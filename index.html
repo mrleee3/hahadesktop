@@ -1885,6 +1885,32 @@ html, body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ─── Composer locked state ──────────────────────────────────────────── */
+
+.hah-cform-textarea.is-locked {
+  background: rgba(0,0,0,0.015) !important;
+  color: var(--desk-text-muted);
+  border-color: var(--desk-border);
+  cursor: default;
+}
+
+.hah-dchip.is-locked {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.hah-date-input.is-locked {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.hah-emis-btn.is-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -2598,7 +2624,7 @@ html, body {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round' },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false },
     tasks: {
       filters: {},
       sort: 'due',
@@ -5621,6 +5647,7 @@ html, body {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card('New entry', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
     const composerType = (state.patient && state.patient.composerType) || 'board_round';
+    const isLocked     = !!(state.patient && state.patient.composerLocked);
     const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
@@ -5635,7 +5662,7 @@ html, body {
       <div class="hah-composer-footer">
         <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
         <button type="button" class="hah-inline-pill" data-patient-action="composer-clear">Clear</button>
-        <button type="button" class="hah-inline-pill is-primary" data-patient-action="composer-done">Done</button>
+        <button type="button" class="hah-inline-pill is-primary" data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
       </div>
       ${composerType === 'board_round' ? `
       <div id="hahNotePreview" style="display:none">
@@ -5644,7 +5671,8 @@ html, body {
         <div class="hah-note-copy-row">
           <button type="button" class="hah-note-copy-btn" id="hahNoteCopyBtn">Copy</button>
         </div>
-        <button type="button" class="hah-emis-btn" id="hahEmisSendBtn">Send to EMIS</button>
+        <button type="button" class="hah-emis-btn${isLocked ? '' : ' is-disabled'}"
+          id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
       </div>` : ''}
     `)]);
   }
@@ -5740,7 +5768,10 @@ html, body {
     const issueText = (fields.issues || '').trim();
     if (issueText) {
       lines.push('ACTIVE ISSUES');
-      issueText.split('\n').filter((l) => l.trim()).forEach((l) => lines.push(l.trim()));
+      const issueLines = issueText.split('\n').map((l) => l.trimEnd());
+      while (issueLines.length && !issueLines[0].trim()) issueLines.shift();
+      while (issueLines.length && !issueLines[issueLines.length - 1].trim()) issueLines.pop();
+      issueLines.forEach((l) => lines.push(l));
       lines.push('');
     }
     if ((fields.progress || '').trim()) {
@@ -5772,12 +5803,26 @@ html, body {
   function afterRender(state, pane) {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
-    const type = (state.patient && state.patient.composerType) || 'board_round';
+    const type     = (state.patient && state.patient.composerType) || 'board_round';
+    const isLocked = !!(state.patient && state.patient.composerLocked);
 
     const draft = loadDraft(vm.patient.id, type);
     if (draft && draft.fields) restoreFields(draft.fields, type);
 
     autoExpandAll(pane);
+
+    if (isLocked) {
+      pane.querySelectorAll('.hah-cform-textarea').forEach((ta) => {
+        ta.setAttribute('readonly', '');
+        ta.classList.add('is-locked');
+      });
+      const dateInput = pane.querySelector('#cform-discharge-date');
+      if (dateInput) { dateInput.disabled = true; dateInput.classList.add('is-locked'); }
+      pane.querySelectorAll('.hah-dchip').forEach((chip) => { chip.disabled = true; chip.classList.add('is-locked'); });
+      refreshPreview(vm, type);
+      bindCopyBtn(pane);
+      return;
+    }
 
     pane.querySelectorAll('.hah-cform-textarea.hah-autoexpand').forEach((ta) => {
       if (ta.classList.contains('is-pulled')) {
@@ -5825,6 +5870,11 @@ html, body {
       });
     });
 
+    bindCopyBtn(pane);
+    refreshPreview(vm, type);
+  }
+
+  function bindCopyBtn(pane) {
     const copyBtn = pane.querySelector('#hahNoteCopyBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -5836,8 +5886,6 @@ html, body {
         }).catch(() => {});
       });
     }
-
-    refreshPreview(vm, type);
   }
 
   function autoExpand(ta) {
@@ -5943,6 +5991,13 @@ html, body {
 
     if (action === 'composer-done' && vm && ops) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
+      const isLocked     = !!(state.patient && state.patient.composerLocked);
+
+      if (isLocked) {
+        store.setState({ patient: { composerLocked: false } });
+        return true;
+      }
+
       const fields = collectComposerFields(composerType);
       const hasContent = Object.values(fields).some((v) => v !== null && v !== false && String(v || '').trim().length > 0);
       if (hasContent) {
@@ -5951,7 +6006,7 @@ html, body {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
           if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
         }
-        clearDraft(vm.patient.id, composerType);
+        saveDraft(vm.patient.id, composerType, fields);
         const typeLabel = ENCOUNTER_TYPES.find((t) => t.key === composerType);
         const pane = document.querySelector('#hahRightPane');
         if (pane) {
@@ -5959,18 +6014,20 @@ html, body {
           showToast(pane, (typeLabel ? typeLabel.label : 'Entry') + ' saved — ' + time);
         }
       }
-      store.setState({ patient: { composerType } }); return true;
+      store.setState({ patient: { composerType, composerLocked: hasContent } });
+      return true;
     }
 
     if (action === 'composer-clear' && vm) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
       clearDraft(vm.patient.id, composerType);
-      document.querySelectorAll('.hah-cform-textarea').forEach((el) => { el.value = ''; el.classList.remove('is-pulled'); el.style.height = ''; });
+      document.querySelectorAll('.hah-cform-textarea').forEach((el) => { el.value = ''; el.classList.remove('is-pulled', 'is-locked'); el.removeAttribute('readonly'); el.style.height = ''; });
       const readyChip = document.getElementById('cform-ready-chip');
-      if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+      if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active', 'is-locked'); readyChip.disabled = false; }
       const dateInput = document.getElementById('cform-discharge-date');
-      if (dateInput) dateInput.value = '';
+      if (dateInput) { dateInput.value = ''; dateInput.disabled = false; dateInput.classList.remove('is-locked'); }
       refreshPreview(vm, composerType);
+      store.setState({ patient: { composerLocked: false } });
       return true;
     }
 
@@ -7265,7 +7322,7 @@ html, body {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-17T21:59:24.854302',
+  builtAt: '2026-04-17T22:09:01.666935',
   entry: 'desktop.html'
 };
 </script>
