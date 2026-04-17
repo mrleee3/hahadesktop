@@ -1674,6 +1674,9 @@ html, body {
 
 /* ─── Composer footer + autosave ─────────────────────────────────────── */
 
+
+/* ─── Composer footer + autosave ─────────────────────────────────────── */
+
 .hah-composer-footer {
   display: flex;
   align-items: center;
@@ -1695,52 +1698,43 @@ html, body {
   opacity: 1;
 }
 
-/* ─── Note section divider ───────────────────────────────────────────── */
+/* ─── Composer / preview separator ──────────────────────────────────── */
 
-.hah-note-divider {
+.hah-composer-sep {
+  height: 1px;
+  background: var(--desk-border);
+  margin: 14px 0 12px;
+}
+
+/* ─── Note preview box ───────────────────────────────────────────────── */
+
+.hah-note-preview {
+  border: 1px solid var(--desk-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hah-note-preview-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 16px 0 12px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.018);
+}
+
+.hah-note-preview-label {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
-  user-select: none;
-}
-
-.hah-note-divider::before,
-.hah-note-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--desk-border);
-}
-
-/* ─── Note preview text ──────────────────────────────────────────────── */
-
-.hah-note-preview-text {
-  margin: 0;
-  padding: 10px 0 12px;
-  font-size: 11.5px;
-  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
-  line-height: 1.65;
-  color: var(--desk-text);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.hah-note-copy-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
 }
 
 .hah-note-copy-btn {
   font-size: 11px;
   font-weight: 500;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 20px;
   border: 1px solid var(--desk-border);
   background: transparent;
@@ -1755,35 +1749,57 @@ html, body {
   border-color: rgba(47,111,237,0.2);
 }
 
+.hah-note-preview-text {
+  margin: 0;
+  padding: 10px 12px 12px;
+  font-size: 11.5px;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  line-height: 1.65;
+  color: var(--desk-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.hah-note-preview-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.015);
+}
+
 /* ─── Send to EMIS ───────────────────────────────────────────────────── */
 
 .hah-emis-btn {
   display: block;
   width: 100%;
-  padding: 10px 16px;
-  border-radius: 11px;
-  border: 1px solid rgba(0, 112, 194, 0.3);
-  background: rgba(0, 112, 194, 0.07);
-  color: rgba(0, 90, 170, 0.9);
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(47,111,237,0.25);
+  background: rgba(47,111,237,0.1);
+  color: rgba(47,111,237,0.9);
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.01em;
   cursor: pointer;
   text-align: center;
   transition: background 140ms ease, border-color 140ms ease;
 }
 
 .hah-emis-btn:hover {
-  background: rgba(0, 112, 194, 0.13);
-  border-color: rgba(0, 112, 194, 0.45);
+  background: rgba(47,111,237,0.16);
+  border-color: rgba(47,111,237,0.38);
 }
 
 .hah-emis-btn:active {
-  background: rgba(0, 112, 194, 0.18);
+  background: rgba(47,111,237,0.22);
   transform: scale(0.995);
 }
 
-/* ─── Discharge date row (single line) ───────────────────────────────── */
+.hah-emis-btn.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
+/* ─── Discharge date row ─────────────────────────────────────────────── */
 
 .hah-discharge-row {
   display: flex;
@@ -1795,15 +1811,15 @@ html, body {
   height: 30px;
   padding: 0 11px;
   border-radius: 20px;
-  border: 1px solid var(--desk-border);
-  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(25,45,72,0.14);
+  background: rgba(255,255,255,0.85);
   font-size: 11px;
   font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all 130ms ease;
+  transition: all 120ms ease;
 }
 
 .hah-dchip:hover {
@@ -1823,25 +1839,38 @@ html, body {
   font-weight: 600;
 }
 
+.hah-dchip.is-locked {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ─── Date input ─────────────────────────────────────────────────────── */
+
 .hah-date-input {
   flex: 1;
   height: 30px;
   padding: 0 9px;
-  border: 1px solid var(--desk-border);
+  border: 1.5px solid rgba(25,45,72,0.2);
   border-radius: 20px;
   font-size: 11.5px;
   font-family: inherit;
   color: var(--desk-text);
-  background: rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.92);
   cursor: pointer;
   min-width: 0;
-  transition: border-color 160ms ease;
+  /* no transition — prevents flash when native calendar picker opens */
 }
 
 .hah-date-input:focus {
   outline: none;
-  border-color: rgba(47,111,237,0.4);
+  border-color: rgba(47,111,237,0.5);
   box-shadow: 0 0 0 3px rgba(47,111,237,0.08);
+}
+
+.hah-date-input.is-locked {
+  opacity: 0.42;
+  cursor: default;
 }
 
 /* ─── Auto-expand textareas ──────────────────────────────────────────── */
@@ -1856,6 +1885,13 @@ html, body {
 .hah-cform-textarea.is-pulled {
   background: rgba(180,83,9,0.04);
   border-color: rgba(180,83,9,0.2);
+}
+
+.hah-cform-textarea.is-locked {
+  background: rgba(0,0,0,0.015) !important;
+  color: var(--desk-text-muted);
+  border-color: var(--desk-border);
+  cursor: default;
 }
 
 /* ─── Toast notification ─────────────────────────────────────────────── */
@@ -1883,32 +1919,6 @@ html, body {
 .hah-composer-toast.is-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* ─── Composer locked state ──────────────────────────────────────────── */
-
-.hah-cform-textarea.is-locked {
-  background: rgba(0,0,0,0.015) !important;
-  color: var(--desk-text-muted);
-  border-color: var(--desk-border);
-  cursor: default;
-}
-
-.hah-dchip.is-locked {
-  opacity: 0.45;
-  cursor: default;
-  pointer-events: none;
-}
-
-.hah-date-input.is-locked {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.hah-emis-btn.is-disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-  filter: grayscale(0.4);
 }
 
 </style>
@@ -5665,14 +5675,17 @@ html, body {
         <button type="button" class="hah-inline-pill is-primary" data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
       </div>
       ${composerType === 'board_round' ? `
-      <div id="hahNotePreview" style="display:none">
-        <div class="hah-note-divider">Clinical note preview</div>
-        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
-        <div class="hah-note-copy-row">
+      <div class="hah-composer-sep"></div>
+      <div class="hah-note-preview" id="hahNotePreview" style="display:none">
+        <div class="hah-note-preview-head">
+          <span class="hah-note-preview-label">Clinical note preview</span>
           <button type="button" class="hah-note-copy-btn" id="hahNoteCopyBtn">Copy</button>
         </div>
-        <button type="button" class="hah-emis-btn${isLocked ? '' : ' is-disabled'}"
-          id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
+        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
+        <div class="hah-note-preview-footer">
+          <button type="button" class="hah-emis-btn${isLocked ? '' : ' is-disabled'}"
+            id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
+        </div>
       </div>` : ''}
     `)]);
   }
@@ -7322,7 +7335,7 @@ html, body {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-17T22:09:01.666935',
+  builtAt: '2026-04-17T22:14:37.671019',
   entry: 'desktop.html'
 };
 </script>
