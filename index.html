@@ -1226,6 +1226,202 @@ html, body {
   background: rgba(255,255,255,0.72);
 }
 
+.hah-patient-main-v2 .hah-patient-header-v2 {
+  position: sticky;
+  top: 0;
+}
+
+.hah-patient-header-grid-v2 {
+  grid-template-columns: 1.5fr 1fr auto;
+}
+
+.hah-patient-content-grid-v2 {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.hah-support-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.hah-card-subcard {
+  background: rgba(255,255,255,0.62);
+  border-color: rgba(25,45,72,0.06);
+  box-shadow: none;
+}
+
+.hah-entry-latest {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(47,111,237,0.08), rgba(47,111,237,0.04));
+  border: 1px solid rgba(47,111,237,0.14);
+}
+
+.hah-entry-latest-top,
+.hah-history-top,
+.hah-timeline-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hah-entry-latest-body,
+.hah-history-main,
+.hah-timeline-main {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--desk-text);
+}
+
+.hah-entry-latest-meta,
+.hah-history-sub {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--desk-text-muted);
+}
+
+.hah-timeline-compact,
+.hah-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hah-timeline-item,
+.hah-history-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid rgba(25,45,72,0.06);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.68);
+  cursor: pointer;
+}
+
+.hah-timeline-item:hover,
+.hah-history-item:hover {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(25,45,72,0.12);
+}
+
+.hah-composer-section + .hah-composer-section {
+  margin-top: 16px;
+}
+
+.hah-composer-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-segment-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hah-segment-btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.8);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hah-segment-btn.is-active {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.18);
+}
+
+.hah-field-wrap {
+  display: block;
+}
+
+.hah-composer-textarea,
+.hah-composer-input,
+.hah-composer-select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(25,45,72,0.08);
+  background: rgba(255,255,255,0.86);
+  color: var(--desk-text);
+  font: inherit;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.hah-composer-textarea:focus,
+.hah-composer-input:focus,
+.hah-composer-select:focus {
+  border-color: rgba(47,111,237,0.28);
+  box-shadow: 0 0 0 4px rgba(47,111,237,0.08);
+}
+
+.hah-composer-textarea {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.hah-composer-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.hah-action-compose-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) 140px 130px;
+  gap: 10px;
+}
+
+.hah-composer-meta {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--desk-text-muted);
+}
+
+.hah-note-preview {
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.58;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.68);
+  border: 1px solid rgba(25,45,72,0.06);
+}
+
+.hah-inline-pill-primary,
+.hah-action-btn-primary {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.18);
+}
+
+@media (max-width: 2560px) {
+  .hah-support-grid,
+  .hah-composer-footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .hah-action-compose-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -2238,6 +2434,7 @@ html, body {
   const DISCHARGE_CYCLE = ['Not ready', 'Possible today', 'Likely tomorrow', 'Ready'];
   const MAX_AUDIT_ROWS = 250;
   const MAX_SUMMARY_ROWS = 40;
+  const ENTRY_TYPES = ['boardround', 'micro-mdm', 'respiratory-mdm', 'other'];
 
   const DEFAULT_STATE = {
     schemaVersion: 2,
@@ -2326,6 +2523,9 @@ html, body {
     } catch (_err) {}
     if (!suppressBroadcast) {
       broadcastState(reason || 'state-updated', meta || {});
+    }
+    if (!(meta && meta.skipRemotePush) && window.HAHBoard.remoteSync && typeof window.HAHBoard.remoteSync.onLocalOpsSaved === 'function') {
+      try { window.HAHBoard.remoteSync.onLocalOpsSaved(clone(state), reason || 'state-updated', meta || {}); } catch (_err) {}
     }
     bumpRender({ remote: false, imported: false });
   }
@@ -2444,6 +2644,173 @@ html, body {
     });
     saveState('round-summary-exported', { summaryId: row.id });
     return clone(row);
+  }
+
+
+  function ensurePatientOps(patientId) {
+    const key = String(patientId);
+    if (!state.patientStates[key] || typeof state.patientStates[key] !== 'object') {
+      state.patientStates[key] = {};
+    }
+    const current = state.patientStates[key];
+    if (!current.entryDrafts || typeof current.entryDrafts !== 'object') current.entryDrafts = {};
+    if (!Array.isArray(current.entries)) current.entries = [];
+    if (!current.currentEntryType) current.currentEntryType = 'boardround';
+    return current;
+  }
+
+  function quietPersist() {
+    state.updatedAt = nowIso();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_err) {}
+  }
+
+  function defaultDraft(type) {
+    return {
+      type: ENTRY_TYPES.includes(String(type || '')) ? String(type) : 'boardround',
+      status: 'In discussion',
+      issues: '',
+      bloodsIx: '',
+      progress: '',
+      plan: '',
+      dischargeReadiness: '',
+      nextReview: '',
+      actionTitle: '',
+      actionOwner: '',
+      actionDue: 'today',
+      updatedAt: '',
+      updatedBy: '',
+      completed: false,
+      editingEntryId: ''
+    };
+  }
+
+  function getPatientEntries(patientId) {
+    const current = ensurePatientOps(patientId);
+    return clone((current.entries || []).slice().sort((a, b) => Date.parse(b.completedAt || b.updatedAt || 0) - Date.parse(a.completedAt || a.updatedAt || 0)));
+  }
+
+  function getCurrentEntryType(patientId) {
+    return ensurePatientOps(patientId).currentEntryType || 'boardround';
+  }
+
+  function setCurrentEntryType(patientId, type, options) {
+    const current = ensurePatientOps(patientId);
+    current.currentEntryType = ENTRY_TYPES.includes(String(type || '')) ? String(type) : 'boardround';
+    if (options && options.quiet) {
+      quietPersist();
+      return current.currentEntryType;
+    }
+    appendAudit({ type: 'entry-type', entityType: 'patient', entityId: String(patientId), summary: `Set entry type to ${current.currentEntryType}` });
+    saveState('entry-type-updated', { patientId: String(patientId) });
+    return current.currentEntryType;
+  }
+
+  function buildDraftFromEntry(entry) {
+    const draft = defaultDraft(entry && entry.type || 'boardround');
+    return {
+      ...draft,
+      ...(entry || {}),
+      editingEntryId: entry && entry.id || '',
+      completed: false
+    };
+  }
+
+  function getEntryDraft(patientId, type) {
+    const current = ensurePatientOps(patientId);
+    const key = ENTRY_TYPES.includes(String(type || '')) ? String(type) : current.currentEntryType || 'boardround';
+    const existing = current.entryDrafts[key];
+    return clone({ ...defaultDraft(key), ...(existing || {}) });
+  }
+
+  function saveEntryDraft(patientId, type, patch, options) {
+    const current = ensurePatientOps(patientId);
+    const key = ENTRY_TYPES.includes(String(type || '')) ? String(type) : current.currentEntryType || 'boardround';
+    const prev = current.entryDrafts[key] || defaultDraft(key);
+    current.entryDrafts[key] = {
+      ...prev,
+      ...cleanObject(patch || {}),
+      type: key,
+      updatedAt: nowIso(),
+      updatedBy: getActorName(),
+      completed: false
+    };
+    current.currentEntryType = key;
+    const opts = options || {};
+    if (opts.quiet) {
+      quietPersist();
+      return clone(current.entryDrafts[key]);
+    }
+    appendAudit({ type: 'entry-draft', entityType: 'patient', entityId: String(patientId), summary: `Updated ${key} draft` });
+    saveState('entry-draft-updated', { patientId: String(patientId) });
+    return clone(current.entryDrafts[key]);
+  }
+
+  function loadEntryIntoDraft(patientId, entryId, options) {
+    const current = ensurePatientOps(patientId);
+    const entry = (current.entries || []).find((row) => String(row.id) == String(entryId));
+    if (!entry) return null;
+    const type = entry.type || 'boardround';
+    current.entryDrafts[type] = buildDraftFromEntry(entry);
+    current.currentEntryType = type;
+    const opts = options || {};
+    if (opts.quiet) {
+      quietPersist();
+      return clone(current.entryDrafts[type]);
+    }
+    appendAudit({ type: 'entry-draft-load', entityType: 'patient', entityId: String(patientId), summary: `Loaded ${type} entry into composer` });
+    saveState('entry-draft-loaded', { patientId: String(patientId) });
+    return clone(current.entryDrafts[type]);
+  }
+
+  function summariseEntry(entry) {
+    const parts = [entry.issues, entry.progress, entry.plan].map((x) => String(x || '').trim()).filter(Boolean);
+    return (parts[0] || entry.bloodsIx || entry.type || 'Entry').slice(0, 180);
+  }
+
+  function completeEntry(patientId, type) {
+    const current = ensurePatientOps(patientId);
+    const key = ENTRY_TYPES.includes(String(type || '')) ? String(type) : current.currentEntryType || 'boardround';
+    const draft = { ...defaultDraft(key), ...(current.entryDrafts[key] || {}) };
+    const entryId = draft.editingEntryId || buildMutationId();
+    const completedAt = nowIso();
+    const entry = {
+      id: entryId,
+      type: key,
+      status: draft.status || 'Discussed',
+      issues: String(draft.issues || '').trim(),
+      bloodsIx: String(draft.bloodsIx || '').trim(),
+      progress: String(draft.progress || '').trim(),
+      plan: String(draft.plan || '').trim(),
+      dischargeReadiness: String(draft.dischargeReadiness || '').trim(),
+      nextReview: String(draft.nextReview || '').trim(),
+      completedAt,
+      completedBy: getActorName(),
+      updatedAt: completedAt,
+      updatedBy: getActorName(),
+      summary: summariseEntry(draft)
+    };
+    const idx = current.entries.findIndex((row) => String(row.id) === String(entryId));
+    if (idx >= 0) current.entries[idx] = entry;
+    else current.entries.unshift(entry);
+    current.entries = current.entries.slice(0, 50);
+    current.entryDrafts[key] = {
+      ...defaultDraft(key),
+      type: key,
+      status: entry.status,
+      dischargeReadiness: entry.dischargeReadiness,
+      nextReview: entry.nextReview,
+      updatedAt: completedAt,
+      updatedBy: getActorName(),
+      completed: true,
+      editingEntryId: ''
+    };
+    current.currentEntryType = key;
+    if (entry.status) current.boardStatus = entry.status;
+    if (entry.dischargeReadiness) current.dischargeReadiness = entry.dischargeReadiness;
+    current.boardNote = entry.summary || current.boardNote || '';
+    appendAudit({ type: 'entry-complete', entityType: 'patient', entityId: String(patientId), summary: `Completed ${key} entry` });
+    saveState('entry-completed', { patientId: String(patientId), entryId });
+    return clone(entry);
   }
 
   function getState() {
@@ -2766,7 +3133,7 @@ html, body {
     }
   }
 
-  function importOpsBundle(text, mode) {
+  function importOpsBundle(text, mode, options) {
     const raw = String(text || '').trim();
     if (!raw) return false;
     let parsed;
@@ -2787,7 +3154,8 @@ html, body {
       entityId: 'ops-bundle',
       summary: `Imported ops snapshot (${mode || 'merge'})`
     });
-    saveState('ops-imported', { imported: true, mode: mode || 'merge' });
+    const opts = options || {};
+    saveState('ops-imported', { imported: true, mode: mode || 'merge', skipRemotePush: !!opts.skipRemotePush, source: opts.source || '' });
     return true;
   }
 
@@ -2927,7 +3295,532 @@ html, body {
     getSyncInfo,
     getRecentAudit,
     getRecentSummaries,
-    clearAllOpsState
+    clearAllOpsState,
+    getPatientEntries,
+    getCurrentEntryType,
+    setCurrentEntryType,
+    getEntryDraft,
+    saveEntryDraft,
+    loadEntryIntoDraft,
+    completeEntry
+  };
+})();
+
+</script>
+  <script>
+/* inlined: js/30-desktop-remote-sync.js */
+(function () {
+  window.HAHBoard = window.HAHBoard || {};
+
+  const SETTINGS_KEY = 'hah_board_remote_sync_settings_v1';
+  const ACCOUNT_KEY = 'hah_board_remote_sync_account_v1';
+  const GRAPH_SETTINGS_KEY = 'hah_graph_settings';
+  const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite'];
+  const DEFAULTS = {
+    clientId: '',
+    folderPath: 'HahBoard',
+    fileName: 'ops-state.json',
+    autoSync: false,
+    pullIntervalSec: 60,
+    lastPushAt: '',
+    lastPullAt: '',
+    lastError: '',
+    lastRemoteWriter: '',
+    lastRemoteUpdatedAt: ''
+  };
+
+  let settings = loadSettings();
+  let account = loadAccount();
+  let msalApp = null;
+  let msalLoaderPromise = null;
+  let pullTimer = null;
+  let pushTimer = null;
+  let currentStatus = 'Remote sync idle';
+  let currentBusy = false;
+
+  function loadSettings() {
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {}; } catch (_err) {}
+    const graphSettings = loadGraphSettings();
+    return {
+      ...DEFAULTS,
+      ...stored,
+      clientId: String(stored.clientId || graphSettings.clientId || '').trim(),
+      folderPath: String(stored.folderPath || DEFAULTS.folderPath).trim() || DEFAULTS.folderPath,
+      fileName: String(stored.fileName || DEFAULTS.fileName).trim() || DEFAULTS.fileName,
+      autoSync: !!stored.autoSync,
+      pullIntervalSec: Math.max(15, Number(stored.pullIntervalSec) || DEFAULTS.pullIntervalSec)
+    };
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_err) {}
+    touchUi();
+  }
+
+  function loadAccount() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return null;
+      return {
+        username: String(raw.username || '').trim(),
+        homeAccountId: String(raw.homeAccountId || '').trim()
+      };
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function saveAccount(next) {
+    account = next && typeof next === 'object' ? {
+      username: String(next.username || '').trim(),
+      homeAccountId: String(next.homeAccountId || '').trim()
+    } : null;
+    try {
+      if (account) localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
+      else localStorage.removeItem(ACCOUNT_KEY);
+    } catch (_err) {}
+    touchUi();
+  }
+
+  function loadGraphSettings() {
+    try {
+      return JSON.parse(localStorage.getItem(GRAPH_SETTINGS_KEY) || '{}') || {};
+    } catch (_err) {
+      return {};
+    }
+  }
+
+  function getClientId() {
+    return String(settings.clientId || '').trim() || String(loadGraphSettings().clientId || '').trim();
+  }
+
+  function getCurrentPageUrl() {
+    return window.location.href.split('#')[0];
+  }
+
+  function ensureHostedForMicrosoft() {
+    if (window.location.protocol === 'file:') {
+      throw new Error('Microsoft sign-in requires a hosted https app address, not a downloaded file.');
+    }
+  }
+
+  function loadExternalScript(src) {
+    return new Promise((resolve, reject) => {
+      const existing = [...document.querySelectorAll('script')].find((s) => s.src === src);
+      if (existing) {
+        if (window.msal && window.msal.PublicClientApplication) { resolve(); return; }
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Script failed to load.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Script failed to load.'));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureMsalLibrary() {
+    ensureHostedForMicrosoft();
+    if (window.msal && window.msal.PublicClientApplication) return;
+    if (!msalLoaderPromise) {
+      msalLoaderPromise = (async () => {
+        const urls = [
+          'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js',
+          'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js',
+          'https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js'
+        ];
+        let lastError = null;
+        for (const url of urls) {
+          try {
+            await loadExternalScript(url);
+            if (window.msal && window.msal.PublicClientApplication) return;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        throw lastError || new Error('Microsoft sign-in library did not load.');
+      })();
+    }
+    await msalLoaderPromise;
+    if (!(window.msal && window.msal.PublicClientApplication)) throw new Error('Microsoft sign-in library did not load.');
+  }
+
+  function getMsalConfig() {
+    const clientId = getClientId();
+    if (!clientId) throw new Error('Set a Microsoft app client ID first. The desktop app can reuse the OneDrive handover client ID.');
+    return {
+      auth: {
+        clientId,
+        authority: 'https://login.microsoftonline.com/consumers',
+        redirectUri: getCurrentPageUrl()
+      },
+      cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+    };
+  }
+
+  async function ensureMsalApp() {
+    await ensureMsalLibrary();
+    const config = getMsalConfig();
+    if (!msalApp || msalApp.getConfiguration().auth.clientId !== config.auth.clientId) {
+      msalApp = new window.msal.PublicClientApplication(config);
+      await msalApp.initialize();
+      const redirect = await msalApp.handleRedirectPromise();
+      if (redirect && redirect.account) {
+        saveAccount({ username: redirect.account.username || '', homeAccountId: redirect.account.homeAccountId || '' });
+        setStatus('Signed in to Microsoft', false);
+      }
+    }
+    const accounts = msalApp.getAllAccounts();
+    if (accounts && accounts.length) {
+      const matched = account && account.homeAccountId ? accounts.find((a) => a.homeAccountId === account.homeAccountId) : null;
+      const resolved = matched || accounts[0];
+      if (resolved) saveAccount({ username: resolved.username || '', homeAccountId: resolved.homeAccountId || '' });
+    }
+    return msalApp;
+  }
+
+  async function getGraphAccessToken() {
+    const app = await ensureMsalApp();
+    const accounts = app.getAllAccounts();
+    const accountObj = account && account.homeAccountId ? accounts.find((a) => a.homeAccountId === account.homeAccountId) : accounts[0];
+    if (!accountObj) {
+      await app.loginRedirect({ scopes: GRAPH_SCOPES, prompt: 'select_account' });
+      return '';
+    }
+    saveAccount({ username: accountObj.username || '', homeAccountId: accountObj.homeAccountId || '' });
+    try {
+      const token = await app.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accountObj });
+      return token.accessToken;
+    } catch (_err) {
+      await app.acquireTokenRedirect({ scopes: GRAPH_SCOPES, account: accountObj });
+      return '';
+    }
+  }
+
+  async function graphRequest(path, options) {
+    const token = await getGraphAccessToken();
+    if (!token) return null;
+    const opts = options || {};
+    const headers = { Authorization: `Bearer ${token}`, ...(opts.headers || {}) };
+    const init = { method: opts.method || 'GET', headers };
+    if (Object.prototype.hasOwnProperty.call(opts, 'body')) init.body = opts.body;
+    const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, init);
+    if (!res.ok) {
+      let message = `Graph request failed (${res.status})`;
+      try {
+        const body = await res.json();
+        message = body.error?.message || message;
+      } catch (_err) {
+        try { message = await res.text() || message; } catch (__err) {}
+      }
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
+    }
+    return res;
+  }
+
+  function encodePath(path) {
+    return String(path || '').split('/').filter(Boolean).map((part) => encodeURIComponent(part)).join('/');
+  }
+
+  async function ensureRemoteFolder() {
+    const parts = String(settings.folderPath || '').split('/').filter(Boolean);
+    let built = '';
+    for (const part of parts) {
+      const next = built ? `${built}/${part}` : part;
+      try {
+        await graphRequest(`/me/drive/root:/${encodePath(next)}`);
+      } catch (err) {
+        if (err && err.status !== 404) throw err;
+        const parentPath = built ? `/me/drive/root:/${encodePath(built)}:/children` : '/me/drive/root/children';
+        await graphRequest(parentPath, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: part, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+        });
+      }
+      built = next;
+    }
+  }
+
+  function getRemoteFilePath() {
+    return `${String(settings.folderPath || '').replace(/^\/+|\/+$/g, '')}/${String(settings.fileName || '').replace(/^\/+|\/+$/g, '')}`;
+  }
+
+  async function getRemoteMetadata() {
+    try {
+      const res = await graphRequest(`/me/drive/root:/${encodePath(getRemoteFilePath())}`);
+      return await res.json();
+    } catch (err) {
+      if (err && err.status === 404) return null;
+      throw err;
+    }
+  }
+
+  async function downloadRemoteText() {
+    const res = await graphRequest(`/me/drive/root:/${encodePath(getRemoteFilePath())}:/content`);
+    return res ? res.text() : '';
+  }
+
+  async function uploadRemoteText(text) {
+    await ensureRemoteFolder();
+    const res = await graphRequest(`/me/drive/root:/${encodePath(getRemoteFilePath())}:/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json;charset=utf-8' },
+      body: text
+    });
+    return res ? res.json() : null;
+  }
+
+  function setStatus(text, isError) {
+    currentStatus = String(text || '').trim() || 'Remote sync idle';
+    settings.lastError = isError ? currentStatus : '';
+    if (!isError) settings.lastError = '';
+    saveSettings();
+  }
+
+  function touchUi() {
+    const store = window.HAHBoard.store;
+    if (store && typeof store.setState === 'function') {
+      store.setState({ ui: { revision: Date.now() } });
+    }
+  }
+
+  function getInfo() {
+    const ops = window.HAHBoard.ops;
+    const accountName = account && account.username ? account.username : '';
+    return {
+      connected: !!accountName,
+      account: accountName,
+      clientId: getClientId(),
+      folderPath: settings.folderPath,
+      fileName: settings.fileName,
+      remotePath: getRemoteFilePath(),
+      autoSync: !!settings.autoSync,
+      pullIntervalSec: settings.pullIntervalSec,
+      lastPushAt: settings.lastPushAt || '',
+      lastPullAt: settings.lastPullAt || '',
+      lastRemoteWriter: settings.lastRemoteWriter || '',
+      lastRemoteUpdatedAt: settings.lastRemoteUpdatedAt || '',
+      lastError: settings.lastError || '',
+      status: currentStatus,
+      opsUpdatedAt: ops && typeof ops.getState === 'function' ? (ops.getState().updatedAt || '') : ''
+    };
+  }
+
+  function promptClientId() {
+    const next = window.prompt('Microsoft app client ID for remote sync', getClientId());
+    if (next === null) return null;
+    settings.clientId = String(next || '').trim();
+    saveSettings();
+    setStatus(settings.clientId ? 'Remote sync client ID saved' : 'Remote sync client ID cleared', false);
+    return settings.clientId;
+  }
+
+  function promptRemotePath() {
+    const nextFolder = window.prompt('Remote OneDrive folder path', settings.folderPath || DEFAULTS.folderPath);
+    if (nextFolder === null) return null;
+    const nextFile = window.prompt('Remote JSON filename', settings.fileName || DEFAULTS.fileName);
+    if (nextFile === null) return null;
+    settings.folderPath = String(nextFolder || DEFAULTS.folderPath).trim() || DEFAULTS.folderPath;
+    settings.fileName = String(nextFile || DEFAULTS.fileName).trim() || DEFAULTS.fileName;
+    saveSettings();
+    setStatus('Remote OneDrive path updated', false);
+    return getRemoteFilePath();
+  }
+
+  async function signIn() {
+    try {
+      currentBusy = true;
+      touchUi();
+      const app = await ensureMsalApp();
+      const accounts = app.getAllAccounts();
+      if (accounts && accounts.length) {
+        saveAccount({ username: accounts[0].username || '', homeAccountId: accounts[0].homeAccountId || '' });
+        setStatus('Connected to Microsoft', false);
+        if (settings.autoSync) schedulePullLoop();
+        return true;
+      }
+      await app.loginRedirect({ scopes: GRAPH_SCOPES, prompt: 'select_account' });
+      return true;
+    } catch (err) {
+      setStatus(err && err.message ? err.message : 'Microsoft sign-in failed', true);
+      return false;
+    } finally {
+      currentBusy = false;
+      touchUi();
+    }
+  }
+
+  async function signOut() {
+    try {
+      currentBusy = true;
+      touchUi();
+      const app = await ensureMsalApp();
+      const accounts = app.getAllAccounts();
+      const accountObj = account && account.homeAccountId ? accounts.find((a) => a.homeAccountId === account.homeAccountId) : accounts[0];
+      saveAccount(null);
+      if (pullTimer) { clearInterval(pullTimer); pullTimer = null; }
+      setStatus('Signed out of Microsoft', false);
+      if (accountObj) {
+        await app.logoutRedirect({ account: accountObj, postLogoutRedirectUri: getCurrentPageUrl() });
+      }
+      return true;
+    } catch (err) {
+      setStatus(err && err.message ? err.message : 'Microsoft sign-out failed', true);
+      return false;
+    } finally {
+      currentBusy = false;
+      touchUi();
+    }
+  }
+
+  async function pushNow(reason) {
+    const ops = window.HAHBoard.ops;
+    if (!ops || typeof ops.exportOpsBundle !== 'function') return false;
+    try {
+      currentBusy = true;
+      setStatus(reason === 'auto' ? 'Auto-pushing ops state…' : 'Pushing ops state to OneDrive…', false);
+      const text = ops.exportOpsBundle();
+      const meta = await uploadRemoteText(text);
+      settings.lastPushAt = new Date().toISOString();
+      settings.lastRemoteWriter = ops.getActorName ? ops.getActorName() : '';
+      settings.lastRemoteUpdatedAt = meta && meta.lastModifiedDateTime ? meta.lastModifiedDateTime : settings.lastPushAt;
+      saveSettings();
+      setStatus(reason === 'auto' ? 'Remote auto-sync current' : 'Ops state pushed to OneDrive', false);
+      return true;
+    } catch (err) {
+      setStatus(err && err.message ? err.message : 'Remote push failed', true);
+      return false;
+    } finally {
+      currentBusy = false;
+      touchUi();
+    }
+  }
+
+  async function pullNow(mode) {
+    const ops = window.HAHBoard.ops;
+    if (!ops || typeof ops.importOpsBundle !== 'function') return false;
+    try {
+      currentBusy = true;
+      setStatus('Pulling ops state from OneDrive…', false);
+      const text = await downloadRemoteText();
+      const ok = ops.importOpsBundle(text, mode || 'merge', { skipRemotePush: true, source: 'remote' });
+      if (!ok) throw new Error('Remote file could not be parsed as ops state');
+      settings.lastPullAt = new Date().toISOString();
+      try {
+        const parsed = JSON.parse(text);
+        const state = parsed && parsed.state ? parsed.state : parsed;
+        settings.lastRemoteWriter = String(state && state.lastWriter || parsed.exportedBy || '').trim();
+        settings.lastRemoteUpdatedAt = String(state && state.updatedAt || parsed.exportedAt || '').trim();
+      } catch (_err) {}
+      saveSettings();
+      setStatus(mode === 'replace' ? 'Remote state pulled and replaced local ops' : 'Remote state merged into local ops', false);
+      return true;
+    } catch (err) {
+      setStatus(err && err.message ? err.message : 'Remote pull failed', true);
+      return false;
+    } finally {
+      currentBusy = false;
+      touchUi();
+    }
+  }
+
+  function queuePush(reason) {
+    if (!settings.autoSync) return;
+    if (pushTimer) clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => { pushNow(reason || 'auto'); }, 1200);
+  }
+
+  function onLocalOpsSaved(_state, _reason, meta) {
+    if (meta && meta.skipRemotePush) return;
+    queuePush('auto');
+  }
+
+  function schedulePullLoop() {
+    if (pullTimer) clearInterval(pullTimer);
+    if (!settings.autoSync) return;
+    pullTimer = setInterval(() => { pullNow('merge'); }, Math.max(15, Number(settings.pullIntervalSec) || 60) * 1000);
+  }
+
+  function toggleAutoSync() {
+    settings.autoSync = !settings.autoSync;
+    saveSettings();
+    if (settings.autoSync) {
+      schedulePullLoop();
+      if (account && account.username) {
+        pullNow('merge');
+        queuePush('auto');
+      }
+      setStatus('Remote auto-sync enabled', false);
+    } else {
+      if (pullTimer) clearInterval(pullTimer);
+      pullTimer = null;
+      if (pushTimer) clearTimeout(pushTimer);
+      pushTimer = null;
+      setStatus('Remote auto-sync disabled', false);
+    }
+    return settings.autoSync;
+  }
+
+  function getBusy() {
+    return currentBusy;
+  }
+
+  async function refreshRemoteMeta() {
+    try {
+      currentBusy = true;
+      const meta = await getRemoteMetadata();
+      if (meta) {
+        settings.lastRemoteUpdatedAt = meta.lastModifiedDateTime || settings.lastRemoteUpdatedAt;
+        settings.lastRemoteWriter = meta.lastModifiedBy && meta.lastModifiedBy.user ? (meta.lastModifiedBy.user.displayName || meta.lastModifiedBy.user.email || settings.lastRemoteWriter) : settings.lastRemoteWriter;
+        saveSettings();
+        setStatus('Remote metadata refreshed', false);
+      } else {
+        setStatus('Remote file not found yet', false);
+      }
+      return meta;
+    } catch (err) {
+      setStatus(err && err.message ? err.message : 'Could not refresh remote metadata', true);
+      return null;
+    } finally {
+      currentBusy = false;
+      touchUi();
+    }
+  }
+
+  async function init() {
+    try {
+      await ensureMsalApp();
+    } catch (_err) {}
+    if (settings.autoSync) {
+      schedulePullLoop();
+      if (account && account.username) {
+        pullNow('merge');
+      }
+    }
+    touchUi();
+  }
+
+  init();
+
+  window.HAHBoard.remoteSync = {
+    getInfo,
+    getBusy,
+    promptClientId,
+    promptRemotePath,
+    signIn,
+    signOut,
+    pushNow,
+    pullNow,
+    toggleAutoSync,
+    onLocalOpsSaved,
+    refreshRemoteMeta
   };
 })();
 
@@ -3505,6 +4398,100 @@ html, body {
     return { meds, ivs };
   }
 
+
+  function findLatestEntry(entries, type) {
+    const rows = Array.isArray(entries) ? entries : [];
+    if (type) return rows.find((row) => String(row.type) === String(type)) || null;
+    return rows[0] || null;
+  }
+
+  function typeLabel(type) {
+    switch (String(type || '')) {
+      case 'micro-mdm': return 'Micro MDM';
+      case 'respiratory-mdm': return 'Respiratory MDM';
+      case 'other': return 'Other';
+      default: return 'Boardround';
+    }
+  }
+
+  function entryStatusLabel(value, fallback) {
+    return String(value || fallback || 'In discussion').trim() || 'In discussion';
+  }
+
+  function buildSuggestedDraft(summary, raw, activeType, entries) {
+    const form = raw.form || {};
+    const latestSameType = findLatestEntry(entries, activeType);
+    const latestAny = findLatestEntry(entries, null);
+    const source = latestSameType || latestAny || {};
+    return {
+      type: activeType,
+      status: entryStatusLabel(source.status, summary.boardStatus || 'In discussion'),
+      issues: String(source.issues || form.issues || raw.summary || '').trim(),
+      bloodsIx: String(source.bloodsIx || form.bloods || '').trim(),
+      progress: String(source.progress || form.examination || raw.summary || '').trim(),
+      plan: String(source.plan || form.plan || '').trim(),
+      dischargeReadiness: String(source.dischargeReadiness || summary.dischargeReadiness || '').trim(),
+      nextReview: String(source.nextReview || summary.reviewDueAt || '').trim(),
+      actionTitle: '',
+      actionOwner: summary.clinician || '',
+      actionDue: 'today',
+      completed: false,
+      editingEntryId: ''
+    };
+  }
+
+  function mergeDraft(base, patch) {
+    return { ...base, ...(patch || {}) };
+  }
+
+  function buildGeneratedPreview(summary, draft) {
+    const blocks = [];
+    const type = typeLabel(draft.type || 'boardround');
+    blocks.push(`${type} — ${entryStatusLabel(draft.status, summary.boardStatus)}`);
+    if (draft.issues) blocks.push(`Issues\n${String(draft.issues).trim()}`);
+    if (draft.bloodsIx) blocks.push(`Bloods / Ix\n${String(draft.bloodsIx).trim()}`);
+    if (draft.progress) blocks.push(`Progress\n${String(draft.progress).trim()}`);
+    if (draft.plan) blocks.push(`Plan\n${String(draft.plan).trim()}`);
+    const footer = [];
+    if (draft.dischargeReadiness) footer.push(`Discharge: ${draft.dischargeReadiness}`);
+    if (draft.nextReview) footer.push(`Next review: ${String(draft.nextReview).trim()}`);
+    if (footer.length) blocks.push(footer.join(' · '));
+    return blocks.filter(Boolean).join('\n\n').trim();
+  }
+
+  function buildTimelineSummary(entries) {
+    return (entries || []).slice(0, 6).map((entry) => ({
+      id: entry.id,
+      type: entry.type,
+      typeLabel: typeLabel(entry.type),
+      completedAt: entry.completedAt || entry.updatedAt || '',
+      completedBy: entry.completedBy || entry.updatedBy || '',
+      status: entry.status || '',
+      summary: truncateText(entry.summary || entry.plan || entry.progress || entry.issues || 'Entry', 140),
+      dischargeReadiness: entry.dischargeReadiness || ''
+    }));
+  }
+
+  function buildWhatChanged(summary, raw, latestEntry) {
+    const changes = [];
+    if (summary.changedSinceYesterday) changes.push({ title: 'Changed since yesterday', body: 'This patient is already flagged as having a live status shift compared with the previous day.' });
+    if (summary.oxygenLpm > 0) changes.push({ title: 'Oxygen requirement', body: `${summary.oxygenLpm}L currently recorded.` });
+    if (summary.reviewOverdue) changes.push({ title: 'Review cadence', body: 'Review is overdue against the current due time.' });
+    if (summary.bloodTrendSummary && summary.bloodTrendSummary !== 'No recent blood summary') changes.push({ title: 'Blood trend', body: summary.bloodTrendSummary });
+    if (latestEntry && latestEntry.plan) changes.push({ title: `${typeLabel(latestEntry.type)} carried plan`, body: truncateText(latestEntry.plan, 180) });
+    return changes.slice(0, 4);
+  }
+
+  function buildOpenItems(summary, tasks, latestEntry) {
+    const items = [];
+    (summary.blockers || []).forEach((blocker) => items.push({ title: blocker, body: 'Current blocker' }));
+    (tasks || []).filter((task) => !['Done', 'Cancelled'].includes(String(task.status || ''))).slice(0, 4).forEach((task) => items.push({ title: task.title, body: `${task.status} · ${task.owner || 'Unassigned'}` }));
+    if (latestEntry && latestEntry.plan) {
+      splitCleanLines(latestEntry.plan).slice(0, 2).forEach((line) => items.push({ title: truncateText(line, 84), body: 'Rolled from previous entry' }));
+    }
+    return items.slice(0, 6);
+  }
+
   function buildPatientWorkspaceModel(state) {
     const boardVm = buildBoardViewModel(state);
     const selectedId = String(state.route.entityId || state.selectedPatientId || (boardVm.selectedPatient && boardVm.selectedPatient.id) || '');
@@ -3513,22 +4500,34 @@ html, body {
 
     const raw = summary.sourcePatient || {};
     const form = raw.form || {};
-    const issues = splitCleanLines(form.issues || raw.summary).slice(0, 6);
-    const planLines = splitCleanLines(form.plan).slice(0, 6);
-    const dischargeLines = splitCleanLines(form.forDischargeSummary).slice(0, 4);
     const bloodSamples = parseBloodSamples(form.bloods);
     const meds = buildMedicationItems(raw);
     const obsItems = buildObsItems(raw, summary);
     const contextRows = boardVm.rows;
     const selectedIndex = contextRows.findIndex((row) => String(row.id) === String(summary.id));
+    const allTasksVm = buildTasksViewModel({ ...state, tasks: { ...(state.tasks || {}), savedView: 'all-open', filters: { patientId: summary.id } } });
+    const patientTasks = allTasksVm.rows.filter((row) => String(row.patientId) === String(summary.id));
+
+    const opsApi = window.HAHBoard.ops;
+    const activeType = opsApi && typeof opsApi.getCurrentEntryType === 'function' ? opsApi.getCurrentEntryType(summary.id) : 'boardround';
+    const entries = opsApi && typeof opsApi.getPatientEntries === 'function' ? opsApi.getPatientEntries(summary.id) : [];
+    const savedDraft = opsApi && typeof opsApi.getEntryDraft === 'function' ? opsApi.getEntryDraft(summary.id, activeType) : null;
+    const suggestedDraft = buildSuggestedDraft(summary, raw, activeType, entries);
+    const activeDraft = mergeDraft(suggestedDraft, savedDraft || {});
+    activeDraft.type = activeType;
+    if (!activeDraft.status) activeDraft.status = entryStatusLabel(summary.boardStatus, 'In discussion');
+    if (!activeDraft.dischargeReadiness) activeDraft.dischargeReadiness = summary.dischargeReadiness || '';
+    if (!activeDraft.nextReview) activeDraft.nextReview = summary.reviewDueAt || '';
+
+    const timelineRows = buildTimelineSummary(entries);
+    const latestEntry = findLatestEntry(entries, null);
+    const latestSameType = findLatestEntry(entries, activeType);
+    const latestDisplayEntry = latestSameType || latestEntry;
 
     return {
       patient: summary,
       summaryText: summary.summaryLine || raw.summary || 'No summary available',
       reviewText: buildLatestReviewText(raw),
-      issues,
-      planLines,
-      dischargeLines,
       bloodSamples,
       obsItems,
       medications: meds.meds,
@@ -3537,7 +4536,29 @@ html, body {
       admissionDate: String(raw.doa || '').trim(),
       referralSource: String(raw.referralSource || '').trim(),
       contextRows,
-      selectedIndex
+      selectedIndex,
+      activeType,
+      activeTypeLabel: typeLabel(activeType),
+      suggestedDraft,
+      activeDraft,
+      generatedPreview: buildGeneratedPreview(summary, activeDraft),
+      timelineRows,
+      latestEntry: latestDisplayEntry,
+      entries,
+      patientTasks,
+      nowGrid: [
+        { label: 'Current state', value: summary.currentStatus },
+        { label: 'Discharge', value: summary.dischargeReadiness },
+        { label: 'Review due', value: summary.reviewDueAt || '—' },
+        { label: 'Lead issue', value: truncateText(summary.summaryLine || raw.summary || '—', 72) },
+        { label: 'Blood trend', value: summary.bloodTrendSummary },
+        { label: 'Obs signal', value: summary.obsSummary }
+      ],
+      whatChanged: buildWhatChanged(summary, raw, latestDisplayEntry),
+      openItems: buildOpenItems(summary, patientTasks, latestDisplayEntry),
+      sourceIssues: splitCleanLines(form.issues || raw.summary).slice(0, 6),
+      planLines: splitCleanLines(form.plan).slice(0, 6),
+      dischargeLines: splitCleanLines(form.forDischargeSummary).slice(0, 4)
     };
   }
 
@@ -4643,6 +5664,23 @@ html, body {
   const d = window.HAHBoard.derived;
   const ops = window.HAHBoard.ops;
 
+  const ENTRY_TYPES = ['boardround', 'micro-mdm', 'respiratory-mdm', 'other'];
+  const ENTRY_TYPE_LABELS = {
+    'boardround': 'Boardround',
+    'micro-mdm': 'Micro MDM',
+    'respiratory-mdm': 'Respiratory MDM',
+    'other': 'Other'
+  };
+  const ENTRY_STATUSES = ['Not discussed', 'In discussion', 'Discussed', 'Actioned', 'Deferred'];
+  const DISCHARGE_OPTIONS = ['Not ready', 'Possible today', 'Likely tomorrow', 'Ready'];
+  const DUE_OPTIONS = [
+    { value: 'today', label: 'Today' },
+    { value: 'tomorrow', label: 'Tomorrow' },
+    { value: 'next-review', label: 'Next review' }
+  ];
+
+  const draftTimers = new Map();
+
   function renderLeftPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card('Patient jump list', c.emptyState('No patient selected', 'Choose a patient from the Board.'))]);
@@ -4661,14 +5699,16 @@ html, body {
     }).join('');
 
     return c.stack([
-      c.card('Current board view', c.keyValueGrid([
-        { label: 'View', value: viewLabel(state.board.savedView) },
-        { label: 'Position', value: vm.selectedIndex >= 0 ? `${vm.selectedIndex + 1} of ${vm.contextRows.length}` : '—' },
-        { label: 'Priority', value: vm.patient.priority },
-        { label: 'Status', value: vm.patient.currentStatus }
-      ])),
+      c.card('Round context', `
+        ${c.keyValueGrid([
+          { label: 'View', value: viewLabel(state.board.savedView) },
+          { label: 'Queue position', value: vm.selectedIndex >= 0 ? `${vm.selectedIndex + 1} of ${vm.contextRows.length}` : '—' },
+          { label: 'Current entry', value: vm.activeTypeLabel },
+          { label: 'Latest round state', value: vm.patient.boardStatus }
+        ])}
+      `),
       c.card('Patient jump list', `
-        <div class="hah-board-sub">Move through the current board cohort without losing context.</div>
+        <div class="hah-board-sub">Move through the current board cohort without losing round context.</div>
         <div style="margin-top:16px;" class="hah-jump-list">${buttons}</div>
       `)
     ]);
@@ -4678,16 +5718,12 @@ html, body {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return renderEmpty();
 
-    const issueCards = vm.issues.map(renderIssueCard).join('');
-    const planRows = vm.planLines.slice(0, 6).map((line) => renderMiniLine(line)).join('');
-    const dischargeRows = vm.dischargeLines.slice(0, 4).map((line) => renderMiniLine(line)).join('');
-
     return `
-      <div class="hah-patient-main">
-        <section class="hah-card hah-patient-header">
+      <div class="hah-patient-main hah-patient-main-v2">
+        <section class="hah-card hah-patient-header hah-patient-header-v2">
           <div class="hah-card-inner">
-            <div class="hah-patient-breadcrumb">${c.escapeHtml(viewLabel(state.board.savedView))} · patient workspace</div>
-            <div class="hah-patient-header-grid">
+            <div class="hah-patient-breadcrumb">${c.escapeHtml(viewLabel(state.board.savedView))} · patient briefing</div>
+            <div class="hah-patient-header-grid hah-patient-header-grid-v2">
               <div>
                 <div class="hah-patient-name-row">
                   <h1 class="hah-patient-name">${c.escapeHtml(vm.patient.name)}</h1>
@@ -4716,60 +5752,42 @@ html, body {
                 <button type="button" class="hah-inline-pill" data-patient-action="next">Next</button>
               </div>
             </div>
-
-            <div class="hah-summary-banner">${c.escapeHtml(buildBannerText(vm))}</div>
           </div>
         </section>
 
-        <div class="hah-patient-content-grid">
+        <div class="hah-patient-content-grid hah-patient-content-grid-v2">
           <div class="hah-patient-column">
-            ${c.card('Today summary', `
-              <div class="hah-patient-rail-note">Live briefing for the selected patient in the current board context.</div>
-              <div style="margin-top:16px;">${c.keyValueGrid([
-                { label: 'Current state', value: vm.patient.currentStatus },
-                { label: 'Review due', value: formatDateTime(vm.patient.reviewDueAt) },
-                { label: 'Blood trend', value: vm.patient.bloodTrendSummary },
-                { label: 'Obs signal', value: vm.patient.obsSummary },
-                { label: 'Main blocker', value: vm.patient.blockers[0] || 'No active blocker' },
-                { label: 'Board status', value: vm.patient.boardStatus }
-              ])}</div>
+            ${c.card('Now', `
+              <div class="hah-patient-rail-note">Current clinical and operational position for the selected patient.</div>
+              <div style="margin-top:16px;">${c.keyValueGrid(vm.nowGrid)}</div>
             `)}
 
-            ${c.card('Board decisions', `
-              ${c.keyValueGrid([
-                { label: 'Board status', value: vm.patient.boardStatus },
-                { label: 'Discharge readiness', value: vm.patient.dischargeReadiness },
-                { label: 'Escalation', value: vm.patient.escalationSummary },
-                { label: 'Review due', value: formatDateTime(vm.patient.reviewDueAt) }
-              ])}
-              <div style="margin-top:16px;" class="hah-task-note">${c.escapeHtml(vm.patient.boardNote || 'No board note recorded yet.')}</div>
-            `)}
+            ${c.card('What changed', renderSimpleCards(vm.whatChanged, 'No significant change cues highlighted yet.'), { subtitle: 'Shifts worth noticing before or during the round' })}
 
-            ${c.card('Active issues', issueCards || '<div class="hah-mini-item"><div class="hah-mini-title">No active issue text recorded.</div></div>', { subtitle: `${vm.issues.length || 0} issue${vm.issues.length === 1 ? '' : 's'}` })}
+            ${c.card('Open actions and blockers', renderSimpleCards(vm.openItems, 'No active actions or blockers recorded.'), { subtitle: `${vm.patientTasks.filter((task) => !['Done', 'Cancelled'].includes(String(task.status || ''))).length} live task${vm.patientTasks.length === 1 ? '' : 's'}` })}
 
-            ${c.card('Clinical narrative', `
-              <div class="hah-review-meta">Latest review ${c.escapeHtml(formatDateTime(vm.patient.latestReviewAt))}</div>
-              <div class="hah-review-body">${c.escapeHtml(vm.reviewText || 'No current narrative available.')}</div>
-            `)}
-
-            ${c.card('Plan', planRows || '<div class="hah-mini-item"><div class="hah-mini-title">No plan text recorded.</div></div>')}
-
-            ${c.card('Discharge planning', dischargeRows || `<div class="hah-mini-item"><div class="hah-mini-title">${c.escapeHtml(vm.patient.dischargeReadiness)}</div></div>`)}
+            ${c.card('Recent clinical ops timeline', renderTimeline(vm), { subtitle: 'Latest full entry plus compact recent history' })}
           </div>
 
           <div class="hah-patient-column">
-            ${c.card('Obs and scores', `
-              ${c.keyValueGrid(vm.obsItems)}
-              <div style="margin-top:16px;" class="hah-detail-inline">
-                ${vm.patient.treatmentFlags.length ? vm.patient.treatmentFlags.map((flag) => c.badge(flag, 'neutral')).join('') : c.badge('No active flags', 'good')}
+            ${c.card('Supporting detail', `
+              <div class="hah-support-grid">
+                <div>${c.card('Obs and scores', `${c.keyValueGrid(vm.obsItems)}<div style="margin-top:16px;" class="hah-detail-inline">${vm.patient.treatmentFlags.length ? vm.patient.treatmentFlags.map((flag) => c.badge(flag, 'neutral')).join('') : c.badge('No active flags', 'good')}</div>`, { className: 'hah-card-subcard' })}</div>
+                <div>${c.card('Bloods and trends', renderBloodSamples(vm.bloodSamples), { subtitle: vm.patient.bloodTrendSummary, className: 'hah-card-subcard' })}</div>
               </div>
             `)}
 
-            ${c.card('Bloods and trends', renderBloodSamples(vm.bloodSamples), { subtitle: vm.patient.bloodTrendSummary })}
+            ${c.card('Current treatment', `
+              <div class="hah-support-grid">
+                <div>${c.card('Medications', renderMedList(vm.medications, 'No medication entries recorded.'), { subtitle: `${vm.medications.length} entr${vm.medications.length === 1 ? 'y' : 'ies'}`, className: 'hah-card-subcard' })}</div>
+                <div>${c.card('IV therapies', renderMedList(vm.ivs, 'No IV therapies recorded.'), { subtitle: `${vm.ivs.length} entr${vm.ivs.length === 1 ? 'y' : 'ies'}`, className: 'hah-card-subcard' })}</div>
+              </div>
+            `)}
 
-            ${c.card('Medications', renderMedList(vm.medications, 'No medication entries recorded.'), { subtitle: `${vm.medications.length} current entr${vm.medications.length === 1 ? 'y' : 'ies'}` })}
-
-            ${c.card('IV therapies', renderMedList(vm.ivs, 'No IV therapies recorded.'), { subtitle: `${vm.ivs.length} IV entr${vm.ivs.length === 1 ? 'y' : 'ies'}` })}
+            ${c.card('Latest source narrative', `
+              <div class="hah-review-meta">Underlying source narrative and plan from the shared patient data.</div>
+              <div class="hah-review-body">${c.escapeHtml(vm.reviewText || 'No current narrative available.')}</div>
+            `)}
           </div>
         </div>
       </div>
@@ -4778,122 +5796,251 @@ html, body {
 
   function renderRightPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
-    if (!vm) return c.stack([c.card('Patient actions', c.emptyState('No patient selected', 'Choose a patient from the Board.'))]);
+    if (!vm) return c.stack([c.card('Boardround composer', c.emptyState('No patient selected', 'Choose a patient from the Board.'))]);
 
     return c.stack([
-      c.card('Quick actions', `
-        <div class="hah-patient-rail-note">Keep board context while moving through the current cohort.</div>
-        <div style="margin-top:14px;" class="hah-action-grid">
-          <button type="button" class="hah-action-btn" data-patient-action="back-board">Back to board</button>
-          <button type="button" class="hah-action-btn" data-patient-action="open-board-context">Board context</button>
-          <button type="button" class="hah-action-btn" data-patient-action="open-tasks">Open tasks</button>
-          <button type="button" class="hah-action-btn" data-patient-action="add-task">Add task</button>
-          <button type="button" class="hah-action-btn" data-patient-action="add-round-task">Add round action</button>
-          <button type="button" class="hah-action-btn" data-patient-action="set-discussed">Discussed</button>
-          <button type="button" class="hah-action-btn" data-patient-action="set-actioned">Actioned</button>
-          <button type="button" class="hah-action-btn" data-patient-action="set-deferred">Deferred</button>
-          <button type="button" class="hah-action-btn" data-patient-action="cycle-discharge">Cycle discharge</button>
-          <button type="button" class="hah-action-btn" data-patient-action="edit-board-note">Board note</button>
-          <button type="button" class="hah-action-btn" data-patient-action="export-round-summary">Export summary</button>
-          <button type="button" class="hah-action-btn" data-patient-action="next">Next patient</button>
-          <button type="button" class="hah-action-btn" data-patient-action="prev">Previous patient</button>
+      c.card('Current round', `
+        <div class="hah-composer-section">
+          <div class="hah-composer-label">Entry type</div>
+          <div class="hah-segment-row">
+            ${ENTRY_TYPES.map((type) => renderSegment(type, ENTRY_TYPE_LABELS[type], vm.activeType, 'set-entry-type', 'data-entry-type')).join('')}
+          </div>
+        </div>
+
+        <div class="hah-composer-section" style="margin-top:14px;">
+          <div class="hah-composer-label">Round status</div>
+          <div class="hah-segment-row">
+            ${ENTRY_STATUSES.map((status) => renderSegment(status, status, vm.activeDraft.status || vm.patient.boardStatus, 'set-entry-status', 'data-entry-status')).join('')}
+          </div>
         </div>
       `),
-      c.card('Review and service state', `
-        ${c.keyValueGrid([
-          { label: 'Priority', value: vm.patient.priority },
-          { label: 'Status', value: vm.patient.currentStatus },
-          { label: 'Review due', value: formatDateTime(vm.patient.reviewDueAt) },
-          { label: 'Board status', value: vm.patient.boardStatus },
-          { label: 'Location', value: vm.patient.location },
-          { label: 'Pathway', value: vm.patient.pathway }
-        ])}
-        <div style="margin-top:16px;" class="hah-task-note">${c.escapeHtml(vm.patient.boardNote || 'No board note recorded yet.')}</div>
+
+      c.card(`${vm.activeTypeLabel} composer`, `
+        <div class="hah-entry-composer" data-patient-id="${c.escapeHtml(vm.patient.id)}" data-entry-type="${c.escapeHtml(vm.activeType)}">
+          ${composerField('Issues', 'issues', vm.activeDraft.issues, 'Unresolved issues, carried-forward problems, key active concerns')}
+          ${composerField('Bloods / Ix', 'bloodsIx', vm.activeDraft.bloodsIx, 'Latest important bloods, imaging, microbiology, pending investigations')}
+          ${composerField('Progress', 'progress', vm.activeDraft.progress, 'How they are doing today, response to treatment, meaningful changes')}
+          ${composerField('Plan', 'plan', vm.activeDraft.plan, 'Next steps, review cadence, treatment/discharge actions')}
+
+          <div class="hah-composer-footer-grid">
+            <label class="hah-field-wrap">
+              <span class="hah-composer-label">Discharge readiness</span>
+              <select class="hah-composer-select" data-patient-field="dischargeReadiness" data-persist-focus="1">
+                ${DISCHARGE_OPTIONS.map((opt) => `<option value="${c.escapeHtml(opt)}" ${String(vm.activeDraft.dischargeReadiness) === String(opt) ? 'selected' : ''}>${c.escapeHtml(opt)}</option>`).join('')}
+              </select>
+            </label>
+
+            <label class="hah-field-wrap">
+              <span class="hah-composer-label">Next review</span>
+              <input class="hah-composer-input" data-patient-field="nextReview" data-persist-focus="1" type="text" value="${c.escapeHtml(prettyReviewValue(vm.activeDraft.nextReview))}" placeholder="e.g. tomorrow AM or 2026-04-18 09:00" />
+            </label>
+          </div>
+
+          <div class="hah-composer-section" style="margin-top:14px;">
+            <div class="hah-composer-label">Add action</div>
+            <div class="hah-action-compose-grid">
+              <input class="hah-composer-input" data-patient-field="actionTitle" data-persist-focus="1" type="text" value="${c.escapeHtml(vm.activeDraft.actionTitle || '')}" placeholder="Action title" />
+              <input class="hah-composer-input" data-patient-field="actionOwner" data-persist-focus="1" type="text" value="${c.escapeHtml(vm.activeDraft.actionOwner || vm.patient.clinician || '')}" placeholder="Owner" />
+              <select class="hah-composer-select" data-patient-field="actionDue" data-persist-focus="1">
+                ${DUE_OPTIONS.map((opt) => `<option value="${c.escapeHtml(opt.value)}" ${String(vm.activeDraft.actionDue || 'today') === String(opt.value) ? 'selected' : ''}>${c.escapeHtml(opt.label)}</option>`).join('')}
+              </select>
+              <button type="button" class="hah-action-btn hah-action-btn-primary" data-patient-action="add-inline-action">Add action</button>
+            </div>
+          </div>
+
+          <div class="hah-composer-meta">
+            <span>Autosaving draft</span>
+            <span>${vm.activeDraft.updatedAt ? `Last draft ${c.escapeHtml(formatDateTime(vm.activeDraft.updatedAt))}` : 'Draft not yet saved'}</span>
+          </div>
+        </div>
       `),
-      c.card('Current blockers', renderMiniLines(vm.patient.blockers, 'No active blocker recorded.')),
-      c.card('Board context', renderMiniLines([
-        `Current view: ${viewLabel(state.board.savedView)}`,
-        vm.selectedIndex >= 0 ? `Position: ${vm.selectedIndex + 1} of ${vm.contextRows.length}` : '',
-        vm.referralSource ? `Referral: ${vm.referralSource}` : '',
-        vm.admissionDate ? `Admission date: ${vm.admissionDate}` : ''
-      ].filter(Boolean), 'No additional context available.'))
+
+      c.card('Generated note preview', `
+        <div class="hah-note-preview" id="hahPatientGeneratedPreview">${c.escapeHtml(vm.generatedPreview || 'No generated note yet.')}</div>
+        <div class="hah-board-right-actions" style="margin-top:14px;">
+          <button type="button" class="hah-inline-pill" data-patient-action="copy-preview">Copy preview</button>
+          <button type="button" class="hah-inline-pill hah-inline-pill-primary" data-patient-action="done-entry">Done</button>
+        </div>
+      `),
+
+      c.card('Recent board history', renderRecentHistory(vm)),
+
+      c.card('Round navigation', `
+        <div class="hah-board-right-actions">
+          <button type="button" class="hah-inline-pill" data-patient-action="prev">Previous patient</button>
+          <button type="button" class="hah-inline-pill" data-patient-action="next">Next patient</button>
+          <button type="button" class="hah-inline-pill" data-patient-action="open-tasks">Open tasks</button>
+        </div>
+        <div class="hah-patient-rail-note" style="margin-top:14px;">${vm.selectedIndex >= 0 ? `Patient ${vm.selectedIndex + 1} of ${vm.contextRows.length} in the current board view.` : 'Board queue position unavailable.'}</div>
+      `)
     ]);
   }
 
-  function renderIssueCard(issue) {
-    const parsed = parseIssue(issue);
+  function renderSimpleCards(items, emptyText) {
+    if (!items || !items.length) return `<div class="hah-mini-item"><div class="hah-mini-title">${c.escapeHtml(emptyText)}</div></div>`;
+    return `<div class="hah-mini-list">${items.map((item) => `
+      <div class="hah-mini-item">
+        <div class="hah-mini-title">${c.escapeHtml(item.title)}</div>
+        <div class="hah-mini-sub">${c.escapeHtml(item.body || '')}</div>
+      </div>`).join('')}</div>`;
+  }
+
+  function renderTimeline(vm) {
+    const latest = vm.latestEntry;
+    const older = vm.timelineRows.slice(1, 6);
     return `
-      <div class="hah-issue-item">
-        <div class="hah-issue-title">${c.escapeHtml(parsed.title)}</div>
-        ${parsed.body ? `<div class="hah-issue-sub">${c.escapeHtml(parsed.body)}</div>` : ''}
-      </div>
+      ${latest ? `
+        <div class="hah-entry-latest">
+          <div class="hah-entry-latest-top">
+            ${c.badge(vm.latestEntry.typeLabel, 'neutral')}
+            ${c.badge(vm.latestEntry.status || 'Completed', 'good')}
+          </div>
+          <div class="hah-entry-latest-body">${c.escapeHtml(latest.summary || 'No prior entry summary')}</div>
+          <div class="hah-entry-latest-meta">${c.escapeHtml(formatDateTime(latest.completedAt))} · ${c.escapeHtml(latest.completedBy || 'Unknown')}</div>
+        </div>` : `<div class="hah-mini-item"><div class="hah-mini-title">No completed board/MDM entries yet.</div></div>`}
+
+      ${older.length ? `<div class="hah-timeline-compact">${older.map((row) => `
+        <button type="button" class="hah-timeline-item" data-patient-action="load-entry" data-entry-id="${c.escapeHtml(row.id)}">
+          <div class="hah-timeline-top"><span>${c.escapeHtml(row.typeLabel)}</span><span>${c.escapeHtml(formatDateTime(row.completedAt))}</span></div>
+          <div class="hah-timeline-main">${c.escapeHtml(row.summary)}</div>
+        </button>`).join('')}</div>` : ''}
     `;
   }
 
+  function renderRecentHistory(vm) {
+    if (!vm.timelineRows.length) {
+      return '<div class="hah-mini-item"><div class="hah-mini-title">No previous board/MDM entries completed yet.</div></div>';
+    }
+    return `<div class="hah-mini-list">${vm.timelineRows.slice(0, 4).map((row) => `
+      <button type="button" class="hah-history-item" data-patient-action="load-entry" data-entry-id="${c.escapeHtml(row.id)}">
+        <div class="hah-history-top"><span>${c.escapeHtml(row.typeLabel)}</span><span>${c.escapeHtml(formatDateTime(row.completedAt))}</span></div>
+        <div class="hah-history-main">${c.escapeHtml(row.summary)}</div>
+        <div class="hah-history-sub">${c.escapeHtml((row.status || 'Completed') + (row.completedBy ? ` · ${row.completedBy}` : ''))}</div>
+      </button>`).join('')}</div>`;
+  }
+
   function renderBloodSamples(samples) {
-    if (!samples.length) return '<div class="hah-mini-item"><div class="hah-mini-title">No blood history recorded.</div></div>';
-    return `<div class="hah-blood-sample-list">${samples.map((sample, index) => `
+    if (!samples || !samples.length) return '<div class="hah-mini-item"><div class="hah-mini-title">No recent blood samples recorded.</div></div>';
+    return `<div class="hah-blood-sample-list">${samples.map((sample) => `
       <div class="hah-blood-sample">
-        <div class="hah-blood-sample-head">
-          <div class="hah-blood-time">${c.escapeHtml(sample.time)}</div>
-          ${index === 0 ? c.badge('Latest', 'good') : ''}
-        </div>
+        <div class="hah-blood-sample-head"><span class="hah-blood-time">${c.escapeHtml(sample.time)}</span></div>
         <div class="hah-blood-main">${c.escapeHtml(sample.main)}</div>
         ${sample.tail ? `<div class="hah-blood-sub">${c.escapeHtml(sample.tail)}</div>` : ''}
-      </div>
-    `).join('')}</div>`;
+      </div>`).join('')}</div>`;
   }
 
   function renderMedList(items, emptyText) {
-    if (!items.length) return `<div class="hah-mini-item"><div class="hah-mini-title">${c.escapeHtml(emptyText)}</div></div>`;
+    if (!items || !items.length) return `<div class="hah-mini-item"><div class="hah-mini-title">${c.escapeHtml(emptyText)}</div></div>`;
     return `<div class="hah-mini-list">${items.map((item) => `
       <div class="hah-mini-item">
         <div class="hah-mini-title">${c.escapeHtml(item.title)}</div>
         ${item.detail ? `<div class="hah-mini-sub">${c.escapeHtml(item.detail)}</div>` : ''}
-      </div>
-    `).join('')}</div>`;
+      </div>`).join('')}</div>`;
   }
 
-  function renderMiniLines(lines, emptyText) {
-    if (!lines.length) return `<div class="hah-mini-item"><div class="hah-mini-title">${c.escapeHtml(emptyText)}</div></div>`;
-    return `<div class="hah-mini-list">${lines.map((line) => renderMiniLine(line)).join('')}</div>`;
-  }
-
-  function renderMiniLine(line) {
+  function composerField(label, field, value, placeholder) {
     return `
-      <div class="hah-mini-item">
-        <div class="hah-mini-title">${c.escapeHtml(line)}</div>
-      </div>
+      <label class="hah-field-wrap">
+        <span class="hah-composer-label">${c.escapeHtml(label)}</span>
+        <textarea class="hah-composer-textarea" data-patient-field="${c.escapeHtml(field)}" data-persist-focus="1" placeholder="${c.escapeHtml(placeholder)}">${c.escapeHtml(value || '')}</textarea>
+      </label>
     `;
+  }
+
+  function renderSegment(value, label, current, action, attrName) {
+    const active = String(value) === String(current) ? ' is-active' : '';
+    return `<button type="button" class="hah-segment-btn${active}" data-patient-action="${c.escapeHtml(action)}" ${attrName}="${c.escapeHtml(value)}">${c.escapeHtml(label)}</button>`;
   }
 
   function buildHeaderMeta(vm) {
     return [
-      vm.patient.age ? `${vm.patient.age}` : '',
+      vm.patient.age ? `Age ${vm.patient.age}` : '',
       vm.patient.sex || '',
-      vm.patient.location || '',
-      vm.patient.pathway || '',
+      vm.patient.location ? `Location: ${vm.patient.location}` : '',
+      vm.patient.pathway ? `Pathway: ${vm.patient.pathway}` : '',
       vm.patient.clinician ? `Clinician: ${vm.patient.clinician}` : ''
     ].filter(Boolean).join(' · ');
-  }
-
-  function buildBannerText(vm) {
-    return [vm.patient.currentStatus, vm.patient.bloodTrendSummary, vm.patient.blockers[0] || 'No active blocker recorded'].filter(Boolean).join(' · ');
   }
 
   function parseIssue(text) {
     const clean = String(text || '').trim();
     if (!clean) return { title: 'Issue', body: '' };
     const split = clean.split(/[:.]/, 2);
-    const title = split[0] ? truncate(split[0], 64) : clean;
-    const body = split[1] ? truncate(split[1].trim(), 180) : '';
+    const title = split[0] || clean;
+    const body = split[1] ? split[1].trim() : '';
     return { title, body };
   }
 
-  function truncate(value, maxLen) {
-    const text = String(value || '').trim();
-    if (text.length <= maxLen) return text;
-    return text.slice(0, Math.max(0, maxLen - 1)).trimEnd() + '…';
+  function scheduleDraftSave(patientId, type, patch, root) {
+    const key = `${patientId}:${type}`;
+    if (draftTimers.has(key)) clearTimeout(draftTimers.get(key));
+    draftTimers.set(key, setTimeout(() => {
+      if (ops && typeof ops.saveEntryDraft === 'function') {
+        ops.saveEntryDraft(patientId, type, patch, { quiet: true });
+      }
+      if (root) markAutosaveState(root, 'Draft autosaved');
+      draftTimers.delete(key);
+    }, 450));
+  }
+
+  function markAutosaveState(root, text) {
+    if (!root) return;
+    const meta = root.querySelector('.hah-composer-meta');
+    if (!meta) return;
+    const spans = meta.querySelectorAll('span');
+    if (spans[0]) spans[0].textContent = text;
+    if (spans[1]) spans[1].textContent = `Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  function collectComposerValues(root, state) {
+    const vm = d.buildPatientWorkspaceModel(state);
+    if (!root || !vm) return vm ? vm.activeDraft : null;
+    const get = (name) => {
+      const el = root.querySelector(`[data-patient-field="${name}"]`);
+      return el ? String(el.value || '').trim() : '';
+    };
+    return {
+      ...vm.activeDraft,
+      type: root.getAttribute('data-entry-type') || vm.activeType,
+      issues: get('issues'),
+      bloodsIx: get('bloodsIx'),
+      progress: get('progress'),
+      plan: get('plan'),
+      dischargeReadiness: get('dischargeReadiness') || vm.activeDraft.dischargeReadiness,
+      nextReview: get('nextReview'),
+      actionTitle: get('actionTitle'),
+      actionOwner: get('actionOwner'),
+      actionDue: get('actionDue') || 'today'
+    };
+  }
+
+  function buildPreviewTextFromDraft(patient, draft) {
+    const blocks = [];
+    blocks.push(`${ENTRY_TYPE_LABELS[draft.type] || 'Entry'} — ${draft.status || patient.boardStatus || 'In discussion'}`);
+    if (draft.issues) blocks.push(`Issues\n${draft.issues}`);
+    if (draft.bloodsIx) blocks.push(`Bloods / Ix\n${draft.bloodsIx}`);
+    if (draft.progress) blocks.push(`Progress\n${draft.progress}`);
+    if (draft.plan) blocks.push(`Plan\n${draft.plan}`);
+    const footer = [];
+    if (draft.dischargeReadiness) footer.push(`Discharge: ${draft.dischargeReadiness}`);
+    if (draft.nextReview) footer.push(`Next review: ${draft.nextReview}`);
+    if (footer.length) blocks.push(footer.join(' · '));
+    return blocks.join('\n\n').trim();
+  }
+
+  function updatePreviewDom(root, state) {
+    const vm = d.buildPatientWorkspaceModel(state);
+    if (!root || !vm) return;
+    const draft = collectComposerValues(root, state);
+    const preview = root.closest('.hah-stack')?.querySelector('#hahPatientGeneratedPreview');
+    if (preview) preview.textContent = buildPreviewTextFromDraft(vm.patient, draft) || 'No generated note yet.';
+  }
+
+  function dueValueToIso(value, patient) {
+    const now = new Date();
+    if (value === 'tomorrow') return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0).toISOString();
+    if (value === 'next-review' && patient.reviewDueAt) return patient.reviewDueAt;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0).toISOString();
   }
 
   function handleClick(event, state) {
@@ -4915,70 +6062,6 @@ html, body {
       return true;
     }
 
-    if (action === 'open-tasks' && vm) {
-      store.setState({
-        selectedPatientId: vm.patient.id,
-        selectedTaskId: null,
-        tasks: { savedView: 'patient-focus', filters: { patientId: vm.patient.id } }
-      });
-      router.goToTasks('patient-focus');
-      return true;
-    }
-
-    if (action === 'add-task' && vm && ops) {
-      const created = ops.promptCreateTask(vm.patient, { createdFrom: 'Patient workspace', boardLink: vm.patient.boardStatus, dueAt: vm.patient.reviewDueAt || '' });
-      if (created) {
-        store.setState({ selectedTaskId: created.id });
-      }
-      return true;
-    }
-
-    if (action === 'add-round-task' && vm && ops) {
-      const created = ops.promptCreateTask(vm.patient, { createdFrom: 'Boardround', boardLink: vm.patient.boardStatus, dueAt: vm.patient.reviewDueAt || '', category: 'Clinical review' });
-      if (created) {
-        store.setState({ selectedTaskId: created.id });
-      }
-      return true;
-    }
-
-    if (action === 'cycle-board-status' && vm && ops) {
-      ops.cycleBoardStatus(vm.patient.id, vm.patient.boardStatus);
-      return true;
-    }
-
-    if (action === 'set-discussed' && vm && ops) {
-      ops.setBoardStatus(vm.patient.id, 'Discussed');
-      return true;
-    }
-
-    if (action === 'set-actioned' && vm && ops) {
-      ops.setBoardStatus(vm.patient.id, 'Actioned');
-      return true;
-    }
-
-    if (action === 'set-deferred' && vm && ops) {
-      ops.setBoardStatus(vm.patient.id, 'Deferred');
-      return true;
-    }
-
-    if (action === 'cycle-discharge' && vm && ops) {
-      ops.cycleDischargeReadiness(vm.patient.id, vm.patient.dischargeReadiness);
-      return true;
-    }
-
-    if (action === 'edit-board-note' && vm && ops) {
-      ops.promptForBoardNote(vm.patient);
-      return true;
-    }
-
-    if (action === 'export-round-summary' && vm && ops) {
-      const boardVm = d.buildBoardViewModel(state);
-      const tasksVm = d.buildTasksViewModel({ ...state, tasks: { ...(state.tasks || {}), savedView: 'all-open', filters: { patientId: null } } });
-      const summary = ops.buildBoardroundSummary([vm.patient], tasksVm.rows, { title: `H@H Patient summary — ${vm.patient.name}` });
-      ops.exportBoardroundSummary(summary);
-      return true;
-    }
-
     if ((action === 'prev' || action === 'next') && vm) {
       const delta = action === 'next' ? 1 : -1;
       const nextIndex = vm.selectedIndex + delta;
@@ -4989,7 +6072,116 @@ html, body {
       return true;
     }
 
+    if (!vm) return false;
+
+    if (action === 'open-tasks') {
+      store.setState({
+        selectedPatientId: vm.patient.id,
+        selectedTaskId: null,
+        tasks: { savedView: 'patient-focus', filters: { patientId: vm.patient.id } }
+      });
+      router.goToTasks('patient-focus');
+      return true;
+    }
+
+    if (action === 'set-entry-type') {
+      const type = target.getAttribute('data-entry-type') || 'boardround';
+      if (ops && typeof ops.setCurrentEntryType === 'function') {
+        ops.setCurrentEntryType(vm.patient.id, type, { quiet: true });
+      }
+      store.setState({ ui: { revision: Date.now() } });
+      return true;
+    }
+
+    if (action === 'set-entry-status') {
+      const status = target.getAttribute('data-entry-status') || 'In discussion';
+      const root = target.closest('.hah-card')?.parentElement?.querySelector('.hah-entry-composer');
+      if (ops && typeof ops.saveEntryDraft === 'function') {
+        ops.saveEntryDraft(vm.patient.id, vm.activeType, { status }, { quiet: true });
+      }
+      store.setState({ ui: { revision: Date.now() } });
+      return true;
+    }
+
+    if (action === 'add-inline-action' && ops) {
+      const root = target.closest('.hah-entry-composer');
+      const draft = collectComposerValues(root, state);
+      if (!draft || !String(draft.actionTitle || '').trim()) return true;
+      const created = ops.createTask({
+        patientId: vm.patient.id,
+        title: draft.actionTitle,
+        note: `${vm.activeTypeLabel} action`,
+        category: vm.activeType === 'boardround' ? 'Clinical review' : 'Escalation / MDT',
+        owner: draft.actionOwner || vm.patient.clinician || 'Unassigned',
+        dueAt: dueValueToIso(draft.actionDue || 'today', vm.patient),
+        priority: vm.patient.priority || 'Medium',
+        status: 'Open',
+        createdFrom: vm.activeTypeLabel,
+        boardLink: draft.status || vm.patient.boardStatus
+      });
+      if (created && typeof ops.saveEntryDraft === 'function') {
+        ops.saveEntryDraft(vm.patient.id, vm.activeType, { actionTitle: '', actionOwner: draft.actionOwner || '', actionDue: draft.actionDue || 'today' }, { quiet: true });
+      }
+      store.setState({ selectedTaskId: created ? created.id : null, ui: { revision: Date.now() } });
+      return true;
+    }
+
+    if (action === 'done-entry' && ops) {
+      const root = target.closest('.hah-stack')?.querySelector('.hah-entry-composer');
+      const draft = collectComposerValues(root, state);
+      if (draft && typeof ops.saveEntryDraft === 'function') {
+        ops.saveEntryDraft(vm.patient.id, vm.activeType, draft, { quiet: true });
+      }
+      ops.completeEntry(vm.patient.id, vm.activeType);
+      store.setState({ ui: { revision: Date.now() } });
+      return true;
+    }
+
+    if (action === 'load-entry' && ops) {
+      const entryId = target.getAttribute('data-entry-id');
+      if (!entryId) return false;
+      ops.loadEntryIntoDraft(vm.patient.id, entryId, { quiet: true });
+      store.setState({ ui: { revision: Date.now() } });
+      return true;
+    }
+
+    if (action === 'copy-preview') {
+      const root = target.closest('.hah-stack')?.querySelector('.hah-entry-composer');
+      const draft = collectComposerValues(root, state);
+      const text = buildPreviewTextFromDraft(vm.patient, draft);
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text);
+      } catch (_err) {}
+      return true;
+    }
+
     return false;
+  }
+
+  function handleInput(event, state) {
+    const field = event.target && event.target.getAttribute && event.target.getAttribute('data-patient-field');
+    if (!field) return false;
+    const vm = d.buildPatientWorkspaceModel(state);
+    if (!vm || !ops) return false;
+    const root = event.target.closest('.hah-entry-composer');
+    if (!root) return false;
+    const patch = { [field]: String(event.target.value || '') };
+    scheduleDraftSave(vm.patient.id, vm.activeType, patch, root);
+    updatePreviewDom(root, state);
+    return true;
+  }
+
+  function handleChange(event, state) {
+    const field = event.target && event.target.getAttribute && event.target.getAttribute('data-patient-field');
+    if (!field) return false;
+    const vm = d.buildPatientWorkspaceModel(state);
+    if (!vm || !ops) return false;
+    const root = event.target.closest('.hah-entry-composer');
+    if (!root) return false;
+    ops.saveEntryDraft(vm.patient.id, vm.activeType, { [field]: String(event.target.value || '') }, { quiet: true });
+    markAutosaveState(root, 'Draft saved');
+    updatePreviewDom(root, state);
+    return true;
   }
 
   function renderEmpty() {
@@ -5030,11 +6222,25 @@ html, body {
     return dt.toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
+  function prettyReviewValue(value) {
+    if (!value) return '';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return String(value);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mi = String(dt.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+
   window.HAHBoard.patientScreen = {
     renderLeftPane,
     renderMainPane,
     renderRightPane,
-    handleClick
+    handleClick,
+    handleInput,
+    handleChange
   };
 })();
 
@@ -5857,6 +7063,43 @@ html, body {
       }
       if (action === 'settings-clear' && window.HAHBoard.ops) {
         window.HAHBoard.ops.clearAllOpsState();
+        return;
+      }
+      if (action === 'settings-remote-client' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.promptClientId();
+        return;
+      }
+      if (action === 'settings-remote-path' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.promptRemotePath();
+        return;
+      }
+      if (action === 'settings-remote-sign-in' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.signIn();
+        return;
+      }
+      if (action === 'settings-remote-sign-out' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.signOut();
+        return;
+      }
+      if (action === 'settings-remote-push' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.pushNow('manual');
+        return;
+      }
+      if (action === 'settings-remote-pull' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.pullNow('merge');
+        return;
+      }
+      if (action === 'settings-remote-replace' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.pullNow('replace');
+        return;
+      }
+      if (action === 'settings-remote-refresh' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.refreshRemoteMeta();
+        return;
+      }
+      if (action === 'settings-remote-autosync' && window.HAHBoard.remoteSync) {
+        window.HAHBoard.remoteSync.toggleAutoSync();
+        return;
       }
     });
 
@@ -5866,6 +7109,22 @@ html, body {
         if (event.key === 'Enter') console.log('Global search:', search.value);
       });
     }
+
+    rootEl.addEventListener('input', function (event) {
+      const state = store.getState();
+      const screen = getActiveScreenModule(state);
+      if (screen && typeof screen.handleInput === 'function') {
+        screen.handleInput(event, state);
+      }
+    });
+
+    rootEl.addEventListener('change', function (event) {
+      const state = store.getState();
+      const screen = getActiveScreenModule(state);
+      if (screen && typeof screen.handleChange === 'function') {
+        screen.handleChange(event, state);
+      }
+    });
 
     document.addEventListener('keydown', function (event) {
       if (event.key === '/' && !isTextInput(event.target)) {
@@ -6066,19 +7325,21 @@ html, body {
 
   function renderSettingsMainPane(state) {
     const ops = window.HAHBoard.ops;
+    const remote = window.HAHBoard.remoteSync;
     const info = ops && typeof ops.getSyncInfo === 'function' ? ops.getSyncInfo() : null;
+    const remoteInfo = remote && typeof remote.getInfo === 'function' ? remote.getInfo() : null;
     const auditRows = ops && typeof ops.getRecentAudit === 'function' ? ops.getRecentAudit(8) : [];
     const summaries = ops && typeof ops.getRecentSummaries === 'function' ? ops.getRecentSummaries(5) : [];
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
         <section class="hah-card hah-surface-hero">
           <h1 class="hah-surface-title">Shared operational sync</h1>
-          <p class="hah-surface-subtitle">Operational state, tasks, board notes, and round summaries shared across same-origin tabs/windows, with import/export snapshots for manual handoff.</p>
+          <p class="hah-surface-subtitle">Local live sync, persisted ops state, and a remote OneDrive JSON store for cross-device boardround working.</p>
         </section>
 
         <section class="hah-card">
           <div class="hah-card-inner">
-            <div class="hah-card-title">Sync status</div>
+            <div class="hah-card-title">Local ops state</div>
             <div class="hah-settings-grid" style="margin-top:16px;">
               <div class="hah-settings-stat"><div class="hah-kv-label">Mode</div><div class="hah-kv-value">${escapeHtml(info ? info.mode : '—')}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">Actor</div><div class="hah-kv-value">${escapeHtml(info ? info.actor : '—')}</div></div>
@@ -6090,6 +7351,45 @@ html, body {
               <button type="button" class="hah-inline-pill" data-action="settings-export">Export ops snapshot</button>
               <button type="button" class="hah-inline-pill" data-action="settings-import">Import ops snapshot</button>
               <button type="button" class="hah-inline-pill" data-action="settings-clear">Clear ops state</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="hah-card">
+          <div class="hah-card-inner">
+            <div class="hah-card-title">Remote shared store</div>
+            <div class="hah-settings-grid" style="margin-top:16px;">
+              <div class="hah-settings-stat"><div class="hah-kv-label">Microsoft account</div><div class="hah-kv-value">${escapeHtml(remoteInfo && remoteInfo.account ? remoteInfo.account : 'Not connected')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Client ID</div><div class="hah-kv-value">${escapeHtml(remoteInfo && remoteInfo.clientId ? remoteInfo.clientId : 'Not set')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Remote path</div><div class="hah-kv-value">${escapeHtml(remoteInfo ? remoteInfo.remotePath : '—')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Auto sync</div><div class="hah-kv-value">${escapeHtml(remoteInfo && remoteInfo.autoSync ? `On · ${remoteInfo.pullIntervalSec}s pull` : 'Off')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Last remote pull</div><div class="hah-kv-value">${escapeHtml(remoteInfo && remoteInfo.lastPullAt ? new Date(remoteInfo.lastPullAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Last remote push</div><div class="hah-kv-value">${escapeHtml(remoteInfo && remoteInfo.lastPushAt ? new Date(remoteInfo.lastPushAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
+            </div>
+            <div class="hah-settings-actions" style="margin-top:16px;">
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-client">Set client ID</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-path">Set remote file</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-sign-in">Sign in Microsoft</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-sign-out">Sign out</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-push">Push now</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-pull">Pull + merge</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-replace">Pull + replace</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-autosync">${escapeHtml(remoteInfo && remoteInfo.autoSync ? 'Disable auto sync' : 'Enable auto sync')}</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-remote-refresh">Refresh remote info</button>
+            </div>
+            <div class="hah-settings-list" style="margin-top:16px;">
+              <div class="hah-settings-list-item">
+                <div class="hah-settings-list-title">Remote status</div>
+                <div class="hah-settings-list-sub">${escapeHtml(remoteInfo && remoteInfo.status ? remoteInfo.status : 'Remote sync idle')}</div>
+              </div>
+              <div class="hah-settings-list-item">
+                <div class="hah-settings-list-title">Latest remote writer</div>
+                <div class="hah-settings-list-sub">${escapeHtml(remoteInfo && remoteInfo.lastRemoteWriter ? remoteInfo.lastRemoteWriter : 'Unknown')} · ${escapeHtml(remoteInfo && remoteInfo.lastRemoteUpdatedAt ? new Date(remoteInfo.lastRemoteUpdatedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div>
+              </div>
+              <div class="hah-settings-list-item">
+                <div class="hah-settings-list-title">Important</div>
+                <div class="hah-settings-list-sub">Use the same Microsoft account and remote file on each device to share operational state. This syncs board decisions, tasks, notes, and round summaries — not the clinical patient source data.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -6125,9 +7425,12 @@ html, body {
     `;
   }
 
+
   function renderSettingsRightPane(state) {
     const ops = window.HAHBoard.ops;
+    const remote = window.HAHBoard.remoteSync;
     const info = ops && typeof ops.getSyncInfo === 'function' ? ops.getSyncInfo() : null;
+    const remoteInfo = remote && typeof remote.getInfo === 'function' ? remote.getInfo() : null;
     return `
       <div class="hah-stack">
         <section class="hah-card">
@@ -6135,8 +7438,12 @@ html, body {
             <div class="hah-card-title">At a glance</div>
             <div class="hah-settings-list" style="margin-top:16px;">
               <div class="hah-settings-list-item">
-                <div class="hah-settings-list-title">Shared sync</div>
+                <div class="hah-settings-list-title">Local sync</div>
                 <div class="hah-settings-list-sub">${escapeHtml(info ? info.label : 'Ready')} · ${escapeHtml(info ? info.mode : 'storage')}</div>
+              </div>
+              <div class="hah-settings-list-item">
+                <div class="hah-settings-list-title">Remote shared store</div>
+                <div class="hah-settings-list-sub">${escapeHtml(remoteInfo && remoteInfo.account ? remoteInfo.account : 'Not connected')} · ${escapeHtml(remoteInfo && remoteInfo.autoSync ? 'Auto sync on' : 'Manual sync')}</div>
               </div>
               <div class="hah-settings-list-item">
                 <div class="hah-settings-list-title">Operational records</div>
@@ -6152,6 +7459,7 @@ html, body {
       </div>
     `;
   }
+
 
   function renderPatientPlaceholder(state) {
     const patientId = state.route.entityId || state.selectedPatientId || '';
@@ -6212,9 +7520,9 @@ html, body {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_001_release.html',
-  source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-17T15:11:27.801237',
+  filename: 'hospital_at_home_board_v0_9_001_release.html',
+  source: 'hospital_at_home_board_v0_9_001_source.zip',
+  builtAt: '2026-04-17T20:04:42.842120',
   entry: 'desktop.html'
 };
 </script>
