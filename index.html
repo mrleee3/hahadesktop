@@ -1749,16 +1749,6 @@ html, body {
   border-color: rgba(47,111,237,0.2);
 }
 
-.hah-note-preview-text {
-  margin: 0;
-  padding: 10px 12px 12px;
-  font-size: 11.5px;
-  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
-  line-height: 1.65;
-  color: var(--desk-text);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
 
 .hah-note-preview-footer {
   padding: 0;
@@ -1915,6 +1905,209 @@ html, body {
 .hah-composer-toast.is-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+
+/* ─── Composer header / carry-forward ───────────────────────────────── */
+
+.hah-composer-header-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0 4px;
+  margin-bottom: 14px;
+}
+
+.hah-composer-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-composer-mainline {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--desk-text);
+}
+
+.hah-composer-subline {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--desk-text-muted);
+}
+
+.hah-composer-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.hah-composer-status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.82);
+  color: var(--desk-text-muted);
+}
+
+.hah-composer-status-chip.is-draft {
+  background: rgba(47,111,237,0.08);
+  border-color: rgba(47,111,237,0.18);
+  color: rgba(47,111,237,0.9);
+}
+
+.hah-composer-status-chip.is-editing {
+  background: rgba(180,83,9,0.09);
+  border-color: rgba(180,83,9,0.22);
+  color: #a04e06;
+}
+
+.hah-composer-status-chip.is-complete {
+  background: rgba(29,158,117,0.08);
+  border-color: rgba(29,158,117,0.22);
+  color: #0d7056;
+}
+
+.hah-composer-status-chip.is-muted {
+  background: rgba(0,0,0,0.03);
+}
+
+.hah-carry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(47,111,237,0.16);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(47,111,237,0.05), rgba(47,111,237,0.025));
+}
+
+.hah-carry-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hah-carry-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+}
+
+.hah-carry-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--desk-text-muted);
+}
+
+.hah-carry-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(47,111,237,0.18);
+  background: rgba(255,255,255,0.72);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(47,111,237,0.88);
+  white-space: nowrap;
+}
+
+.hah-carry-chip.is-current {
+  border-color: rgba(180,83,9,0.24);
+  color: #a04e06;
+}
+
+.hah-carry-body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--desk-text-muted);
+}
+
+.hah-carry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hah-note-preview-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--desk-text-muted);
+}
+
+.hah-note-preview-text {
+  margin: 0;
+  padding: 12px 12px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.55;
+  color: var(--desk-text);
+}
+
+.hah-note-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hah-note-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hah-note-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-note-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hah-note-line,
+.hah-note-paragraph {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--desk-text);
+}
+
+.hah-note-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.hah-note-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+}
+
+.hah-note-row-value {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--desk-text);
 }
 
 </style>
@@ -5680,19 +5873,32 @@ html, body {
 
   function renderRightPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
-    if (!vm) return c.stack([c.card('New entry', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
-    const composerType = (state.patient && state.patient.composerType) || 'board_round';
-    const isLocked     = !!(state.patient && state.patient.composerLocked);
-    const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
-    const typeTabs     = ENCOUNTER_TYPES.map((t) => {
+    if (!vm) return c.stack([c.card('Clinical entry composer', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
+    const composerType   = (state.patient && state.patient.composerType) || 'board_round';
+    const isLocked       = !!(state.patient && state.patient.composerLocked);
+    const composerEditId = (state.patient && state.patient.composerEditId) || null;
+    const latestTyped    = ops ? (ops.getEncountersForPatient(vm.patient.id, composerType)[0] || null) : null;
+    const lastRound      = ops ? ops.getLastBoardRound(vm.patient.id) : null;
+    const typeTabs       = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
         data-composer-type="${c.escapeHtml(t.key)}">${c.escapeHtml(t.label)}</button>`;
     }).join('');
-    return c.stack([c.card('New entry', `
+    const composerMeta = buildComposerMeta(composerType, isLocked, composerEditId, latestTyped, lastRound);
+    return c.stack([c.card('Clinical entry composer', `
+      <div class="hah-composer-header-block">
+        <div class="hah-composer-kicker">${c.escapeHtml(composerMeta.kicker)}</div>
+        <div class="hah-composer-mainline">${c.escapeHtml(composerMeta.title)}</div>
+        <div class="hah-composer-subline">${c.escapeHtml(composerMeta.subtitle)}</div>
+        <div class="hah-composer-status-row">
+          <span class="hah-composer-status-chip ${composerMeta.stateClass}">${c.escapeHtml(composerMeta.stateLabel)}</span>
+          ${composerMeta.pullText ? `<span class="hah-composer-status-chip is-muted">${c.escapeHtml(composerMeta.pullText)}</span>` : ''}
+        </div>
+      </div>
       <div class="hah-composer-tabs">${typeTabs}</div>
+      ${renderComposerCarryBlock(composerType, latestTyped, composerEditId)}
       <div class="hah-composer-form" id="hahComposerForm">
-        ${renderComposerForm(composerType, lastRound, vm)}
+        ${renderComposerForm(composerType, latestTyped, vm)}
       </div>
       <div class="hah-composer-footer">
         <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
@@ -5705,16 +5911,93 @@ html, body {
       <div class="hah-composer-sep"></div>
       <div class="hah-note-preview" id="hahNotePreview" style="display:none">
         <div class="hah-note-preview-head">
-          <span class="hah-note-preview-label">Clinical note preview</span>
+          <div>
+            <span class="hah-note-preview-label">Copy-ready clinical text</span>
+            <div class="hah-note-preview-sub">Built from the current composer and patient context.</div>
+          </div>
           <button type="button" class="hah-note-copy-btn" id="hahNoteCopyBtn">Copy</button>
         </div>
-        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
+        <div class="hah-note-preview-text" id="hahNotePreviewText"></div>
         <div class="hah-note-preview-footer">
           <button type="button" class="hah-emis-btn${isLocked ? '' : ' is-disabled'}"
             id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
         </div>
       </div>` : ''}
     `)]);
+  }
+
+  function buildComposerMeta(composerType, isLocked, composerEditId, latestTyped, lastRound) {
+    const typeLabel = getEncounterTypeLabel(composerType);
+    const latestRef = composerType === 'board_round' ? lastRound : latestTyped;
+    const latestSummary = latestRef
+      ? `Latest ${typeLabel.toLowerCase()} ${formatEntryDate(latestRef.timestamp)}${latestRef.author ? ' · ' + latestRef.author : ''}`
+      : `No previous ${typeLabel.toLowerCase()} entry for this admission`;
+
+    if (isLocked && composerEditId) {
+      return {
+        kicker: 'Completed entry',
+        title: `${typeLabel} entry completed`,
+        subtitle: 'Select Edit to amend this entry or New note to start a fresh one.',
+        stateLabel: 'Completed',
+        stateClass: 'is-complete',
+        pullText: latestSummary
+      };
+    }
+
+    if (composerEditId) {
+      return {
+        kicker: 'Editing current entry',
+        title: `Editing ${typeLabel.toLowerCase()} entry`,
+        subtitle: 'Changes here will update the selected saved entry.',
+        stateLabel: 'Editing',
+        stateClass: 'is-editing',
+        pullText: latestSummary
+      };
+    }
+
+    return {
+      kicker: "Today's working note",
+      title: composerType === 'board_round' ? "Today's board round" : `New ${typeLabel.toLowerCase()} entry`,
+      subtitle: composerType === 'board_round'
+        ? 'Continue the running clinical story, then formalise it with Done.'
+        : 'Capture the key review, recommendation, and follow-up clearly.',
+      stateLabel: 'Draft autosaves',
+      stateClass: 'is-draft',
+      pullText: latestSummary
+    };
+  }
+
+  function renderComposerCarryBlock(composerType, latestTyped, composerEditId) {
+    if (!latestTyped) return '';
+    const typeLabel = getEncounterTypeLabel(composerType);
+    const fields = latestTyped.fields || {};
+    const parts = [];
+    if (composerType === 'board_round') {
+      if (String(fields.issues || '').trim()) parts.push('issues');
+      if (String(fields.plan || '').trim()) parts.push('plan');
+    }
+    const carrySummary = parts.length
+      ? `Pulled forward ${parts.join(' + ')} from the latest ${typeLabel.toLowerCase()}.`
+      : `Latest ${typeLabel.toLowerCase()} available for reference.`;
+    return `<div class="hah-carry-card">
+      <div class="hah-carry-head">
+        <div>
+          <div class="hah-carry-title">Carry-forward from previous ${c.escapeHtml(typeLabel.toLowerCase())}</div>
+          <div class="hah-carry-sub">${c.escapeHtml(formatEntryDate(latestTyped.timestamp))}${latestTyped.author ? ` · ${c.escapeHtml(latestTyped.author)}` : ''}</div>
+        </div>
+        ${composerEditId === latestTyped.id ? '<span class="hah-carry-chip is-current">Updating this entry</span>' : '<span class="hah-carry-chip">Available to continue</span>'}
+      </div>
+      <div class="hah-carry-body">${c.escapeHtml(carrySummary)}</div>
+      <div class="hah-carry-actions">
+        <button type="button" class="hah-inline-pill" data-patient-action="composer-continue-last">Continue from last entry</button>
+        <button type="button" class="hah-inline-pill" data-patient-action="composer-edit-latest">Update latest entry</button>
+      </div>
+    </div>`;
+  }
+
+  function getEncounterTypeLabel(type) {
+    const match = ENCOUNTER_TYPES.find((t) => t.key === type);
+    return match ? match.label : 'Entry';
   }
 
   function renderComposerForm(type, lastRound, vm) {
@@ -5731,7 +6014,7 @@ html, body {
 
       return `
         <div class="hah-cform-field">
-          <label class="hah-cform-label">Issues</label>
+          <label class="hah-cform-label">Issues ${pulledIssues ? '<span class="hah-pull-tag">Pulled forward</span>' : ''}</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledIssues ? ' is-pulled' : ''}" id="cform-issues"
             placeholder="1. Issue one&#10;2. Issue two">${c.escapeHtml(pulledIssues)}</textarea>
         </div>
@@ -5746,7 +6029,7 @@ html, body {
             placeholder="e.g. CRP 45  WBC 8.2  Cr 112  Na 138"></textarea>
         </div>
         <div class="hah-cform-field">
-          <label class="hah-cform-label">Plan</label>
+          <label class="hah-cform-label">Plan ${pulledPlan ? '<span class="hah-pull-tag">Pulled forward</span>' : ''}</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3"
             placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
         </div>
@@ -5918,7 +6201,8 @@ html, body {
     const copyBtn = pane.querySelector('#hahNoteCopyBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const text = (pane.querySelector('#hahNotePreviewText') || {}).textContent || '';
+        const preview = pane.querySelector('#hahNotePreviewText');
+        const text = preview ? (preview.dataset.plainText || preview.textContent || '') : '';
         if (!text) return;
         navigator.clipboard && navigator.clipboard.writeText(text).then(() => {
           copyBtn.textContent = 'Copied';
@@ -5965,9 +6249,44 @@ html, body {
     if (!previewEl) return;
     const fields = collectComposerFields(type);
     const text   = buildNotePreviewText(vm, type, fields);
-    previewEl.textContent = text;
+    previewEl.innerHTML = buildNotePreviewHtml(vm, type, fields);
+    previewEl.dataset.plainText = text;
     const wrap = document.getElementById('hahNotePreview');
     if (wrap) wrap.style.display = text ? '' : 'none';
+  }
+
+  function buildNotePreviewHtml(vm, type, fields) {
+    if (type !== 'board_round') return '';
+    const sections = [];
+    const issueText = (fields.issues || '').trim();
+    if (issueText) {
+      const issueLines = issueText.split('\n').map((l) => l.trim()).filter(Boolean);
+      sections.push(renderPreviewSection('Issues', issueLines.map((line) => `<div class="hah-note-line">${c.escapeHtml(line)}</div>`).join('')));
+    }
+    if ((fields.progress || '').trim()) {
+      sections.push(renderPreviewSection('Progress', `<div class="hah-note-paragraph">${c.escapeHtml(fields.progress.trim())}</div>`));
+    }
+    const newBloods  = (fields.bloods || '').trim();
+    const prevBloods = vm.patient.bloodTrendSummary || '';
+    if (newBloods || prevBloods) {
+      const bloodRows = [];
+      if (newBloods) bloodRows.push(`<div class="hah-note-row"><span class="hah-note-row-label">Today</span><span class="hah-note-row-value">${c.escapeHtml(newBloods)}</span></div>`);
+      if (prevBloods) bloodRows.push(`<div class="hah-note-row"><span class="hah-note-row-label">Trend</span><span class="hah-note-row-value">${c.escapeHtml(prevBloods)}</span></div>`);
+      sections.push(renderPreviewSection('Bloods / Ix', bloodRows.join('')));
+    }
+    if ((fields.plan || '').trim()) {
+      sections.push(renderPreviewSection('Plan', `<div class="hah-note-paragraph">${c.escapeHtml(fields.plan.trim())}</div>`));
+    }
+    const edd = formatEDD(fields.dischargeDate, fields.dischargeReady);
+    if (edd) {
+      sections.push(renderPreviewSection('Discharge', `<div class="hah-note-row"><span class="hah-note-row-label">EDD</span><span class="hah-note-row-value">${c.escapeHtml(edd)}</span></div>`));
+    }
+    if (!sections.length) return '';
+    return `<div class="hah-note-doc">${sections.join('')}</div>`;
+  }
+
+  function renderPreviewSection(title, bodyHtml) {
+    return `<section class="hah-note-section"><div class="hah-note-section-title">${c.escapeHtml(title)}</div><div class="hah-note-section-body">${bodyHtml}</div></section>`;
   }
 
   function resetComposerDOM() {
@@ -6087,6 +6406,24 @@ html, body {
       resetComposerDOM();
       refreshPreview(vm, composerType);
       store.setState({ patient: { composerLocked: false, composerEditId: null } });
+      return true;
+    }
+
+    if (action === 'composer-continue-last' && vm) {
+      const composerType = (state.patient && state.patient.composerType) || 'board_round';
+      clearDraft(vm.patient.id, composerType);
+      resetComposerDOM();
+      refreshPreview(vm, composerType);
+      store.setState({ patient: { composerLocked: false, composerEditId: null } });
+      return true;
+    }
+
+    if (action === 'composer-edit-latest' && vm && ops) {
+      const composerType = (state.patient && state.patient.composerType) || 'board_round';
+      const latest = ops.getEncountersForPatient(vm.patient.id, composerType)[0];
+      if (!latest) return true;
+      saveDraft(vm.patient.id, composerType, latest.fields || {});
+      store.setState({ patient: { composerLocked: false, composerEditId: latest.id, composerType } });
       return true;
     }
 
@@ -7388,9 +7725,9 @@ html, body {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_001_release.html',
-  source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-17T22:24:48.064707',
+  filename: 'hospital_at_home_board_v0_8_008_release.html',
+  source: 'hospital_at_home_board_v0_8_008_source.zip',
+  builtAt: '2026-04-17T22:58:29.972737',
   entry: 'desktop.html'
 };
 </script>
