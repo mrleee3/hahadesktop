@@ -1671,12 +1671,16 @@ html, body {
 
 /* ─── Composer footer + autosave ─────────────────────────────────────── */
 
+
+/* ─── Composer footer + autosave ─────────────────────────────────────── */
+
 .hah-composer-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding-top: 4px;
+  padding-top: 6px;
+  padding-bottom: 2px;
 }
 
 .hah-autosave-indicator {
@@ -1691,84 +1695,114 @@ html, body {
   opacity: 1;
 }
 
-/* ─── Note preview ───────────────────────────────────────────────────── */
+/* ─── Note section divider ───────────────────────────────────────────── */
 
-.hah-note-preview {
-  margin-top: 14px;
-  border: 1px solid var(--desk-border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.hah-note-preview-head {
+.hah-note-divider {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--desk-border);
-  background: rgba(0,0,0,0.02);
-}
-
-.hah-note-preview-label {
+  gap: 10px;
+  margin: 16px 0 12px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
+  user-select: none;
 }
 
-.hah-note-copy-btn {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 9px;
-  border-radius: 20px;
-  border: 1px solid var(--desk-border);
-  background: rgba(255,255,255,0.9);
-  color: var(--desk-text-muted);
-  cursor: pointer;
-  transition: all 120ms ease;
+.hah-note-divider::before,
+.hah-note-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--desk-border);
 }
 
-.hah-note-copy-btn:hover {
-  background: rgba(47,111,237,0.08);
-  color: rgba(47,111,237,0.9);
-  border-color: rgba(47,111,237,0.2);
-}
+/* ─── Note preview text ──────────────────────────────────────────────── */
 
 .hah-note-preview-text {
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 0 12px;
   font-size: 11.5px;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
   line-height: 1.65;
   color: var(--desk-text);
   white-space: pre-wrap;
   word-break: break-word;
-  background: rgba(255,255,255,0.6);
 }
 
-/* ─── Discharge date widget ──────────────────────────────────────────── */
-
-.hah-discharge-widget {
+.hah-note-copy-row {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 
-.hah-discharge-chips {
+.hah-note-copy-btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--desk-border);
+  background: transparent;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.hah-note-copy-btn:hover {
+  background: rgba(47,111,237,0.07);
+  color: rgba(47,111,237,0.9);
+  border-color: rgba(47,111,237,0.2);
+}
+
+/* ─── Send to EMIS ───────────────────────────────────────────────────── */
+
+.hah-emis-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 11px;
+  border: 1px solid rgba(0, 112, 194, 0.3);
+  background: rgba(0, 112, 194, 0.07);
+  color: rgba(0, 90, 170, 0.9);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-align: center;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.hah-emis-btn:hover {
+  background: rgba(0, 112, 194, 0.13);
+  border-color: rgba(0, 112, 194, 0.45);
+}
+
+.hah-emis-btn:active {
+  background: rgba(0, 112, 194, 0.18);
+  transform: scale(0.995);
+}
+
+/* ─── Discharge date row (single line) ───────────────────────────────── */
+
+.hah-discharge-row {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
 .hah-dchip {
-  padding: 4px 12px;
+  height: 30px;
+  padding: 0 11px;
   border-radius: 20px;
   border: 1px solid var(--desk-border);
-  background: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.82);
   font-size: 11px;
   font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 130ms ease;
 }
 
@@ -1782,7 +1816,7 @@ html, body {
 .hah-dchip-ready.is-active {
   background: rgba(22,163,74,0.1);
   color: #15803d;
-  border-color: rgba(22,163,74,0.3);
+  border-color: rgba(22,163,74,0.32);
 }
 
 .hah-dchip-ready.is-active {
@@ -1790,15 +1824,17 @@ html, body {
 }
 
 .hah-date-input {
-  width: 100%;
-  padding: 6px 10px;
+  flex: 1;
+  height: 30px;
+  padding: 0 9px;
   border: 1px solid var(--desk-border);
-  border-radius: 10px;
-  font-size: 12.5px;
+  border-radius: 20px;
+  font-size: 11.5px;
   font-family: inherit;
   color: var(--desk-text);
-  background: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.88);
   cursor: pointer;
+  min-width: 0;
   transition: border-color 160ms ease;
 }
 
@@ -1814,14 +1850,39 @@ html, body {
   resize: none;
   overflow: hidden;
   min-height: 52px;
-  transition: border-color 160ms ease, background 300ms ease;
+  transition: border-color 160ms ease, background 280ms ease;
 }
 
-/* Amber fades out on edit — CSS transition handles this automatically
-   since JS removes .is-pulled which changes the background */
 .hah-cform-textarea.is-pulled {
   background: rgba(180,83,9,0.04);
   border-color: rgba(180,83,9,0.2);
+}
+
+/* ─── Toast notification ─────────────────────────────────────────────── */
+
+.hah-card { position: relative; }
+
+.hah-composer-toast {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: var(--desk-text);
+  color: rgba(255,255,255,0.95);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.hah-composer-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 </style>
@@ -5577,12 +5638,13 @@ html, body {
         <button type="button" class="hah-inline-pill is-primary" data-patient-action="composer-done">Done</button>
       </div>
       ${composerType === 'board_round' ? `
-      <div class="hah-note-preview" id="hahNotePreview" style="display:none">
-        <div class="hah-note-preview-head">
-          <span class="hah-note-preview-label">Clinical note preview</span>
+      <div id="hahNotePreview" style="display:none">
+        <div class="hah-note-divider">Clinical note preview</div>
+        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
+        <div class="hah-note-copy-row">
           <button type="button" class="hah-note-copy-btn" id="hahNoteCopyBtn">Copy</button>
         </div>
-        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
+        <button type="button" class="hah-emis-btn" id="hahEmisSendBtn">Send to EMIS</button>
       </div>` : ''}
     `)]);
   }
@@ -5621,13 +5683,11 @@ html, body {
             placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
         </div>
         <div class="hah-cform-field">
-          <label class="hah-cform-label">Estimated discharge date</label>
-          <div class="hah-discharge-widget">
-            <div class="hah-discharge-chips">
-              <button type="button" class="hah-dchip" data-discharge-quick="today">Today</button>
-              <button type="button" class="hah-dchip" data-discharge-quick="tomorrow">Tomorrow</button>
-              <button type="button" class="hah-dchip hah-dchip-ready" id="cform-ready-chip" data-discharge-quick="ready">Ready</button>
-            </div>
+          <label class="hah-cform-label">Estimated discharge</label>
+          <div class="hah-discharge-row">
+            <button type="button" class="hah-dchip" data-discharge-quick="today">Today</button>
+            <button type="button" class="hah-dchip" data-discharge-quick="tomorrow">Tomorrow</button>
+            <button type="button" class="hah-dchip hah-dchip-ready" id="cform-ready-chip" data-discharge-quick="ready">Ready</button>
             <input type="date" id="cform-discharge-date" class="hah-date-input"
               min="${todayIso()}" value="${c.escapeHtml(prevDate)}">
           </div>
@@ -5822,6 +5882,24 @@ html, body {
     if (wrap) wrap.style.display = text ? '' : 'none';
   }
 
+  function showToast(pane, text) {
+    const existing = pane.querySelector('.hah-composer-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'hah-composer-toast';
+    toast.textContent = text;
+    const card = pane.querySelector('.hah-card');
+    if (!card) return;
+    card.appendChild(toast);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+    });
+    setTimeout(() => {
+      toast.classList.remove('is-visible');
+      setTimeout(() => toast.remove(), 220);
+    }, 2600);
+  }
+
   function showAutosaveIndicator(pane) {
     const el = pane.querySelector('#hahAutosaveIndicator');
     if (!el) return;
@@ -5874,6 +5952,12 @@ html, body {
           if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
         }
         clearDraft(vm.patient.id, composerType);
+        const typeLabel = ENCOUNTER_TYPES.find((t) => t.key === composerType);
+        const pane = document.querySelector('#hahRightPane');
+        if (pane) {
+          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          showToast(pane, (typeLabel ? typeLabel.label : 'Entry') + ' saved — ' + time);
+        }
       }
       store.setState({ patient: { composerType } }); return true;
     }
@@ -7181,7 +7265,7 @@ html, body {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-17T21:35:10.235618',
+  builtAt: '2026-04-17T21:59:24.854302',
   entry: 'desktop.html'
 };
 </script>
