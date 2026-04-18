@@ -139,10 +139,64 @@ html, body {
   justify-content: space-between;
   gap: var(--desk-gap-4);
   padding: 0 var(--desk-gap-5);
-  background: rgba(244, 247, 251, 0.86);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--desk-border);
+  background: #0a84ff;
+  border-bottom: 1px solid rgba(10, 90, 180, 0.3);
   z-index: 20;
+  color: #fff;
+}
+
+.hah-header .hah-brand {
+  color: #fff;
+}
+
+.hah-header .hah-brand-kicker {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.hah-header .hah-search {
+  width: 420px;
+  max-width: 100%;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  color: #fff;
+}
+
+.hah-header .hah-search::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hah-header .hah-search:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.hah-header .hah-pill-btn,
+.hah-header .hah-icon-btn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.hah-header .hah-pill-btn:hover,
+.hah-header .hah-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.hah-header .hah-pill-btn.is-status {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.hah-header .hah-pill-btn.is-active {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .hah-nav {
@@ -1094,7 +1148,8 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-log-dot {
@@ -1285,7 +1340,8 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-mdm-dot {
@@ -1381,7 +1437,8 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-ref-label {
@@ -1719,8 +1776,8 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--desk-border);
-  background: rgba(0,0,0,0.018);
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-note-preview-label {
@@ -1964,7 +2021,8 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-mdm-chevron-sm {
@@ -7793,7 +7851,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-18T07:40:05.615411',
+  builtAt: '2026-04-18T07:55:50.740825',
   entry: 'desktop.html'
 };
 </script>
