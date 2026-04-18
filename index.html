@@ -1042,96 +1042,81 @@ html, body {
 
 .hah-pt-header-bar {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 18px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 100%);
-  border: 1px solid rgba(34, 84, 162, 0.12);
-  border-radius: 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--desk-border);
+  border-radius: 16px;
   position: sticky;
   top: 0;
   z-index: 5;
   backdrop-filter: blur(14px);
-  box-shadow: 0 6px 20px rgba(20, 42, 73, 0.05);
-}
-.hah-pt-header-bar::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(47,111,237,0.75) 0%, rgba(47,111,237,0.18) 100%);
 }
 
-.hah-pt-header-top {
+.hah-pt-header-identity {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  position: relative;
-}
-
-.hah-pt-header-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
   flex-wrap: wrap;
-}
-
-.hah-pt-header-chips,
-.hah-pt-header-alerts {
-  display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .hah-pt-name {
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  white-space: nowrap;
-  color: #17263b;
-}
-
-.hah-pt-age-sex {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 600;
-  color: #6a778a;
+  letter-spacing: -0.02em;
   white-space: nowrap;
-  letter-spacing: 0.01em;
 }
 
-.hah-pt-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 12px;
-  color: var(--desk-text-muted);
+.hah-pt-meta {
   font-size: 12px;
-  line-height: 1.35;
+  color: var(--desk-text-muted);
+  white-space: nowrap;
 }
 
-.hah-pt-meta-item {
-  position: relative;
-  font-weight: 500;
+.hah-pt-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
-.hah-pt-meta-item.is-good { color: #18804b; }
-.hah-pt-meta-item.is-warn { color: #9a6a00; }
-.hah-pt-meta-item.is-danger { color: #c23a3a; }
-.hah-pt-meta-item:not(:last-child)::after {
-  content: '·';
-  margin-left: 12px;
-  color: rgba(0,0,0,0.22);
+
+.hah-pt-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hah-pt-select-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-pt-select {
+  padding: 5px 9px;
+  border: 1px solid var(--desk-border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.9);
+  color: var(--desk-text);
+  cursor: pointer;
+}
+
+.hah-pt-select:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+  box-shadow: 0 0 0 3px rgba(47,111,237,0.1);
 }
 
 /* ─── Obs strip ──────────────────────────────────────────────────────── */
 
-.hah-obs-strip,
-.hah-status-strip {
+.hah-obs-strip {
   display: flex;
   gap: 0;
   padding: 0;
@@ -1141,19 +1126,16 @@ html, body {
   overflow: hidden;
 }
 
-.hah-obs-cell,
-.hah-status-cell {
+.hah-obs-cell {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 14px;
   border-right: 1px solid var(--desk-border);
-  min-width: 0;
 }
 
-.hah-obs-cell:last-child,
-.hah-status-cell:last-child {
+.hah-obs-cell:last-child {
   border-right: none;
 }
 
@@ -1165,18 +1147,12 @@ html, body {
   color: var(--desk-text-muted);
 }
 
-.hah-obs-val,
-.hah-status-val {
+.hah-obs-val {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--desk-text);
   line-height: 1.1;
-}
-
-.hah-status-val {
-  font-size: 14px;
-  line-height: 1.25;
 }
 
 .hah-obs-cell.is-warn  .hah-obs-val { color: #b45309; }
@@ -2542,62 +2518,227 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   opacity: 0.85;
 }
 
-/* ─── Caseload metrics card ──────────────────────────────────────────── */
+/* ─── Caseload card ──────────────────────────────────────────────────── */
 
-.hah-metrics-card {
-  padding: 12px 14px;
+.hah-caseload-card {
+  padding: 12px 14px 14px;
   background: rgba(255,255,255,0.9);
 }
 
-.hah-metrics-head {
+.hah-caseload-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.hah-metrics-title {
+.hah-caseload-title {
   font-size: 12px;
   font-weight: 600;
   color: var(--desk-text);
   letter-spacing: -0.01em;
 }
 
-.hah-metrics-placeholder-note {
-  font-size: 10px;
-  color: var(--desk-text-muted);
-  font-style: italic;
-}
-
-.hah-metrics-grid {
+.hah-metric-tiles {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
 
-.hah-metric-cell {
+.hah-metric-tile {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 2px;
-  padding: 8px 10px;
-  background: rgba(0,0,0,0.028);
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid transparent;
   border-radius: 10px;
+  min-height: 56px;
+  justify-content: center;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
-.hah-metric-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--desk-text-muted);
-  letter-spacing: 0.02em;
+.hah-metric-tile.is-clickable {
+  cursor: pointer;
 }
 
-.hah-metric-val {
-  font-size: 18px;
+.hah-metric-tile.is-clickable:hover {
+  background: rgba(47,111,237,0.08);
+  border-color: rgba(47,111,237,0.18);
+}
+
+.hah-metric-tile.is-active-filter {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.35);
+}
+
+.hah-metric-tile-value {
+  font-size: 20px;
   font-weight: 600;
   color: var(--desk-text);
   letter-spacing: -0.02em;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-metric-tile.is-active-filter .hah-metric-tile-value {
+  color: rgba(47,111,237,0.95);
+}
+
+.hah-metric-tile-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.hah-metric-tile.is-active-filter .hah-metric-tile-label {
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-metric-tile-chev {
+  font-size: 13px;
+  color: var(--desk-text-muted);
+  opacity: 0.4;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.hah-metric-tile.is-clickable:hover .hah-metric-tile-chev {
+  opacity: 0.85;
+  transform: translateX(1px);
+}
+
+.hah-metric-tile-funnel {
+  font-size: 9px;
+  color: rgba(47,111,237,0.95);
+  line-height: 1;
+}
+
+/* ─── Divider + round zone ──────────────────────────────────────────── */
+
+.hah-caseload-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,0.08), rgba(0,0,0,0));
+  margin: 12px 0 12px;
+}
+
+.hah-round-zone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 6px;
+}
+
+.hah-round-zone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hah-round-zone-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-round-zone-sub {
+  font-size: 13px;
+  color: var(--desk-text);
+  font-weight: 500;
+}
+
+.hah-round-togo {
+  cursor: pointer;
+  color: rgba(47,111,237,0.95);
+  transition: opacity 140ms ease;
+}
+
+.hah-round-togo:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.hah-round-togo.is-active-filter {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* ─── Ring ───────────────────────────────────────────────────────────── */
+
+.hah-ring {
+  flex-shrink: 0;
+  display: block;
+}
+
+.hah-ring-track {
+  fill: none;
+  stroke: rgba(0,0,0,0.08);
+  stroke-width: 5;
+}
+
+.hah-ring-fill {
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 420ms cubic-bezier(0.22, 0.9, 0.18, 1);
+}
+
+.hah-ring-text {
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--desk-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.hah-ring-slash {
+  fill: var(--desk-text-muted);
+  font-weight: 400;
+}
+
+.hah-ring-total {
+  font-size: 12px;
+  fill: var(--desk-text-muted);
+  font-weight: 500;
+}
+
+/* ─── List filter banner ─────────────────────────────────────────────── */
+
+.hah-list-filter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  background: rgba(47,111,237,0.07);
+  border-bottom: 1px solid rgba(47,111,237,0.15);
+  font-size: 11px;
+  color: rgba(47,111,237,0.95);
+}
+
+.hah-list-filter-clear {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: rgba(47,111,237,0.95);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 120ms ease;
+}
+
+.hah-list-filter-clear:hover {
+  background: rgba(47,111,237,0.12);
 }
 
 /* ─── Patient list card + header ─────────────────────────────────────── */
@@ -3510,7 +3651,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null },
     tasks: {
       filters: {},
       sort: 'due',
@@ -6476,10 +6617,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card('Patients', c.emptyState('No patient selected', 'Choose a patient from the board.'))]);
 
-    const sortMode = (state.patient && state.patient.listSort) || 'name';
-    const sortedRows = sortPatientRows(vm.contextRows, sortMode);
+    const sortMode  = (state.patient && state.patient.listSort) || 'name';
+    const filterMode = (state.patient && state.patient.listFilter) || null;
 
-    const jumpRows = sortedRows.map((row) => {
+    const allRows = sortPatientRows(vm.contextRows, sortMode);
+    const metrics = computeCaseloadMetrics(allRows);
+    const filteredRows = applyListFilter(allRows, filterMode);
+
+    const jumpRows = filteredRows.map((row) => {
       const active = String(row.id) === String(vm.patient.id) ? ' is-active' : '';
       const status = row.boardStatus || 'Not discussed';
       const statusTone = status === 'Discussed' || status === 'Actioned' ? 'is-done'
@@ -6524,31 +6669,102 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       </div>`;
 
     return c.stack([
-      `<section class="hah-card hah-metrics-card">
-        <div class="hah-metrics-head">
-          <span class="hah-metrics-title">Caseload</span>
-          <span class="hah-metrics-placeholder-note">Live metrics coming soon</span>
-        </div>
-        <div class="hah-metrics-grid">
-          <div class="hah-metric-cell">
-            <span class="hah-metric-label">Total</span>
-            <span class="hah-metric-val">${sortedRows.length}</span>
-          </div>
-          <div class="hah-metric-cell">
-            <span class="hah-metric-label">Discussed</span>
-            <span class="hah-metric-val">${sortedRows.filter((r) => r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned').length}</span>
-          </div>
-          <div class="hah-metric-cell">
-            <span class="hah-metric-label">To go</span>
-            <span class="hah-metric-val">${sortedRows.filter((r) => !(r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned')).length}</span>
-          </div>
-        </div>
-      </section>`,
+      renderCaseloadCard(metrics, filterMode),
       `<section class="hah-card hah-patient-list-card">
         ${listHead}
+        ${filterMode ? `
+        <div class="hah-list-filter-banner">
+          <span>Showing ${filteredRows.length} of ${allRows.length}</span>
+          <button type="button" class="hah-list-filter-clear" data-patient-action="clear-list-filter">Clear filter</button>
+        </div>` : ''}
         <div class="hah-patient-list">${jumpRows}</div>
       </section>`
     ]);
+  }
+
+  function computeCaseloadMetrics(rows) {
+    const total = rows.length;
+    const now = Date.now();
+    const losList = rows.map((r) => {
+      const t = parseAdmissionDate(r.admissionDate);
+      if (!t) return null;
+      return Math.max(0, Math.floor((now - t) / 86400000));
+    }).filter((v) => v !== null);
+    const avgLOS = losList.length ? (losList.reduce((a, b) => a + b, 0) / losList.length) : 0;
+    const over7 = losList.filter((v) => v > 7).length;
+    const dischargeToday = rows.filter((r) => r.dischargeReadiness === 'Ready' || r.dischargeReadiness === 'Possible today').length;
+    const discussed = rows.filter((r) => r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned').length;
+    const toGo = total - discussed;
+    return { total, avgLOS, over7, dischargeToday, discussed, toGo };
+  }
+
+  function applyListFilter(rows, mode) {
+    if (!mode) return rows;
+    const now = Date.now();
+    if (mode === 'over-7') {
+      return rows.filter((r) => {
+        const t = parseAdmissionDate(r.admissionDate);
+        if (!t) return false;
+        return Math.floor((now - t) / 86400000) > 7;
+      });
+    }
+    if (mode === 'discharge-today') {
+      return rows.filter((r) => r.dischargeReadiness === 'Ready' || r.dischargeReadiness === 'Possible today');
+    }
+    if (mode === 'to-go') {
+      return rows.filter((r) => !(r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned'));
+    }
+    return rows;
+  }
+
+  function renderCaseloadCard(m, filterMode) {
+    const avgLabel = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
+    const ringFrac = m.total ? m.discussed / m.total : 0;
+    const ringCirc = 2 * Math.PI * 26; // radius 26
+    const ringFill = (ringFrac * ringCirc).toFixed(1);
+    const ringEmpty = ringCirc.toFixed(1);
+    const ringDisplay = m.total ? `${m.discussed}<tspan class="hah-ring-slash">/</tspan><tspan class="hah-ring-total">${m.total}</tspan>` : '—';
+
+    function tile(label, value, filterKey) {
+      const isActive  = filterKey && filterMode === filterKey;
+      const clickable = !!filterKey;
+      return `<div class="hah-metric-tile${clickable ? ' is-clickable' : ''}${isActive ? ' is-active-filter' : ''}"
+        ${clickable ? `data-patient-action="toggle-list-filter" data-filter="${c.escapeHtml(filterKey)}"` : ''}>
+        <span class="hah-metric-tile-value">${value}</span>
+        <span class="hah-metric-tile-label">${c.escapeHtml(label)}${clickable && !isActive ? ' <span class="hah-metric-tile-chev">›</span>' : ''}${isActive ? ' <span class="hah-metric-tile-funnel" aria-label="Filter active">●</span>' : ''}</span>
+      </div>`;
+    }
+
+    return `<section class="hah-card hah-caseload-card">
+      <div class="hah-caseload-head">
+        <span class="hah-caseload-title">Caseload</span>
+      </div>
+      <div class="hah-metric-tiles">
+        ${tile('Total', m.total || '—')}
+        ${tile('Avg LOS', avgLabel)}
+        ${tile('Over 7 days', m.over7, 'over-7')}
+        ${tile('Discharge today', m.dischargeToday, 'discharge-today')}
+      </div>
+      <div class="hah-caseload-divider"></div>
+      <div class="hah-round-zone">
+        <svg class="hah-ring" width="64" height="64" viewBox="0 0 64 64">
+          <circle class="hah-ring-track" cx="32" cy="32" r="26" />
+          <circle class="hah-ring-fill" cx="32" cy="32" r="26"
+            stroke-dasharray="${ringFill} ${ringEmpty}"
+            stroke-dashoffset="0"
+            transform="rotate(-90 32 32)" />
+          <text class="hah-ring-text" x="32" y="32" text-anchor="middle" dominant-baseline="central">${ringDisplay}</text>
+        </svg>
+        <div class="hah-round-zone-text">
+          <div class="hah-round-zone-title">Round progress</div>
+          <div class="hah-round-zone-sub">
+            ${m.total
+              ? (m.toGo === 0 ? 'All discussed' : `<a class="hah-round-togo${filterMode === 'to-go' ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} to go</a>`)
+              : 'No patients'}
+          </div>
+        </div>
+      </div>
+    </section>`;
   }
 
   function sortPatientRows(rows, mode) {
@@ -6600,7 +6816,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     return `<div class="hah-pt-workspace">
       ${renderPatientHeader(vm, state)}
-      ${renderObsStrip(vm, state)}
+      ${renderObsStrip(vm)}
       <div class="hah-pt-centre-split">
         <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds, state)}</div>
         <div class="hah-pt-ref-col">
@@ -6616,80 +6832,30 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function renderPatientHeader(vm, state) {
     const patient = vm.patient;
-    const ageSex = [patient.age || '', patient.sex || ''].filter(Boolean).join('');
-    const losMeta = buildLengthOfStayMeta(vm.admissionDate);
-    const metaParts = [
-      vm.referralSource ? { text: 'Referred from ' + vm.referralSource } : null,
-      vm.admissionDate ? { text: 'Admitted ' + vm.admissionDate } : null,
-      losMeta,
-      patient.pathway ? { text: patient.pathway } : null,
-      patient.escalationSummary && !/^DNAR(\s*\+\s*ACP)?$/i.test(patient.escalationSummary) && patient.escalationSummary !== 'Full escalation'
-        ? { text: patient.escalationSummary }
-        : null
-    ].filter(Boolean);
-
-    const rightFlags = [
-      patient.iv ? c.badge('IV', 'neutral') : '',
-      patient.oxygenLpm > 0 ? c.badge('O₂ ' + patient.oxygenLpm + 'L', 'warn') : '',
-      patient.acp ? c.badge('ACP', 'neutral') : '',
-      patient.dnar ? c.badge('DNAR', 'danger') : ''
-    ].filter(Boolean).join('');
-
+    const meta    = [patient.age || '', patient.sex || '', patient.location || '', patient.pathway || '',
+      vm.admissionDate ? 'Adm ' + vm.admissionDate : ''].filter(Boolean).join(' · ');
+    const escalation = patient.escalationSummary && patient.escalationSummary !== 'None' ? c.badge(patient.escalationSummary, 'warn') : '';
     return `<div class="hah-pt-header-bar">
-      <div class="hah-pt-header-top">
-        <div class="hah-pt-header-main">
-          <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
-          ${ageSex ? `<span class="hah-pt-age-sex">${c.escapeHtml(ageSex)}</span>` : ''}
-        </div>
-        <div class="hah-pt-header-alerts">${rightFlags}</div>
+      <div class="hah-pt-header-identity">
+        <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
+        ${priorityBadge(patient.priority)}
+        ${c.badge(patient.currentStatus, 'neutral')}
+        ${c.badge(patient.boardStatus || 'Not discussed', 'neutral')}
+        ${c.badge('D/C: ' + (patient.dischargeReadiness || 'Not ready'), 'neutral')}
+        ${patient.dnar ? c.badge('DNAR', 'danger') : ''}
+        ${escalation}
+        <span class="hah-pt-meta">${c.escapeHtml(meta)}</span>
       </div>
-      ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map(renderPatientMetaPart).join('')}</div>` : ''}
     </div>`;
   }
 
-  function renderPatientMetaPart(part) {
-    const tone = part && part.tone ? ` is-${part.tone}` : '';
-    return `<span class="hah-pt-meta-item${tone}">${c.escapeHtml(part && part.text ? part.text : '')}</span>`;
-  }
-
-  function buildLengthOfStayMeta(admissionDate) {
-    const ts = parseAdmissionDate(admissionDate);
-    if (!ts) return null;
-    const start = new Date(ts);
-    const now = new Date();
-    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const days = Math.max(0, Math.floor((nowDay - startDay) / 86400000));
-    const tone = days < 7 ? 'good' : days === 7 ? 'warn' : 'danger';
-    return { text: `LOS ${days}d`, tone };
-  }
-
-  function renderObsStrip(vm, state) {
+  function renderObsStrip(vm) {
     const items = vm.obsItems.filter((i) => i.value && i.value !== '—').slice(0, 7);
-    if (items.length) {
-      return `<div class="hah-obs-strip">${items.map((item) => {
-        const cls = isObsDanger(item.label, item.value) ? ' is-danger' : isObsWarn(item.label, item.value) ? ' is-warn' : '';
-        return `<div class="hah-obs-cell${cls}"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-obs-val">${c.escapeHtml(item.value)}</div></div>`;
-      }).join('')}</div>`;
-    }
-
-    const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
-    const latestBoard = encounters.find((e) => e.type === 'board_round') || encounters[0] || null;
-    let taskCount = 0;
-    try {
-      const tasksVm = d.buildTasksViewModel({ ...state, tasks: { ...(state.tasks || {}), savedView: 'all-open', filters: { patientId: vm.patient.id } } });
-      taskCount = Array.isArray(tasksVm && tasksVm.rows) ? tasksVm.rows.length : 0;
-    } catch (_) {}
-    const bloodLabel = vm.bloodSamples && vm.bloodSamples.length ? vm.bloodSamples[0].time : 'No recent bloods';
-    const blocker = (vm.patient.blockers && vm.patient.blockers[0]) || 'No active blocker';
-    const statusItems = [
-      { label: 'Latest entry', value: latestBoard ? formatCompactDateTime(latestBoard.timestamp) : 'None yet' },
-      { label: 'Latest bloods', value: bloodLabel },
-      { label: 'Open tasks', value: String(taskCount) },
-      { label: 'Discharge', value: vm.patient.dischargeReadiness || 'Not ready' },
-      { label: 'Primary blocker', value: blocker }
-    ];
-    return `<div class="hah-status-strip">${statusItems.map((item) => `<div class="hah-status-cell"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-status-val">${c.escapeHtml(item.value)}</div></div>`).join('')}</div>`;
+    if (!items.length) return '';
+    return `<div class="hah-obs-strip">${items.map((item) => {
+      const cls = isObsDanger(item.label, item.value) ? ' is-danger' : isObsWarn(item.label, item.value) ? ' is-warn' : '';
+      return `<div class="hah-obs-cell${cls}"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-obs-val">${c.escapeHtml(item.value)}</div></div>`;
+    }).join('')}</div>`;
   }
 
   function renderBoardRoundLog(entries, state) {
@@ -7520,6 +7686,17 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       store.setState({ patient: { sortMenuOpen: !now } });
       return true;
     }
+    if (action === 'toggle-list-filter') {
+      const filter = target.getAttribute('data-filter');
+      if (!filter) return false;
+      const current = (state.patient && state.patient.listFilter) || null;
+      store.setState({ patient: { listFilter: current === filter ? null : filter } });
+      return true;
+    }
+    if (action === 'clear-list-filter') {
+      store.setState({ patient: { listFilter: null } });
+      return true;
+    }
     if (action === 'set-list-sort') {
       const mode = target.getAttribute('data-sort');
       if (!mode) return false;
@@ -7687,13 +7864,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function splitLines(text) {
     return String(text || '').split('\n').map((l) => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean);
   }
-  function formatCompactDateTime(iso) {
-    if (!iso) return '—';
-    const dt = new Date(iso);
-    if (isNaN(dt.getTime())) return '—';
-    return dt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
   function formatEntryDate(iso) {
     if (!iso) return '—';
     const dt = new Date(iso); if (isNaN(dt.getTime())) return String(iso);
@@ -9052,9 +9222,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_031_release.html',
-  source: 'hospital_at_home_board_v0_8_031_source.zip',
-  builtAt: '2026-04-18T19:56:02.743774',
+  filename: 'hospital_at_home_board_v0_8_021_release.html',
+  source: 'hospital_at_home_board_v0_8_021_source.zip',
+  builtAt: '2026-04-18T20:28:34.255268',
   entry: 'desktop.html'
 };
 </script>
