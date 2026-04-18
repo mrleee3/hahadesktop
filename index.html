@@ -2597,25 +2597,42 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 .hah-metric-tile.is-active-filter .hah-metric-tile-label {
   color: rgba(47,111,237,0.95);
-  font-weight: 600;
 }
 
 .hah-metric-tile-chev {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  text-align: center;
+  line-height: 12px;
   font-size: 13px;
   color: var(--desk-text-muted);
   opacity: 0.4;
-  transition: opacity 140ms ease, transform 140ms ease;
+  transform-origin: center center;
+  transition: opacity 140ms ease, transform 140ms ease, color 140ms ease;
 }
 
-.hah-metric-tile.is-clickable:hover .hah-metric-tile-chev {
+.hah-metric-tile.is-clickable:not(.is-active-filter):hover .hah-metric-tile-chev {
   opacity: 0.85;
-  transform: translateX(1px);
 }
 
-.hah-metric-tile-funnel {
-  font-size: 9px;
+.hah-metric-tile.is-active-filter:hover .hah-metric-tile-chev {
+  transform: rotate(90deg);
+}
+
+.hah-metric-tile.is-active-filter .hah-metric-tile-chev {
+  opacity: 1;
   color: rgba(47,111,237,0.95);
-  line-height: 1;
+  transform: rotate(90deg);
+}
+
+/* Semantic alert colour when a metric indicates a concerning caseload state */
+.hah-metric-tile.is-alert .hah-metric-tile-value {
+  color: #dc2626;
+}
+
+.hah-metric-tile.is-alert.is-active-filter .hah-metric-tile-value {
+  color: #dc2626;
 }
 
 /* ─── Divider + round zone ──────────────────────────────────────────── */
@@ -6618,11 +6635,12 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (!vm) return c.stack([c.card('Patients', c.emptyState('No patient selected', 'Choose a patient from the board.'))]);
 
     const sortMode  = (state.patient && state.patient.listSort) || 'name';
-    const filterMode = (state.patient && state.patient.listFilter) || null;
+    const rawFilter = (state.patient && state.patient.listFilter) || null;
+    const filterSet = new Set(Array.isArray(rawFilter) ? rawFilter : rawFilter ? [rawFilter] : []);
 
     const allRows = sortPatientRows(vm.contextRows, sortMode);
     const metrics = computeCaseloadMetrics(allRows);
-    const filteredRows = applyListFilter(allRows, filterMode);
+    const filteredRows = applyListFilter(allRows, filterSet);
 
     const jumpRows = filteredRows.map((row) => {
       const active = String(row.id) === String(vm.patient.id) ? ' is-active' : '';
@@ -6669,13 +6687,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       </div>`;
 
     return c.stack([
-      renderCaseloadCard(metrics, filterMode),
+      renderCaseloadCard(metrics, filterSet),
       `<section class="hah-card hah-patient-list-card">
         ${listHead}
-        ${filterMode ? `
+        ${filterSet.size ? `
         <div class="hah-list-filter-banner">
           <span>Showing ${filteredRows.length} of ${allRows.length}</span>
-          <button type="button" class="hah-list-filter-clear" data-patient-action="clear-list-filter">Clear filter</button>
+          <button type="button" class="hah-list-filter-clear" data-patient-action="clear-list-filter">Clear filter${filterSet.size > 1 ? 's' : ''}</button>
         </div>` : ''}
         <div class="hah-patient-list">${jumpRows}</div>
       </section>`
@@ -6698,26 +6716,26 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     return { total, avgLOS, over7, dischargeToday, discussed, toGo };
   }
 
-  function applyListFilter(rows, mode) {
-    if (!mode) return rows;
+  function applyListFilter(rows, filterSet) {
+    if (!filterSet || !filterSet.size) return rows;
     const now = Date.now();
-    if (mode === 'over-7') {
-      return rows.filter((r) => {
+    return rows.filter((r) => {
+      if (filterSet.has('over-7')) {
         const t = parseAdmissionDate(r.admissionDate);
         if (!t) return false;
-        return Math.floor((now - t) / 86400000) > 7;
-      });
-    }
-    if (mode === 'discharge-today') {
-      return rows.filter((r) => r.dischargeReadiness === 'Ready' || r.dischargeReadiness === 'Possible today');
-    }
-    if (mode === 'to-go') {
-      return rows.filter((r) => !(r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned'));
-    }
-    return rows;
+        if (Math.floor((now - t) / 86400000) <= 7) return false;
+      }
+      if (filterSet.has('discharge-today')) {
+        if (!(r.dischargeReadiness === 'Ready' || r.dischargeReadiness === 'Possible today')) return false;
+      }
+      if (filterSet.has('to-go')) {
+        if (r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned') return false;
+      }
+      return true;
+    });
   }
 
-  function renderCaseloadCard(m, filterMode) {
+  function renderCaseloadCard(m, filterSet) {
     const avgLabel = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
     const ringFrac = m.total ? m.discussed / m.total : 0;
     const ringCirc = 2 * Math.PI * 26; // radius 26
@@ -6725,15 +6743,24 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const ringEmpty = ringCirc.toFixed(1);
     const ringDisplay = m.total ? `${m.discussed}<tspan class="hah-ring-slash">/</tspan><tspan class="hah-ring-total">${m.total}</tspan>` : '—';
 
-    function tile(label, value, filterKey) {
-      const isActive  = filterKey && filterMode === filterKey;
+    function tile(label, value, filterKey, alert) {
+      const isActive  = filterKey && filterSet.has(filterKey);
       const clickable = !!filterKey;
-      return `<div class="hah-metric-tile${clickable ? ' is-clickable' : ''}${isActive ? ' is-active-filter' : ''}"
+      const classes = [
+        'hah-metric-tile',
+        clickable ? 'is-clickable' : '',
+        isActive ? 'is-active-filter' : '',
+        alert ? 'is-alert' : ''
+      ].filter(Boolean).join(' ');
+      return `<div class="${classes}"
         ${clickable ? `data-patient-action="toggle-list-filter" data-filter="${c.escapeHtml(filterKey)}"` : ''}>
         <span class="hah-metric-tile-value">${value}</span>
-        <span class="hah-metric-tile-label">${c.escapeHtml(label)}${clickable && !isActive ? ' <span class="hah-metric-tile-chev">›</span>' : ''}${isActive ? ' <span class="hah-metric-tile-funnel" aria-label="Filter active">●</span>' : ''}</span>
+        <span class="hah-metric-tile-label">${c.escapeHtml(label)}${clickable ? ' <span class="hah-metric-tile-chev">›</span>' : ''}</span>
       </div>`;
     }
+
+    const avgAlert  = m.total > 0 && m.avgLOS > 7;
+    const over7Alert = m.over7 > 0;
 
     return `<section class="hah-card hah-caseload-card">
       <div class="hah-caseload-head">
@@ -6741,8 +6768,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       </div>
       <div class="hah-metric-tiles">
         ${tile('Total', m.total || '—')}
-        ${tile('Avg LOS', avgLabel)}
-        ${tile('Over 7 days', m.over7, 'over-7')}
+        ${tile('Avg LOS', avgLabel, null, avgAlert)}
+        ${tile('Over 7 days', m.over7, 'over-7', over7Alert)}
         ${tile('Discharge today', m.dischargeToday, 'discharge-today')}
       </div>
       <div class="hah-caseload-divider"></div>
@@ -6759,7 +6786,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           <div class="hah-round-zone-title">Round progress</div>
           <div class="hah-round-zone-sub">
             ${m.total
-              ? (m.toGo === 0 ? 'All discussed' : `<a class="hah-round-togo${filterMode === 'to-go' ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} to go</a>`)
+              ? (m.toGo === 0 ? 'All discussed' : `<a class="hah-round-togo${filterSet.has('to-go') ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} to go</a>`)
               : 'No patients'}
           </div>
         </div>
@@ -7689,8 +7716,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (action === 'toggle-list-filter') {
       const filter = target.getAttribute('data-filter');
       if (!filter) return false;
-      const current = (state.patient && state.patient.listFilter) || null;
-      store.setState({ patient: { listFilter: current === filter ? null : filter } });
+      const raw = (state.patient && state.patient.listFilter) || null;
+      const current = Array.isArray(raw) ? raw.slice() : raw ? [raw] : [];
+      const idx = current.indexOf(filter);
+      if (idx >= 0) current.splice(idx, 1); else current.push(filter);
+      store.setState({ patient: { listFilter: current.length ? current : null } });
       return true;
     }
     if (action === 'clear-list-filter') {
@@ -9224,7 +9254,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T20:28:34.255268',
+  builtAt: '2026-04-18T20:50:11.402112',
   entry: 'desktop.html'
 };
 </script>
