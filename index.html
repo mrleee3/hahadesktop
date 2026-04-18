@@ -81,7 +81,7 @@
 /* inlined: css/desktop-shell.css */
 :root {
   --desk-header-h: 72px;
-  --desk-nav-w: 84px;
+  --desk-nav-w: 56px;
   --desk-left-w: 292px;
   --desk-right-w: 680px;
 
@@ -205,8 +205,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px 10px;
+  gap: 4px;
+  padding: 12px 0;
   border-right: 1px solid var(--desk-border);
   background: rgba(244, 247, 251, 0.72);
 }
@@ -305,8 +305,7 @@ html, body {
 }
 
 .hah-icon-btn,
-.hah-pill-btn,
-.hah-nav-btn {
+.hah-pill-btn {
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.82);
   color: var(--desk-text);
@@ -314,8 +313,7 @@ html, body {
 }
 
 .hah-icon-btn:hover,
-.hah-pill-btn:hover,
-.hah-nav-btn:hover {
+.hah-pill-btn:hover {
   background: rgba(255,255,255,1);
   border-color: rgba(25,45,72,0.14);
 }
@@ -341,35 +339,52 @@ html, body {
   border-color: rgba(42, 128, 84, 0.16);
 }
 
-.hah-pill-btn.is-active,
-.hah-nav-btn.is-active {
+.hah-pill-btn.is-active {
   background: rgba(47, 111, 237, 0.12);
   border-color: rgba(47, 111, 237, 0.18);
 }
 
 .hah-nav-btn {
-  width: 58px;
-  min-height: 64px;
-  padding: 8px 6px;
-  border-radius: 18px;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--desk-text-muted);
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.hah-nav-icon {
-  font-size: 18px;
-  line-height: 1;
+.hah-nav-btn:hover {
+  background: rgba(25,45,72,0.06);
+  color: var(--desk-text);
 }
 
-.hah-nav-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1;
+.hah-nav-btn.is-active {
+  background: rgba(47, 111, 237, 0.1);
+  color: rgba(47, 111, 237, 0.95);
+}
+
+.hah-nav-btn.is-active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: rgba(47, 111, 237, 0.95);
+}
+
+.hah-nav-svg {
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 
 .hah-card {
@@ -1156,7 +1171,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   background: rgba(55, 138, 221, 0.08);
   border-bottom: 1px solid rgba(55, 138, 221, 0.2);
 }
@@ -1903,7 +1918,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
   border-bottom: 1px solid rgba(0,0,0,0.08);
 }
@@ -2474,6 +2489,268 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 .hah-log-earlier-list .hah-log-entry {
   opacity: 0.85;
+}
+
+/* ─── Caseload metrics card ──────────────────────────────────────────── */
+
+.hah-metrics-card {
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.9);
+}
+
+.hah-metrics-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hah-metrics-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+  letter-spacing: -0.01em;
+}
+
+.hah-metrics-placeholder-note {
+  font-size: 10px;
+  color: var(--desk-text-muted);
+  font-style: italic;
+}
+
+.hah-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.hah-metric-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.028);
+  border-radius: 10px;
+}
+
+.hah-metric-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.hah-metric-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--desk-text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* ─── Patient list card + header ─────────────────────────────────────── */
+
+.hah-patient-list-card {
+  background: rgba(255,255,255,0.9);
+  overflow: hidden;
+}
+
+.hah-list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.hah-list-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+}
+
+.hah-list-count {
+  font-size: 11px;
+  color: var(--desk-text-muted);
+  margin-right: auto;
+}
+
+.hah-list-sort-wrap {
+  position: relative;
+}
+
+.hah-list-sort-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--desk-text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.hah-list-sort-btn:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--desk-text);
+}
+
+.hah-list-sort-btn.is-open {
+  background: rgba(47,111,237,0.12);
+  color: rgba(47,111,237,0.95);
+}
+
+.hah-sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  padding: 5px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 60;
+}
+
+.hah-sort-menu button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--desk-text);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.hah-sort-menu button + button {
+  margin-top: 1px;
+}
+
+.hah-sort-menu button:hover {
+  background: rgba(47,111,237,0.06);
+}
+
+.hah-sort-menu button.is-selected {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-sort-check {
+  font-size: 12px;
+  color: rgba(47,111,237,0.95);
+  opacity: 0;
+}
+
+.hah-sort-menu button.is-selected .hah-sort-check {
+  opacity: 1;
+}
+
+/* ─── Patient list rows (tight nav style) ────────────────────────────── */
+
+.hah-patient-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.hah-patient-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  min-height: 40px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: background 120ms ease;
+  font-family: inherit;
+}
+
+.hah-patient-row:last-child {
+  border-bottom: none;
+}
+
+.hah-patient-row:hover {
+  background: rgba(47,111,237,0.04);
+}
+
+.hah-patient-row.is-active {
+  background: rgba(47,111,237,0.1);
+  box-shadow: inset 3px 0 0 rgba(47,111,237,0.85);
+}
+
+.hah-patient-row.is-active .hah-patient-row-name {
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-patient-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hah-patient-row-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--desk-text);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hah-patient-row-sub {
+  font-size: 11px;
+  color: var(--desk-text-muted);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hah-patient-row.is-done .hah-patient-row-name {
+  opacity: 0.6;
+}
+
+.hah-patient-row.is-done .hah-patient-row-sub {
+  color: #16a34a;
+}
+
+.hah-patient-row.is-deferred .hah-patient-row-sub {
+  color: #d97706;
+}
+
+.hah-patient-row.is-now .hah-patient-row-sub {
+  color: rgba(47,111,237,0.95);
+  font-weight: 500;
+}
+
+.hah-patient-row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 </style>
@@ -3191,7 +3468,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false },
     tasks: {
       filters: {},
       sort: 'due',
@@ -4773,7 +5050,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       acp: escalationFlags.acp,
       sourcePatient: raw,
       summaryLine: deriveSummaryLine(raw),
-      boardNote: ''
+      boardNote: '',
+      admissionDate: String(raw.doa || '').trim()
     };
 
     return applyPatientOperationalState(summary);
@@ -6156,29 +6434,117 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card('Patients', c.emptyState('No patient selected', 'Choose a patient from the board.'))]);
 
-    const jumpButtons = vm.contextRows.map((row) => {
+    const sortMode = (state.patient && state.patient.listSort) || 'name';
+    const sortedRows = sortPatientRows(vm.contextRows, sortMode);
+
+    const jumpRows = sortedRows.map((row) => {
       const active = String(row.id) === String(vm.patient.id) ? ' is-active' : '';
-      return `<button type="button" class="hah-jump-btn${active}"
+      const status = row.boardStatus || 'Not discussed';
+      const statusTone = status === 'Discussed' || status === 'Actioned' ? 'is-done'
+                      : status === 'Deferred' ? 'is-deferred'
+                      : status === 'In discussion' ? 'is-now'
+                      : '';
+      return `<button type="button" class="hah-patient-row${active} ${statusTone}"
         data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
-        <div class="hah-jump-head"><span class="hah-jump-name">${c.escapeHtml(row.name)}</span>${priorityBadge(row.priority)}</div>
-        <div class="hah-jump-sub">${c.escapeHtml(row.currentStatus)}</div>
+        <div class="hah-patient-row-main">
+          <span class="hah-patient-row-name">${c.escapeHtml(row.name)}</span>
+          <span class="hah-patient-row-sub">${c.escapeHtml(status)}</span>
+        </div>
+        ${priorityDot(row.priority)}
       </button>`;
     }).join('');
 
-    return c.stack([
-      c.card('Round', `
-        <div class="hah-round-actions">
-          <button type="button" class="hah-round-btn is-primary" data-patient-action="set-discussed">Discussed</button>
-          <button type="button" class="hah-round-btn is-primary" data-patient-action="set-actioned">Actioned</button>
-          <button type="button" class="hah-round-btn" data-patient-action="set-deferred">Deferred</button>
-          <button type="button" class="hah-round-btn" data-patient-action="next">Next →</button>
+    const sortLabel = sortMode === 'admission' ? 'Admission date' : 'Name (A–Z)';
+    const sortMenuOpen = !!(state.patient && state.patient.sortMenuOpen);
+
+    const listHead = `
+      <div class="hah-list-head">
+        <span class="hah-list-title">Patients</span>
+        <span class="hah-list-count">${sortedRows.length}</span>
+        <div class="hah-list-sort-wrap">
+          <button type="button" class="hah-list-sort-btn${sortMenuOpen ? ' is-open' : ''}"
+            data-patient-action="toggle-sort-menu" title="Sort: ${c.escapeHtml(sortLabel)}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M7 12h10"/><path d="M11 18h2"/>
+            </svg>
+          </button>
+          ${sortMenuOpen ? `
+          <div class="hah-sort-menu">
+            <button type="button" class="${sortMode === 'name' ? 'is-selected' : ''}"
+              data-patient-action="set-list-sort" data-sort="name">
+              <span>Name (A–Z)</span><span class="hah-sort-check">✓</span>
+            </button>
+            <button type="button" class="${sortMode === 'admission' ? 'is-selected' : ''}"
+              data-patient-action="set-list-sort" data-sort="admission">
+              <span>Admission date</span><span class="hah-sort-check">✓</span>
+            </button>
+          </div>` : ''}
         </div>
-        <div class="hah-round-secondary">
-          <button type="button" class="hah-inline-pill" data-patient-action="back-board">← Board</button>
-          <button type="button" class="hah-inline-pill" data-patient-action="add-task">Add task</button>
-        </div>`),
-      c.card('Patients', `<div class="hah-jump-list">${jumpButtons}</div>`)
+      </div>`;
+
+    return c.stack([
+      `<section class="hah-card hah-metrics-card">
+        <div class="hah-metrics-head">
+          <span class="hah-metrics-title">Caseload</span>
+          <span class="hah-metrics-placeholder-note">Live metrics coming soon</span>
+        </div>
+        <div class="hah-metrics-grid">
+          <div class="hah-metric-cell">
+            <span class="hah-metric-label">Total</span>
+            <span class="hah-metric-val">${sortedRows.length}</span>
+          </div>
+          <div class="hah-metric-cell">
+            <span class="hah-metric-label">Discussed</span>
+            <span class="hah-metric-val">${sortedRows.filter((r) => r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned').length}</span>
+          </div>
+          <div class="hah-metric-cell">
+            <span class="hah-metric-label">To go</span>
+            <span class="hah-metric-val">${sortedRows.filter((r) => !(r.boardStatus === 'Discussed' || r.boardStatus === 'Actioned')).length}</span>
+          </div>
+        </div>
+      </section>`,
+      `<section class="hah-card hah-patient-list-card">
+        ${listHead}
+        <div class="hah-patient-list">${jumpRows}</div>
+      </section>`
     ]);
+  }
+
+  function sortPatientRows(rows, mode) {
+    const arr = rows.slice();
+    if (mode === 'admission') {
+      return arr.sort((a, b) => {
+        const da = parseAdmissionDate(a.admissionDate);
+        const db = parseAdmissionDate(b.admissionDate);
+        if (da && db) return da - db;
+        if (da) return -1;
+        if (db) return 1;
+        return 0;
+      });
+    }
+    return arr.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  }
+
+  function parseAdmissionDate(value) {
+    if (!value) return 0;
+    const s = String(value).trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) {
+      const yr = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+      return new Date(yr, +m[2] - 1, +m[1]).getTime();
+    }
+    const fallback = new Date(s).getTime();
+    return isNaN(fallback) ? 0 : fallback;
+  }
+
+  function priorityDot(priority) {
+    const tone = priority === 'Critical' ? '#dc2626'
+              : priority === 'High' ? '#f59e0b'
+              : priority === 'Low' ? '#16a34a'
+              : '#94a3b8';
+    return `<span class="hah-patient-row-dot" style="background:${tone}" title="Priority: ${c.escapeHtml(priority || 'Normal')}"></span>`;
   }
 
   function renderMainPane(state) {
@@ -7041,7 +7407,19 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const action = target.getAttribute('data-patient-action');
     const vm = d.buildPatientWorkspaceModel(state);
 
-    if (action === 'jump')       { const pid = target.getAttribute('data-patient-id'); if (!pid) return false; store.setState({ selectedPatientId: pid }); router.goToPatient(pid); return true; }
+    if (action === 'jump')       { const pid = target.getAttribute('data-patient-id'); if (!pid) return false; store.setState({ selectedPatientId: pid, patient: { sortMenuOpen: false } }); router.goToPatient(pid); return true; }
+    if (action === 'toggle-sort-menu') {
+      const now = !!(state.patient && state.patient.sortMenuOpen);
+      store.setState({ patient: { sortMenuOpen: !now } });
+      return true;
+    }
+    if (action === 'set-list-sort') {
+      const mode = target.getAttribute('data-sort');
+      if (!mode) return false;
+      store.setState({ patient: { listSort: mode, sortMenuOpen: false } });
+      try { localStorage.setItem('hah_list_sort', mode); } catch (_) {}
+      return true;
+    }
     if (action === 'back-board') { router.goToBoard(state.board.savedView === 'all-active' ? null : state.board.savedView); return true; }
     if (action === 'next' && vm) { const n = vm.contextRows[vm.selectedIndex + 1]; if (n) { store.setState({ selectedPatientId: n.id }); router.goToPatient(n.id); } return true; }
     if (action === 'prev' && vm) { const p = vm.contextRows[vm.selectedIndex - 1]; if (p) { store.setState({ selectedPatientId: p.id }); router.goToPatient(p.id); } return true; }
@@ -7213,6 +7591,17 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
   function isObsWarn(label, value)   { const v = parseFloat(String(value)); return (label === 'SpO₂' && v < 96) || (label === 'NEWS2' && v >= 3); }
   function isObsDanger(label, value) { const v = parseFloat(String(value)); return (label === 'SpO₂' && v < 92) || (label === 'NEWS2' && v >= 7); }
+
+  // Close sort menu on any click outside the menu or trigger button
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (event) => {
+      const s = store.getState();
+      if (!(s.patient && s.patient.sortMenuOpen)) return;
+      if (event.target.closest('[data-patient-action="toggle-sort-menu"]')) return;
+      if (event.target.closest('.hah-sort-menu')) return;
+      store.setState({ patient: { sortMenuOpen: false } });
+    }, true);
+  }
 
   window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender };
 })();
@@ -7980,11 +8369,42 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         </header>
 
         <nav class="hah-nav" id="hahNav">
-          <button class="hah-nav-btn" data-nav="board" aria-label="Board" title="Board"><span class="hah-nav-icon">▦</span><span class="hah-nav-label">Board</span></button>
-          <button class="hah-nav-btn" data-nav="patient" aria-label="Patient" title="Patient"><span class="hah-nav-icon">◫</span><span class="hah-nav-label">Patient</span></button>
-          <button class="hah-nav-btn" data-nav="tasks" aria-label="Tasks" title="Tasks"><span class="hah-nav-icon">✓</span><span class="hah-nav-label">Tasks</span></button>
-          <button class="hah-nav-btn" data-nav="insights" aria-label="Insights" title="Insights"><span class="hah-nav-icon">◌</span><span class="hah-nav-label">Insights</span></button>
-          <button class="hah-nav-btn" data-nav="settings" aria-label="Settings" title="Settings"><span class="hah-nav-icon">⚙</span><span class="hah-nav-label">Settings</span></button>
+          <button class="hah-nav-btn" data-nav="board" aria-label="Board" title="Board">
+            <svg class="hah-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </button>
+          <button class="hah-nav-btn" data-nav="patient" aria-label="Patient" title="Patient">
+            <svg class="hah-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="3.5"/>
+              <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
+            </svg>
+          </button>
+          <button class="hah-nav-btn" data-nav="tasks" aria-label="Tasks" title="Tasks">
+            <svg class="hah-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6l2 2 4-4"/>
+              <path d="M12 6h8"/>
+              <path d="M4 14l2 2 4-4"/>
+              <path d="M12 14h8"/>
+            </svg>
+          </button>
+          <button class="hah-nav-btn" data-nav="insights" aria-label="Insights" title="Insights">
+            <svg class="hah-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20V10"/>
+              <path d="M10 20V4"/>
+              <path d="M16 20v-8"/>
+              <path d="M22 20H2"/>
+            </svg>
+          </button>
+          <button class="hah-nav-btn" data-nav="settings" aria-label="Settings" title="Settings">
+            <svg class="hah-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="2.6"/>
+              <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.76-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 0 1-4 0v-.09A1.6 1.6 0 0 0 9.2 19.4a1.6 1.6 0 0 0-1.76.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 0 1 0-4h.09A1.6 1.6 0 0 0 4.6 9.2a1.6 1.6 0 0 0-.32-1.76l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.76.32h.01A1.6 1.6 0 0 0 9.8 3.5V3a2 2 0 0 1 4 0v.09a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.76-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.76v.01c.26.6.84 1 1.47 1H21a2 2 0 0 1 0 4h-.09a1.6 1.6 0 0 0-1.51.97z"/>
+            </svg>
+          </button>
         </nav>
 
         <aside class="hah-left-pane" id="hahLeftPane"></aside>
@@ -8502,7 +8922,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T15:48:36.758989',
+  builtAt: '2026-04-18T16:26:26.780695',
   entry: 'desktop.html'
 };
 </script>
