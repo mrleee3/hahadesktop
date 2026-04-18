@@ -1749,6 +1749,16 @@ html, body {
   border-color: rgba(47,111,237,0.2);
 }
 
+.hah-note-preview-text {
+  margin: 0;
+  padding: 10px 12px 12px;
+  font-size: 11.5px;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  line-height: 1.65;
+  color: var(--desk-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 .hah-note-preview-footer {
   padding: 0;
@@ -1838,7 +1848,7 @@ html, body {
   flex: 1;
   height: 30px;
   padding: 0 9px;
-  border: 1.5px solid #aaa;
+  border: 1px solid var(--desk-border);
   border-radius: 20px;
   font-size: 11.5px;
   font-family: inherit;
@@ -1851,7 +1861,11 @@ html, body {
 
 .hah-date-input:focus {
   outline: none;
-  border-color: rgba(47,111,237,0.6);
+}
+
+.hah-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
 }
 
 .hah-date-input.is-locked {
@@ -1907,207 +1921,198 @@ html, body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ─── Discharge button ───────────────────────────────────────────────── */
 
-/* ─── Composer header / carry-forward ───────────────────────────────── */
-
-.hah-composer-header-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 2px 0 4px;
-  margin-bottom: 14px;
-}
-
-.hah-composer-kicker {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--desk-text-muted);
-}
-
-.hah-composer-mainline {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  color: var(--desk-text);
-}
-
-.hah-composer-subline {
+.hah-discharge-btn {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
   font-size: 13px;
-  line-height: 1.45;
-  color: var(--desk-text-muted);
-}
-
-.hah-composer-status-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.hah-composer-status-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 11px;
   font-weight: 600;
-  border: 1px solid var(--desk-border);
-  background: rgba(255,255,255,0.82);
-  color: var(--desk-text-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
-.hah-composer-status-chip.is-draft {
-  background: rgba(47,111,237,0.08);
-  border-color: rgba(47,111,237,0.18);
-  color: rgba(47,111,237,0.9);
+.hah-discharge-btn:hover {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.5);
 }
 
-.hah-composer-status-chip.is-editing {
-  background: rgba(180,83,9,0.09);
-  border-color: rgba(180,83,9,0.22);
-  color: #a04e06;
+.hah-discharge-btn:active {
+  background: rgba(220, 38, 38, 0.22);
+  transform: scale(0.997);
 }
 
-.hah-composer-status-chip.is-complete {
-  background: rgba(29,158,117,0.08);
-  border-color: rgba(29,158,117,0.22);
-  color: #0d7056;
-}
+/* ─── Discharged list row (settings) ─────────────────────────────────── */
 
-.hah-composer-status-chip.is-muted {
-  background: rgba(0,0,0,0.03);
-}
-
-.hah-carry-card {
+.hah-discharged-row {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 13px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(47,111,237,0.16);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(47,111,237,0.05), rgba(47,111,237,0.025));
-}
-
-.hah-carry-head {
-  display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-}
-
-.hah-carry-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--desk-text);
-}
-
-.hah-carry-sub {
-  margin-top: 3px;
-  font-size: 11px;
-  color: var(--desk-text-muted);
-}
-
-.hah-carry-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(47,111,237,0.18);
-  background: rgba(255,255,255,0.72);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: rgba(47,111,237,0.88);
-  white-space: nowrap;
-}
-
-.hah-carry-chip.is-current {
-  border-color: rgba(180,83,9,0.24);
-  color: #a04e06;
-}
-
-.hah-carry-body {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--desk-text-muted);
-}
-
-.hah-carry-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.hah-note-preview-sub {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--desk-text-muted);
-}
-
-.hah-note-preview-text {
-  margin: 0;
-  padding: 12px 12px 14px;
-  font-size: 13px;
-  font-family: inherit;
-  line-height: 1.55;
-  color: var(--desk-text);
-}
-
-.hah-note-doc {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-.hah-note-section {
+/* ─── MDM widget collapsible state ───────────────────────────────────── */
+
+.hah-mdm-widget .hah-mdm-head {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 9px 12px;
+  text-align: left;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  transition: background 120ms ease;
+  font-family: inherit;
 }
 
-.hah-note-section-title {
+.hah-mdm-widget .hah-mdm-head:hover {
+  background: rgba(47,111,237,0.04);
+}
+
+.hah-mdm-widget.is-collapsed .hah-mdm-head {
+  border-bottom: none;
+}
+
+.hah-mdm-chevron {
+  margin-left: 4px;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--desk-text-muted);
+  transition: transform 180ms ease;
+  display: inline-block;
+  transform: rotate(0deg);
 }
 
-.hah-note-section-body {
+.hah-mdm-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.hah-mdm-chevron-sm {
+  display: inline-block;
+  font-size: 9px;
+  margin-right: 4px;
+  transition: transform 180ms ease;
+}
+
+.hah-mdm-chevron-sm.is-open {
+  transform: rotate(90deg);
+}
+
+.hah-mdm-earlier {
+  border-top: 1px dashed var(--desk-border);
+  background: rgba(0,0,0,0.012);
+}
+
+.hah-mdm-earlier-toggle {
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  text-align: left;
+  letter-spacing: 0.02em;
+  transition: color 120ms ease;
+}
+
+.hah-mdm-earlier-toggle:hover {
+  color: rgba(47,111,237,0.9);
+}
+
+.hah-mdm-earlier-list {
+  padding: 0 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.hah-note-line,
-.hah-note-paragraph {
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--desk-text);
-}
-
-.hah-note-row {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
   gap: 10px;
-  align-items: start;
+  border-top: 1px solid var(--desk-border);
+  padding-top: 10px;
 }
 
-.hah-note-row-label {
-  font-size: 11px;
-  font-weight: 600;
+.hah-mdm-entry.is-earlier {
+  opacity: 0.82;
+}
+
+.hah-mdm-entry.is-earlier .hah-mdm-field-body {
   color: var(--desk-text-muted);
 }
 
-.hah-note-row-value {
-  font-size: 13px;
-  line-height: 1.55;
+/* ─── Flatpickr theme overrides ──────────────────────────────────────── */
+
+.flatpickr-input.hah-date-input {
+  display: none;
+}
+
+input.hah-date-input.flatpickr-alt-input {
+  display: block;
+  flex: 1;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--desk-border);
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-family: inherit;
   color: var(--desk-text);
+  background: #fff;
+  cursor: pointer;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+input.hah-date-input.flatpickr-alt-input:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+}
+
+input.hah-date-input.flatpickr-alt-input::placeholder {
+  color: var(--desk-text-muted);
+}
+
+.flatpickr-calendar {
+  border: 1px solid rgba(25,45,72,0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 40px rgba(17,37,63,0.14) !important;
+  font-family: inherit !important;
+}
+
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after,
+.flatpickr-calendar.arrowBottom::before,
+.flatpickr-calendar.arrowBottom::after {
+  display: none !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month {
+  color: var(--desk-text) !important;
+}
+
+.flatpickr-weekday {
+  color: var(--desk-text-muted) !important;
+  font-weight: 500 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: rgba(47,111,237,0.9) !important;
+  border-color: rgba(47,111,237,0.9) !important;
+}
+
+.flatpickr-day.today {
+  border-color: rgba(47,111,237,0.5) !important;
+}
+
+.flatpickr-day:hover {
+  background: rgba(47,111,237,0.1) !important;
 }
 
 </style>
@@ -2800,6 +2805,8 @@ html, body {
 }
 
 </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 </head>
 <body class="hah-desktop-body">
   <div id="desktop-root"></div>
@@ -3125,11 +3132,12 @@ html, body {
   const MAX_ENCOUNTER_ROWS = 500;
 
   const DEFAULT_STATE = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     patientStates: {},
     taskPatches: {},
     customTasks: [],
     encounters: [],
+    dischargedPatients: [],
     auditTrail: [],
     roundSummaries: [],
     updatedAt: '',
@@ -3178,11 +3186,12 @@ html, body {
 
   function normaliseState(parsed) {
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       patientStates: parsed && parsed.patientStates && typeof parsed.patientStates === 'object' ? parsed.patientStates : {},
       taskPatches: parsed && parsed.taskPatches && typeof parsed.taskPatches === 'object' ? parsed.taskPatches : {},
       customTasks: Array.isArray(parsed && parsed.customTasks) ? parsed.customTasks : [],
       encounters: Array.isArray(parsed && parsed.encounters) ? parsed.encounters.slice(0, MAX_ENCOUNTER_ROWS) : [],
+      dischargedPatients: Array.isArray(parsed && parsed.dischargedPatients) ? parsed.dischargedPatients.slice(0, 200) : [],
       auditTrail: Array.isArray(parsed && parsed.auditTrail) ? parsed.auditTrail.slice(0, MAX_AUDIT_ROWS) : [],
       roundSummaries: Array.isArray(parsed && parsed.roundSummaries) ? parsed.roundSummaries.slice(0, MAX_SUMMARY_ROWS) : [],
       updatedAt: parsed && parsed.updatedAt ? parsed.updatedAt : '',
@@ -3816,6 +3825,65 @@ html, body {
     return clone(state.encounters[idx]);
   }
 
+  function dischargePatient(patientId, snapshot) {
+    const pid = String(patientId || '');
+    if (!pid) return null;
+    const row = {
+      id: buildMutationId(),
+      patientId: pid,
+      dischargedAt: nowIso(),
+      dischargedBy: getActorName(),
+      snapshot: snapshot || null
+    };
+    state.dischargedPatients.unshift(row);
+    state.dischargedPatients = state.dischargedPatients.slice(0, 200);
+    appendAudit({
+      type: 'patient-discharged',
+      entityType: 'patient',
+      entityId: pid,
+      summary: `Discharged patient ${(snapshot && snapshot.name) || pid}`
+    });
+    saveState('patient-discharged', { patientId: pid });
+    return clone(row);
+  }
+
+  function restorePatient(dischargeId) {
+    const idx = state.dischargedPatients.findIndex((d) => d.id === String(dischargeId));
+    if (idx < 0) return false;
+    const row = state.dischargedPatients.splice(idx, 1)[0];
+    appendAudit({
+      type: 'patient-restored',
+      entityType: 'patient',
+      entityId: row.patientId,
+      summary: `Restored patient ${(row.snapshot && row.snapshot.name) || row.patientId}`
+    });
+    saveState('patient-restored', { patientId: row.patientId });
+    return true;
+  }
+
+  function clearDischargedPatients() {
+    if (!state.dischargedPatients.length) return false;
+    const count = state.dischargedPatients.length;
+    state.dischargedPatients = [];
+    appendAudit({
+      type: 'discharged-cleared',
+      entityType: 'discharge-list',
+      entityId: 'all',
+      summary: `Cleared ${count} discharged patient record${count === 1 ? '' : 's'}`
+    });
+    saveState('discharged-cleared', { count });
+    return true;
+  }
+
+  function getDischargedPatients() {
+    return clone(state.dischargedPatients);
+  }
+
+  function isPatientDischarged(patientId) {
+    const pid = String(patientId || '');
+    return state.dischargedPatients.some((d) => d.patientId === pid);
+  }
+
   function buildEncounterId(patientId) {
     return `enc:${String(patientId)}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 6)}`;
   }
@@ -3924,6 +3992,11 @@ html, body {
     deleteEncounter,
     getEncountersForPatient,
     getLastBoardRound,
+    dischargePatient,
+    restorePatient,
+    clearDischargedPatients,
+    getDischargedPatients,
+    isPatientDischarged,
     clearAllOpsState
   };
 })();
@@ -4414,7 +4487,12 @@ html, body {
 
   function buildBoardViewModel(state) {
     const sourceBundle = getPatientSourceBundle();
-    const allRows = sourceBundle.rows.map(buildPatientSummary);
+    const ops = window.HAHBoard && window.HAHBoard.ops;
+    const isDischarged = ops && typeof ops.isPatientDischarged === 'function'
+      ? (id) => ops.isPatientDischarged(id)
+      : () => false;
+    const activeRows = sourceBundle.rows.filter((row) => !isDischarged(row.id));
+    const allRows = activeRows.map(buildPatientSummary);
     const filtered = filterPatients(allRows, state.board.savedView);
     const sorted = sortPatients(filtered, state.board.sort);
     const selectedPatient = pickSelectedPatient(sorted, state, sourceBundle.currentPatientId);
@@ -5727,8 +5805,8 @@ html, body {
       <div class="hah-pt-centre-split">
         <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds)}</div>
         <div class="hah-pt-ref-col">
-          ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms)}
-          ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms)}
+          ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms, state)}
+          ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
           ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
           ${renderMedsWidget(vm)}
           ${renderNarrativeWidget(vm)}
@@ -5739,8 +5817,6 @@ html, body {
 
   function renderPatientHeader(vm, state) {
     const patient = vm.patient;
-    const bsOpts  = BOARD_STATUS_CYCLE.map((s) => `<option${patient.boardStatus === s ? ' selected' : ''}>${c.escapeHtml(s)}</option>`).join('');
-    const dcOpts  = DISCHARGE_CYCLE.map((s) => `<option${patient.dischargeReadiness === s ? ' selected' : ''}>${c.escapeHtml(s)}</option>`).join('');
     const meta    = [patient.age || '', patient.sex || '', patient.location || '', patient.pathway || '',
       vm.admissionDate ? 'Adm ' + vm.admissionDate : ''].filter(Boolean).join(' · ');
     const escalation = patient.escalationSummary && patient.escalationSummary !== 'None' ? c.badge(patient.escalationSummary, 'warn') : '';
@@ -5749,19 +5825,11 @@ html, body {
         <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
         ${priorityBadge(patient.priority)}
         ${c.badge(patient.currentStatus, 'neutral')}
+        ${c.badge(patient.boardStatus || 'Not discussed', 'neutral')}
+        ${c.badge('D/C: ' + (patient.dischargeReadiness || 'Not ready'), 'neutral')}
         ${patient.dnar ? c.badge('DNAR', 'danger') : ''}
         ${escalation}
         <span class="hah-pt-meta">${c.escapeHtml(meta)}</span>
-      </div>
-      <div class="hah-pt-header-controls">
-        <div class="hah-pt-select-wrap">
-          <label class="hah-pt-select-label">Board status</label>
-          <select class="hah-pt-select" data-patient-action="set-board-status">${bsOpts}</select>
-        </div>
-        <div class="hah-pt-select-wrap">
-          <label class="hah-pt-select-label">Discharge</label>
-          <select class="hah-pt-select" data-patient-action="set-discharge">${dcOpts}</select>
-        </div>
       </div>
     </div>`;
   }
@@ -5809,22 +5877,50 @@ html, body {
     </div>`;
   }
 
-  function renderMdmWidget(type, label, colour, entries) {
-    const latest    = entries[0];
-    const countText = entries.length ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') : 'No entries';
-    const bodyHtml  = latest ? renderMdmEntry(latest) : `<div class="hah-mdm-empty">No ${c.escapeHtml(label)} input for this admission.</div>`;
-    return `<div class="hah-mdm-widget">
-      <div class="hah-mdm-head"><div class="hah-mdm-dot" style="background:${colour}"></div>
+  function renderMdmWidget(type, label, colour, entries, state) {
+    const expandedMap = (state && state.patient && state.patient.mdmExpanded) || {};
+    const isExpanded  = type in expandedMap ? expandedMap[type] : (entries.length > 0);
+    const hasEntries  = entries.length > 0;
+    const countText   = entries.length ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') : 'None';
+    const showEarlier = !!(state && state.patient && state.patient.mdmEarlier && state.patient.mdmEarlier[type]);
+    const earlierEntries = entries.slice(1);
+
+    const headToggle = `
+      <button type="button" class="hah-mdm-head" data-patient-action="toggle-mdm-expand" data-mdm-type="${c.escapeHtml(type)}">
+        <div class="hah-mdm-dot" style="background:${colour}"></div>
         <span class="hah-mdm-label">${c.escapeHtml(label)}</span>
         <span class="hah-mdm-count">${c.escapeHtml(countText)}</span>
-      </div>
+        <span class="hah-mdm-chevron${isExpanded ? ' is-open' : ''}">▸</span>
+      </button>`;
+
+    if (!isExpanded) {
+      return `<div class="hah-mdm-widget is-collapsed">${headToggle}</div>`;
+    }
+
+    const bodyHtml = hasEntries
+      ? renderMdmEntry(entries[0])
+      : `<div class="hah-mdm-empty">No ${c.escapeHtml(label)} input for this admission.</div>`;
+
+    const earlierHtml = earlierEntries.length ? `
+      <div class="hah-mdm-earlier">
+        <button type="button" class="hah-mdm-earlier-toggle"
+          data-patient-action="toggle-mdm-earlier" data-mdm-type="${c.escapeHtml(type)}">
+          <span class="hah-mdm-chevron-sm${showEarlier ? ' is-open' : ''}">▸</span>
+          ${showEarlier ? 'Hide' : 'Show'} earlier entries (${earlierEntries.length})
+        </button>
+        ${showEarlier ? `<div class="hah-mdm-earlier-list">${earlierEntries.map((e) => renderMdmEntry(e, true)).join('')}</div>` : ''}
+      </div>` : '';
+
+    return `<div class="hah-mdm-widget">
+      ${headToggle}
       <div class="hah-mdm-body">${bodyHtml}</div>
+      ${earlierHtml}
       <button type="button" class="hah-mdm-add" data-patient-action="open-composer"
         data-encounter-type="${c.escapeHtml(type)}">+ Add ${c.escapeHtml(label)} entry</button>
     </div>`;
   }
 
-  function renderMdmEntry(enc) {
+  function renderMdmEntry(enc, isEarlier) {
     const f = enc.fields || {};
     const fieldMap = enc.type === 'micro_mdm'
       ? [['Question', f.question], ['Recommendation', f.recommendation], ['Follow-up', f.followUp]]
@@ -5832,7 +5928,7 @@ html, body {
     const fieldsHtml = fieldMap.filter(([, v]) => v).map(([label, value]) =>
       `<div class="hah-mdm-field"><div class="hah-mdm-field-label">${c.escapeHtml(label)}</div><div class="hah-mdm-field-body">${c.escapeHtml(value)}</div></div>`
     ).join('');
-    return `<div class="hah-mdm-entry">
+    return `<div class="hah-mdm-entry${isEarlier ? ' is-earlier' : ''}">
       <div class="hah-mdm-entry-meta">${formatEntryDate(enc.timestamp)} · ${c.escapeHtml(enc.author || '')}</div>
       ${fieldsHtml || '<span class="hah-mdm-empty">No content recorded.</span>'}
     </div>`;
@@ -5873,32 +5969,20 @@ html, body {
 
   function renderRightPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
-    if (!vm) return c.stack([c.card('Clinical entry composer', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
-    const composerType   = (state.patient && state.patient.composerType) || 'board_round';
-    const isLocked       = !!(state.patient && state.patient.composerLocked);
-    const composerEditId = (state.patient && state.patient.composerEditId) || null;
-    const latestTyped    = ops ? (ops.getEncountersForPatient(vm.patient.id, composerType)[0] || null) : null;
-    const lastRound      = ops ? ops.getLastBoardRound(vm.patient.id) : null;
-    const typeTabs       = ENCOUNTER_TYPES.map((t) => {
+    if (!vm) return c.stack([c.card('New entry', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
+    const composerType = (state.patient && state.patient.composerType) || 'board_round';
+    const isLocked     = !!(state.patient && state.patient.composerLocked);
+    const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
+    const typeTabs     = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
         data-composer-type="${c.escapeHtml(t.key)}">${c.escapeHtml(t.label)}</button>`;
     }).join('');
-    const composerMeta = buildComposerMeta(composerType, isLocked, composerEditId, latestTyped, lastRound);
-    return c.stack([c.card('Clinical entry composer', `
-      <div class="hah-composer-header-block">
-        <div class="hah-composer-kicker">${c.escapeHtml(composerMeta.kicker)}</div>
-        <div class="hah-composer-mainline">${c.escapeHtml(composerMeta.title)}</div>
-        <div class="hah-composer-subline">${c.escapeHtml(composerMeta.subtitle)}</div>
-        <div class="hah-composer-status-row">
-          <span class="hah-composer-status-chip ${composerMeta.stateClass}">${c.escapeHtml(composerMeta.stateLabel)}</span>
-          ${composerMeta.pullText ? `<span class="hah-composer-status-chip is-muted">${c.escapeHtml(composerMeta.pullText)}</span>` : ''}
-        </div>
-      </div>
+    return c.stack([
+      c.card('New entry', `
       <div class="hah-composer-tabs">${typeTabs}</div>
-      ${renderComposerCarryBlock(composerType, latestTyped, composerEditId)}
       <div class="hah-composer-form" id="hahComposerForm">
-        ${renderComposerForm(composerType, latestTyped, vm)}
+        ${renderComposerForm(composerType, lastRound, vm)}
       </div>
       <div class="hah-composer-footer">
         <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
@@ -5911,93 +5995,18 @@ html, body {
       <div class="hah-composer-sep"></div>
       <div class="hah-note-preview" id="hahNotePreview" style="display:none">
         <div class="hah-note-preview-head">
-          <div>
-            <span class="hah-note-preview-label">Copy-ready clinical text</span>
-            <div class="hah-note-preview-sub">Built from the current composer and patient context.</div>
-          </div>
+          <span class="hah-note-preview-label">Clinical note preview</span>
           <button type="button" class="hah-note-copy-btn" id="hahNoteCopyBtn">Copy</button>
         </div>
-        <div class="hah-note-preview-text" id="hahNotePreviewText"></div>
+        <pre class="hah-note-preview-text" id="hahNotePreviewText"></pre>
         <div class="hah-note-preview-footer">
           <button type="button" class="hah-emis-btn${isLocked ? '' : ' is-disabled'}"
             id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
         </div>
       </div>` : ''}
-    `)]);
-  }
-
-  function buildComposerMeta(composerType, isLocked, composerEditId, latestTyped, lastRound) {
-    const typeLabel = getEncounterTypeLabel(composerType);
-    const latestRef = composerType === 'board_round' ? lastRound : latestTyped;
-    const latestSummary = latestRef
-      ? `Latest ${typeLabel.toLowerCase()} ${formatEntryDate(latestRef.timestamp)}${latestRef.author ? ' · ' + latestRef.author : ''}`
-      : `No previous ${typeLabel.toLowerCase()} entry for this admission`;
-
-    if (isLocked && composerEditId) {
-      return {
-        kicker: 'Completed entry',
-        title: `${typeLabel} entry completed`,
-        subtitle: 'Select Edit to amend this entry or New note to start a fresh one.',
-        stateLabel: 'Completed',
-        stateClass: 'is-complete',
-        pullText: latestSummary
-      };
-    }
-
-    if (composerEditId) {
-      return {
-        kicker: 'Editing current entry',
-        title: `Editing ${typeLabel.toLowerCase()} entry`,
-        subtitle: 'Changes here will update the selected saved entry.',
-        stateLabel: 'Editing',
-        stateClass: 'is-editing',
-        pullText: latestSummary
-      };
-    }
-
-    return {
-      kicker: "Today's working note",
-      title: composerType === 'board_round' ? "Today's board round" : `New ${typeLabel.toLowerCase()} entry`,
-      subtitle: composerType === 'board_round'
-        ? 'Continue the running clinical story, then formalise it with Done.'
-        : 'Capture the key review, recommendation, and follow-up clearly.',
-      stateLabel: 'Draft autosaves',
-      stateClass: 'is-draft',
-      pullText: latestSummary
-    };
-  }
-
-  function renderComposerCarryBlock(composerType, latestTyped, composerEditId) {
-    if (!latestTyped) return '';
-    const typeLabel = getEncounterTypeLabel(composerType);
-    const fields = latestTyped.fields || {};
-    const parts = [];
-    if (composerType === 'board_round') {
-      if (String(fields.issues || '').trim()) parts.push('issues');
-      if (String(fields.plan || '').trim()) parts.push('plan');
-    }
-    const carrySummary = parts.length
-      ? `Pulled forward ${parts.join(' + ')} from the latest ${typeLabel.toLowerCase()}.`
-      : `Latest ${typeLabel.toLowerCase()} available for reference.`;
-    return `<div class="hah-carry-card">
-      <div class="hah-carry-head">
-        <div>
-          <div class="hah-carry-title">Carry-forward from previous ${c.escapeHtml(typeLabel.toLowerCase())}</div>
-          <div class="hah-carry-sub">${c.escapeHtml(formatEntryDate(latestTyped.timestamp))}${latestTyped.author ? ` · ${c.escapeHtml(latestTyped.author)}` : ''}</div>
-        </div>
-        ${composerEditId === latestTyped.id ? '<span class="hah-carry-chip is-current">Updating this entry</span>' : '<span class="hah-carry-chip">Available to continue</span>'}
-      </div>
-      <div class="hah-carry-body">${c.escapeHtml(carrySummary)}</div>
-      <div class="hah-carry-actions">
-        <button type="button" class="hah-inline-pill" data-patient-action="composer-continue-last">Continue from last entry</button>
-        <button type="button" class="hah-inline-pill" data-patient-action="composer-edit-latest">Update latest entry</button>
-      </div>
-    </div>`;
-  }
-
-  function getEncounterTypeLabel(type) {
-    const match = ENCOUNTER_TYPES.find((t) => t.key === type);
-    return match ? match.label : 'Entry';
+    `),
+      `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">Discharge</button>`
+    ]);
   }
 
   function renderComposerForm(type, lastRound, vm) {
@@ -6014,7 +6023,7 @@ html, body {
 
       return `
         <div class="hah-cform-field">
-          <label class="hah-cform-label">Issues ${pulledIssues ? '<span class="hah-pull-tag">Pulled forward</span>' : ''}</label>
+          <label class="hah-cform-label">Issues</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledIssues ? ' is-pulled' : ''}" id="cform-issues"
             placeholder="1. Issue one&#10;2. Issue two">${c.escapeHtml(pulledIssues)}</textarea>
         </div>
@@ -6029,7 +6038,7 @@ html, body {
             placeholder="e.g. CRP 45  WBC 8.2  Cr 112  Na 138"></textarea>
         </div>
         <div class="hah-cform-field">
-          <label class="hah-cform-label">Plan ${pulledPlan ? '<span class="hah-pull-tag">Pulled forward</span>' : ''}</label>
+          <label class="hah-cform-label">Plan</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3"
             placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
         </div>
@@ -6168,7 +6177,25 @@ html, body {
 
     const dischargeDateInput = pane.querySelector('#cform-discharge-date');
     const readyChip          = pane.querySelector('#cform-ready-chip');
-    if (dischargeDateInput) {
+
+    let fp = null;
+    if (dischargeDateInput && typeof window.flatpickr === 'function') {
+      fp = window.flatpickr(dischargeDateInput, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'D j M Y',
+        minDate: 'today',
+        disableMobile: true,
+        onChange: function () {
+          if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+          refreshPreview(vm, type);
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+        }
+      });
+    }
+
+    if (dischargeDateInput && !fp) {
       dischargeDateInput.addEventListener('change', () => {
         if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
         refreshPreview(vm, type);
@@ -6179,13 +6206,17 @@ html, body {
     pane.querySelectorAll('[data-discharge-quick]').forEach((chip) => {
       chip.addEventListener('click', () => {
         const quick = chip.getAttribute('data-discharge-quick');
-        if (quick === 'today')    { if (dischargeDateInput) dischargeDateInput.value = todayIso();    if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
-        if (quick === 'tomorrow') { if (dischargeDateInput) dischargeDateInput.value = tomorrowIso(); if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
+        const setDate = (iso) => {
+          if (fp) fp.setDate(iso, false);
+          else if (dischargeDateInput) dischargeDateInput.value = iso;
+        };
+        if (quick === 'today')    { setDate(todayIso());    if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
+        if (quick === 'tomorrow') { setDate(tomorrowIso()); if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
         if (quick === 'ready') {
           const nowActive = chip.dataset.active === 'true';
           chip.dataset.active = nowActive ? 'false' : 'true';
           chip.classList.toggle('is-active', !nowActive);
-          if (!nowActive && dischargeDateInput) dischargeDateInput.value = '';
+          if (!nowActive) setDate('');
         }
         refreshPreview(vm, type);
         clearTimeout(saveTimer);
@@ -6201,8 +6232,7 @@ html, body {
     const copyBtn = pane.querySelector('#hahNoteCopyBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const preview = pane.querySelector('#hahNotePreviewText');
-        const text = preview ? (preview.dataset.plainText || preview.textContent || '') : '';
+        const text = (pane.querySelector('#hahNotePreviewText') || {}).textContent || '';
         if (!text) return;
         navigator.clipboard && navigator.clipboard.writeText(text).then(() => {
           copyBtn.textContent = 'Copied';
@@ -6249,44 +6279,9 @@ html, body {
     if (!previewEl) return;
     const fields = collectComposerFields(type);
     const text   = buildNotePreviewText(vm, type, fields);
-    previewEl.innerHTML = buildNotePreviewHtml(vm, type, fields);
-    previewEl.dataset.plainText = text;
+    previewEl.textContent = text;
     const wrap = document.getElementById('hahNotePreview');
     if (wrap) wrap.style.display = text ? '' : 'none';
-  }
-
-  function buildNotePreviewHtml(vm, type, fields) {
-    if (type !== 'board_round') return '';
-    const sections = [];
-    const issueText = (fields.issues || '').trim();
-    if (issueText) {
-      const issueLines = issueText.split('\n').map((l) => l.trim()).filter(Boolean);
-      sections.push(renderPreviewSection('Issues', issueLines.map((line) => `<div class="hah-note-line">${c.escapeHtml(line)}</div>`).join('')));
-    }
-    if ((fields.progress || '').trim()) {
-      sections.push(renderPreviewSection('Progress', `<div class="hah-note-paragraph">${c.escapeHtml(fields.progress.trim())}</div>`));
-    }
-    const newBloods  = (fields.bloods || '').trim();
-    const prevBloods = vm.patient.bloodTrendSummary || '';
-    if (newBloods || prevBloods) {
-      const bloodRows = [];
-      if (newBloods) bloodRows.push(`<div class="hah-note-row"><span class="hah-note-row-label">Today</span><span class="hah-note-row-value">${c.escapeHtml(newBloods)}</span></div>`);
-      if (prevBloods) bloodRows.push(`<div class="hah-note-row"><span class="hah-note-row-label">Trend</span><span class="hah-note-row-value">${c.escapeHtml(prevBloods)}</span></div>`);
-      sections.push(renderPreviewSection('Bloods / Ix', bloodRows.join('')));
-    }
-    if ((fields.plan || '').trim()) {
-      sections.push(renderPreviewSection('Plan', `<div class="hah-note-paragraph">${c.escapeHtml(fields.plan.trim())}</div>`));
-    }
-    const edd = formatEDD(fields.dischargeDate, fields.dischargeReady);
-    if (edd) {
-      sections.push(renderPreviewSection('Discharge', `<div class="hah-note-row"><span class="hah-note-row-label">EDD</span><span class="hah-note-row-value">${c.escapeHtml(edd)}</span></div>`));
-    }
-    if (!sections.length) return '';
-    return `<div class="hah-note-doc">${sections.join('')}</div>`;
-  }
-
-  function renderPreviewSection(title, bodyHtml) {
-    return `<section class="hah-note-section"><div class="hah-note-section-title">${c.escapeHtml(title)}</div><div class="hah-note-section-body">${bodyHtml}</div></section>`;
   }
 
   function resetComposerDOM() {
@@ -6351,11 +6346,11 @@ html, body {
     }
     if (action === 'set-composer-type') {
       const ct = target.getAttribute('data-composer-type'); if (!ct) return false;
-      store.setState({ patient: { composerType: ct } }); return true;
+      store.setState({ patient: { composerType: ct, composerLocked: false, composerEditId: null } }); return true;
     }
     if (action === 'open-composer') {
       const ct = target.getAttribute('data-encounter-type'); if (!ct) return false;
-      store.setState({ patient: { composerType: ct } }); return true;
+      store.setState({ patient: { composerType: ct, composerLocked: false, composerEditId: null } }); return true;
     }
 
     if (action === 'composer-done' && vm && ops) {
@@ -6409,24 +6404,6 @@ html, body {
       return true;
     }
 
-    if (action === 'composer-continue-last' && vm) {
-      const composerType = (state.patient && state.patient.composerType) || 'board_round';
-      clearDraft(vm.patient.id, composerType);
-      resetComposerDOM();
-      refreshPreview(vm, composerType);
-      store.setState({ patient: { composerLocked: false, composerEditId: null } });
-      return true;
-    }
-
-    if (action === 'composer-edit-latest' && vm && ops) {
-      const composerType = (state.patient && state.patient.composerType) || 'board_round';
-      const latest = ops.getEncountersForPatient(vm.patient.id, composerType)[0];
-      if (!latest) return true;
-      saveDraft(vm.patient.id, composerType, latest.fields || {});
-      store.setState({ patient: { composerLocked: false, composerEditId: latest.id, composerType } });
-      return true;
-    }
-
     if (action === 'composer-clear' && vm) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
       clearDraft(vm.patient.id, composerType);
@@ -6436,10 +6413,41 @@ html, body {
       return true;
     }
 
+    if (action === 'toggle-mdm-expand') {
+      const mdmType = target.getAttribute('data-mdm-type');
+      if (!mdmType) return false;
+      const current = (state.patient && state.patient.mdmExpanded) || {};
+      const wasOpen = mdmType in current ? current[mdmType] : true;
+      store.setState({ patient: { mdmExpanded: { ...current, [mdmType]: !wasOpen } } });
+      return true;
+    }
+
+    if (action === 'toggle-mdm-earlier') {
+      const mdmType = target.getAttribute('data-mdm-type');
+      if (!mdmType) return false;
+      const current = (state.patient && state.patient.mdmEarlier) || {};
+      store.setState({ patient: { mdmEarlier: { ...current, [mdmType]: !current[mdmType] } } });
+      return true;
+    }
+
     if (action === 'delete-encounter' && ops) {
       const encId = target.getAttribute('data-encounter-id');
       if (!encId) return false;
       if (window.confirm('Delete this entry?')) ops.deleteEncounter(encId);
+      return true;
+    }
+
+    if (action === 'discharge-patient' && vm && ops) {
+      const patient = vm.patient;
+      const msg = 'Discharge ' + patient.name + ' from the service?\n\nThe patient will be removed from the active board. You can restore them from Settings.';
+      if (!window.confirm(msg)) return true;
+      ops.dischargePatient(patient.id, {
+        name: patient.name,
+        pathway: patient.pathway,
+        age: patient.age,
+        location: patient.location
+      });
+      router.goToBoard(state.board.savedView === 'all-active' ? null : state.board.savedView);
       return true;
     }
 
@@ -7307,6 +7315,17 @@ html, body {
       if (action === 'settings-clear' && window.HAHBoard.ops) {
         window.HAHBoard.ops.clearAllOpsState();
       }
+      if (action === 'settings-clear-discharged' && window.HAHBoard.ops) {
+        const list = window.HAHBoard.ops.getDischargedPatients() || [];
+        if (!list.length) return;
+        if (window.confirm('Clear all ' + list.length + ' discharged patient record(s)? This cannot be undone.')) {
+          window.HAHBoard.ops.clearDischargedPatients();
+        }
+      }
+      if (action === 'settings-restore-patient' && window.HAHBoard.ops) {
+        const id = actionTarget.getAttribute('data-discharge-id');
+        if (id) window.HAHBoard.ops.restorePatient(id);
+      }
     });
 
     rootEl.addEventListener('change', function (event) {
@@ -7623,6 +7642,32 @@ html, body {
 
         <section class="hah-card">
           <div class="hah-card-inner">
+            <div class="hah-card-title">Discharged patients</div>
+            <div class="hah-muted" style="margin-top:6px;font-size:13px;">Recycle bin — discharged patients can be restored to the active board or cleared permanently.</div>
+            <div class="hah-settings-actions" style="margin-top:12px;">
+              <button type="button" class="hah-inline-pill" data-action="settings-clear-discharged">Clear all discharged</button>
+            </div>
+            <div class="hah-settings-list" style="margin-top:16px;">
+              ${(ops && typeof ops.getDischargedPatients === 'function' ? ops.getDischargedPatients() : []).length
+                ? ops.getDischargedPatients().map((row) => {
+                    const when = row.dischargedAt ? new Date(row.dischargedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+                    const name = (row.snapshot && row.snapshot.name) || row.patientId;
+                    const meta = [(row.snapshot && row.snapshot.pathway) || '', (row.snapshot && row.snapshot.location) || ''].filter(Boolean).join(' · ');
+                    return `<div class="hah-settings-list-item hah-discharged-row">
+                      <div style="flex:1;min-width:0;">
+                        <div class="hah-settings-list-title">${escapeHtml(name)}</div>
+                        <div class="hah-settings-list-sub">${escapeHtml(meta ? meta + ' · ' : '')}Discharged ${escapeHtml(when)} · ${escapeHtml(row.dischargedBy || 'Board user')}</div>
+                      </div>
+                      <button type="button" class="hah-inline-pill" data-action="settings-restore-patient" data-discharge-id="${escapeHtml(row.id)}">Restore</button>
+                    </div>`;
+                  }).join('')
+                : `<div class="hah-muted">No discharged patients.</div>`}
+            </div>
+          </div>
+        </section>
+
+        <section class="hah-card">
+          <div class="hah-card-inner">
             <div class="hah-card-title">Recent round summaries</div>
             <div class="hah-settings-list" style="margin-top:16px;">
               ${summaries.length ? summaries.map((row) => `
@@ -7725,9 +7770,9 @@ html, body {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_008_release.html',
-  source: 'hospital_at_home_board_v0_8_008_source.zip',
-  builtAt: '2026-04-17T22:58:29.972737',
+  filename: 'hospital_at_home_board_v0_8_001_release.html',
+  source: 'hospital_at_home_board_v0_8_001_source.zip',
+  builtAt: '2026-04-18T06:59:13.832211',
   entry: 'desktop.html'
 };
 </script>
