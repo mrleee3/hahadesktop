@@ -1155,8 +1155,8 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: rgba(55, 138, 221, 0.08);
+  border-bottom: 1px solid rgba(55, 138, 221, 0.2);
 }
 
 .hah-log-dot {
@@ -2147,6 +2147,16 @@ html, body {
   padding: 9px 12px;
   background: rgba(0,0,0,0.04);
   border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.hah-mdm-widget[data-mdm-type="micro_mdm"] .hah-mdm-head {
+  background: rgba(29, 158, 117, 0.08);
+  border-bottom-color: rgba(29, 158, 117, 0.22);
+}
+
+.hah-mdm-widget[data-mdm-type="resp_mdm"] .hah-mdm-head {
+  background: rgba(127, 119, 221, 0.1);
+  border-bottom-color: rgba(127, 119, 221, 0.24);
 }
 
 .hah-mdm-chevron-sm {
@@ -6304,7 +6314,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       <button type="button" class="hah-mdm-add" data-patient-action="open-composer"
         data-encounter-type="${c.escapeHtml(type)}">+ Add ${c.escapeHtml(label)} entry</button>`;
 
-    return `<div class="hah-mdm-widget">
+    return `<div class="hah-mdm-widget" data-mdm-type="${c.escapeHtml(type)}">
       ${head}
       <div class="hah-mdm-body">${bodyHtml}</div>
       ${olderHtml}
@@ -6329,7 +6339,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function renderOtherWidget(entries) {
     const latest = entries[0]; if (!latest) return '';
     const f = latest.fields || {};
-    return `<div class="hah-mdm-widget">
+    return `<div class="hah-mdm-widget" data-mdm-type="other">
       <div class="hah-mdm-head"><div class="hah-mdm-dot" style="background:#888780"></div>
         <span class="hah-mdm-label">${c.escapeHtml(f.source || 'Other')}</span>
         <span class="hah-mdm-count">${formatEntryDate(latest.timestamp)}</span>
@@ -8488,7 +8498,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T10:50:19.102569',
+  builtAt: '2026-04-18T15:40:27.674958',
   entry: 'desktop.html'
 };
 </script>
