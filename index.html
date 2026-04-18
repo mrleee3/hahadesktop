@@ -1044,14 +1044,25 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 16px 10px;
-  background: rgba(255,255,255,0.92);
-  border: 1px solid var(--desk-border);
-  border-radius: 16px;
+  padding: 14px 18px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.92) 100%);
+  border: 1px solid rgba(34, 84, 162, 0.12);
+  border-radius: 18px;
   position: sticky;
   top: 0;
   z-index: 5;
   backdrop-filter: blur(14px);
+  box-shadow: 0 6px 20px rgba(20, 42, 73, 0.05);
+}
+.hah-pt-header-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(47,111,237,0.75) 0%, rgba(47,111,237,0.18) 100%);
 }
 
 .hah-pt-header-top {
@@ -1059,6 +1070,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: relative;
 }
 
 .hah-pt-header-main {
@@ -1078,17 +1090,19 @@ html, body {
 }
 
 .hah-pt-name {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
   white-space: nowrap;
+  color: #17263b;
 }
 
 .hah-pt-age-sex {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--desk-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  color: #6a778a;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .hah-pt-meta-row {
@@ -1098,9 +1112,16 @@ html, body {
   gap: 6px 12px;
   color: var(--desk-text-muted);
   font-size: 12px;
+  line-height: 1.35;
 }
 
-.hah-pt-meta-item { position: relative; }
+.hah-pt-meta-item {
+  position: relative;
+  font-weight: 500;
+}
+.hah-pt-meta-item.is-good { color: #18804b; }
+.hah-pt-meta-item.is-warn { color: #9a6a00; }
+.hah-pt-meta-item.is-danger { color: #c23a3a; }
 .hah-pt-meta-item:not(:last-child)::after {
   content: '·';
   margin-left: 12px;
@@ -6596,13 +6617,15 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function renderPatientHeader(vm, state) {
     const patient = vm.patient;
     const ageSex = [patient.age || '', patient.sex || ''].filter(Boolean).join('');
-    const los = buildLengthOfStayLabel(vm.admissionDate);
+    const losMeta = buildLengthOfStayMeta(vm.admissionDate);
     const metaParts = [
-      vm.referralSource ? 'Referred from ' + vm.referralSource : '',
-      vm.admissionDate ? 'Admitted ' + vm.admissionDate : '',
-      los,
-      patient.pathway || '',
-      patient.escalationSummary && !/^DNAR(\s*\+\s*ACP)?$/i.test(patient.escalationSummary) && patient.escalationSummary !== 'Full escalation' ? patient.escalationSummary : ''
+      vm.referralSource ? { text: 'Referred from ' + vm.referralSource } : null,
+      vm.admissionDate ? { text: 'Admitted ' + vm.admissionDate } : null,
+      losMeta,
+      patient.pathway ? { text: patient.pathway } : null,
+      patient.escalationSummary && !/^DNAR(\s*\+\s*ACP)?$/i.test(patient.escalationSummary) && patient.escalationSummary !== 'Full escalation'
+        ? { text: patient.escalationSummary }
+        : null
     ].filter(Boolean);
 
     const rightFlags = [
@@ -6620,19 +6643,25 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         </div>
         <div class="hah-pt-header-alerts">${rightFlags}</div>
       </div>
-      ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map((part) => `<span class="hah-pt-meta-item">${c.escapeHtml(part)}</span>`).join('')}</div>` : ''}
+      ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map(renderPatientMetaPart).join('')}</div>` : ''}
     </div>`;
   }
 
-  function buildLengthOfStayLabel(admissionDate) {
+  function renderPatientMetaPart(part) {
+    const tone = part && part.tone ? ` is-${part.tone}` : '';
+    return `<span class="hah-pt-meta-item${tone}">${c.escapeHtml(part && part.text ? part.text : '')}</span>`;
+  }
+
+  function buildLengthOfStayMeta(admissionDate) {
     const ts = parseAdmissionDate(admissionDate);
-    if (!ts) return '';
+    if (!ts) return null;
     const start = new Date(ts);
     const now = new Date();
     const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
     const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const days = Math.max(0, Math.floor((nowDay - startDay) / 86400000));
-    return `LOS ${days}d`;
+    const tone = days < 7 ? 'good' : days === 7 ? 'warn' : 'danger';
+    return { text: `LOS ${days}d`, tone };
   }
 
   function renderObsStrip(vm, state) {
@@ -9023,9 +9052,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_030_release.html',
-  source: 'hospital_at_home_board_v0_8_030_source.zip',
-  builtAt: '2026-04-18T19:45:07.198896',
+  filename: 'hospital_at_home_board_v0_8_031_release.html',
+  source: 'hospital_at_home_board_v0_8_031_source.zip',
+  builtAt: '2026-04-18T19:56:02.743774',
   entry: 'desktop.html'
 };
 </script>
