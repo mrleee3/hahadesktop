@@ -5931,12 +5931,15 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         ${showOlder ? `<div class="hah-mdm-earlier-list">${earlierEntries.map((e) => renderMdmEntry(e, true)).join('')}</div>` : ''}
       </div>` : '';
 
+    const addBtn = entries.length >= 2 ? '' : `
+      <button type="button" class="hah-mdm-add" data-patient-action="open-composer"
+        data-encounter-type="${c.escapeHtml(type)}">+ Add ${c.escapeHtml(label)} entry</button>`;
+
     return `<div class="hah-mdm-widget">
       ${head}
       <div class="hah-mdm-body">${bodyHtml}</div>
       ${olderHtml}
-      <button type="button" class="hah-mdm-add" data-patient-action="open-composer"
-        data-encounter-type="${c.escapeHtml(type)}">+ Add ${c.escapeHtml(label)} entry</button>
+      ${addBtn}
     </div>`;
   }
 
@@ -7790,7 +7793,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-18T07:31:06.550270',
+  builtAt: '2026-04-18T07:40:05.615411',
   entry: 'desktop.html'
 };
 </script>
