@@ -1282,6 +1282,7 @@ html, body {
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--desk-text);
+  white-space: pre-wrap;
 }
 
 .hah-log-entry:not(.is-latest) .hah-log-field-body {
@@ -1874,8 +1875,8 @@ html, body {
 .hah-note-preview-text {
   margin: 0;
   padding: 10px 12px 12px;
-  font-size: 12px;
-  font-family: inherit;
+  font-size: 11.5px;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
   line-height: 1.65;
   color: var(--desk-text);
   white-space: pre-wrap;
@@ -6144,11 +6145,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card("Today's board round", c.emptyState('No patient selected', 'Open a patient from the board.'), { subtitle: "Select a patient to continue today’s note." })]);
     const composerType = (state.patient && state.patient.composerType) || 'board_round';
-    const isLocked     = !!(state.patient && state.patient.composerLocked);
+    const scopedComposer = getScopedComposerState(state, vm.patient.id);
+    const isLocked     = !!scopedComposer.locked;
     const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
     const boardSel     = loadBoardSelectionToday();
     const heading      = getComposerHeading(composerType, isLocked);
-    const subheading   = getComposerSubheading(composerType, isLocked, lastRound);
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
@@ -6166,7 +6167,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           <input type="text" id="hahBoardMembersOther" class="hah-board-members-input" placeholder="Other board member(s)" value="${c.escapeHtml(boardSel.otherText || '')}">
         </div>
       </div>
-      <div class="hah-composer-subtitle">${c.escapeHtml(subheading)}</div>
       <div class="hah-composer-form" id="hahComposerForm">
         ${renderComposerForm(composerType, lastRound, vm)}
       </div>
@@ -6216,6 +6216,30 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         ? ' Issues and plan can be carried forward from the latest completed board round.'
         : '';
     return base + tail;
+  }
+
+  function getScopedComposerState(state, patientId) {
+    const map = (state && state.patient && state.patient.composerByPatient) || {};
+    const scoped = map && map[patientId] ? map[patientId] : {};
+    return {
+      locked: !!scoped.locked,
+      editId: scoped.editId || null
+    };
+  }
+
+  function patchScopedComposerState(patientId, patch) {
+    if (!patientId) return;
+    const currentState = store.getState();
+    const map = (currentState.patient && currentState.patient.composerByPatient) || {};
+    const prev = map[patientId] || {};
+    store.setState({
+      patient: {
+        composerByPatient: {
+          ...map,
+          [patientId]: { ...prev, ...patch }
+        }
+      }
+    });
   }
 
   function renderBoardMemberChips(selection) {
@@ -6315,7 +6339,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (type !== 'board_round') return '';
     const now   = new Date();
     const stamp = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const lines = ['H@H BOARD ROUND — ' + stamp, ''];
+    const boardSel = loadBoardSelectionToday();
+    const members = (boardSel.members || []).filter((m) => m !== 'Other');
+    if ((boardSel.otherText || '').trim()) members.push((boardSel.otherText || '').trim());
+    const lines = ['H@H BOARD ROUND — ' + stamp];
+    if (members.length) lines.push("Who's on board: " + members.join(', '));
+    if ((vm.referralSource || '').trim()) lines.push('Referred from ' + vm.referralSource.trim());
+    lines.push('');
 
     const issueText = (fields.issues || '').trim();
     if (issueText) {
@@ -6356,7 +6386,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
     const type     = (state.patient && state.patient.composerType) || 'board_round';
-    const isLocked = !!(state.patient && state.patient.composerLocked);
+    const scopedComposer = getScopedComposerState(state, vm.patient.id);
+    const isLocked = !!scopedComposer.locked;
 
     const draft = loadDraft(vm.patient.id, type);
     if (draft && draft.fields) restoreFields(draft.fields, type);
@@ -6468,6 +6499,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       if (otherInput && otherInput.value !== (sel.otherText || '')) otherInput.value = sel.otherText || '';
     }
 
+    function updatePreview() {
+      const state = store.getState();
+      const vm = d.buildPatientWorkspaceModel(state);
+      const type = (state.patient && state.patient.composerType) || 'board_round';
+      if (vm) refreshPreview(vm, type);
+    }
+
     chips.forEach((chip) => {
       chip.addEventListener('click', () => {
         const label = chip.getAttribute('data-board-member');
@@ -6477,6 +6515,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         if (!sel.members.includes('Other')) sel.otherText = '';
         saveBoardSelectionToday(sel);
         renderSelection(sel);
+        updatePreview();
       });
     });
 
@@ -6487,6 +6526,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         if (sel.otherText && !sel.members.includes('Other')) sel.members = sel.members.concat('Other');
         saveBoardSelectionToday(sel);
         renderSelection(sel);
+        updatePreview();
       });
     }
 
@@ -6611,20 +6651,23 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     }
     if (action === 'set-composer-type') {
       const ct = target.getAttribute('data-composer-type'); if (!ct) return false;
-      store.setState({ patient: { composerType: ct, composerLocked: false, composerEditId: null } }); return true;
+      patchScopedComposerState(vm ? vm.patient.id : (state.route && state.route.entityId), { locked: false, editId: null });
+      store.setState({ patient: { composerType: ct } }); return true;
     }
     if (action === 'open-composer') {
       const ct = target.getAttribute('data-encounter-type'); if (!ct) return false;
-      store.setState({ patient: { composerType: ct, composerLocked: false, composerEditId: null } }); return true;
+      patchScopedComposerState(vm ? vm.patient.id : (state.route && state.route.entityId), { locked: false, editId: null });
+      store.setState({ patient: { composerType: ct } }); return true;
     }
 
     if (action === 'composer-done' && vm && ops) {
       const composerType  = (state.patient && state.patient.composerType) || 'board_round';
-      const isLocked      = !!(state.patient && state.patient.composerLocked);
-      const composerEditId = (state.patient && state.patient.composerEditId) || null;
+      const scopedComposer = getScopedComposerState(state, vm.patient.id);
+      const isLocked      = !!scopedComposer.locked;
+      const composerEditId = scopedComposer.editId || null;
 
       if (isLocked) {
-        store.setState({ patient: { composerLocked: false } });
+        patchScopedComposerState(vm.patient.id, { locked: false });
         return true;
       }
 
@@ -6653,9 +6696,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           showToast(pane, (typeLabel ? typeLabel.label : 'Entry') + ' ' + verb + ' — ' + time);
         }
-        store.setState({ patient: { composerType, composerLocked: true, composerEditId: savedId } });
+        patchScopedComposerState(vm.patient.id, { locked: true, editId: savedId });
+        store.setState({ patient: { composerType } });
       } else {
-        store.setState({ patient: { composerType, composerLocked: false, composerEditId: null } });
+        patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
+        store.setState({ patient: { composerType } });
       }
       return true;
     }
@@ -6665,7 +6710,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       clearDraft(vm.patient.id, composerType);
       resetComposerDOM();
       refreshPreview(vm, composerType);
-      store.setState({ patient: { composerLocked: false, composerEditId: null } });
+      patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
       return true;
     }
 
@@ -6674,7 +6719,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       clearDraft(vm.patient.id, composerType);
       resetComposerDOM();
       refreshPreview(vm, composerType);
-      store.setState({ patient: { composerLocked: false, composerEditId: null } });
+      patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
       return true;
     }
 
@@ -8032,9 +8077,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_001_release.html',
-  source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-18T08:34:53.727386',
+  filename: 'hospital_at_home_board_v0_8_015_release.html',
+  source: 'hospital_at_home_board_v0_8_015_source.zip',
+  builtAt: '2026-04-18T08:53:44.432710',
   entry: 'desktop.html'
 };
 </script>
