@@ -6335,6 +6335,27 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     return { source: val('cform-source'), note: val('cform-note') };
   }
 
+  function formatBloodsDateLabel(vm) {
+    const candidates = [
+      vm && vm.patient && vm.patient.bloodDate,
+      vm && vm.patient && vm.patient.latestBloodDate,
+      vm && vm.latestBloodDate,
+      vm && vm.patient && vm.patient.latestReviewAt,
+      vm && vm.patient && vm.patient.reviewDueAt
+    ].filter(Boolean);
+
+    for (const value of candidates) {
+      const dt = new Date(value);
+      if (!Number.isNaN(dt.getTime())) {
+        return dt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+      }
+      const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}/${m[2]}`;
+    }
+
+    return todayIso().split('-').reverse().slice(0,2).join('/');
+  }
+
   function buildNotePreviewText(vm, type, fields) {
     if (type !== 'board_round') return '';
     const now   = new Date();
@@ -8080,7 +8101,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_016_release.html',
   source: 'hospital_at_home_board_v0_8_016_source.zip',
-  builtAt: '2026-04-18T09:04:49.798354',
+  builtAt: '2026-04-18T09:23:43.900399',
   entry: 'desktop.html'
 };
 </script>
