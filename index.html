@@ -1017,7 +1017,8 @@ html, body {
 /*  CARD-HEAD BASE
     All card head rows share this layout (board round log, MDM widgets,
     reference widgets, note preview, patient list header). Individual rules
-    only override colour/tint — layout comes from here. */
+    only override colour/tint — layout comes from here. Fixed min-height
+    guarantees pixel-identical head heights across the page. */
 .hah-log-head,
 .hah-mdm-head,
 .hah-ref-head,
@@ -1026,7 +1027,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 12px;
+  padding: 0 12px;
+  min-height: 36px;
   border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
@@ -2236,32 +2238,34 @@ html, body {
 }
 
 .hah-desktop-app.hah-patient-compact .hah-nav {
-  position: absolute;
-  left: 12px;
-  bottom: 14px;
+  position: static;
+  margin: 0 12px 12px;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 6px 8px;
   border-right: none;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.95);
   border: 1px solid rgba(25,45,72,0.08);
   border-radius: 14px;
   box-shadow: 0 6px 20px rgba(17,37,63,0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   z-index: 26;
+  flex-shrink: 0;
+  grid-area: unset;
 }
 
-/* Accent bar flips from left edge (column nav) to top edge (row nav) */
+/* Accent bar flips from left edge (column nav) to bottom edge (row nav) */
 .hah-desktop-app.hah-patient-compact .hah-nav-btn.is-active::before {
   left: 8px;
   right: 8px;
-  top: -6px;
-  bottom: auto;
+  top: auto;
+  bottom: -6px;
   width: auto;
   height: 3px;
-  border-radius: 0 0 3px 3px;
+  border-radius: 3px 3px 0 0;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-nav-btn {
@@ -2271,7 +2275,17 @@ html, body {
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane {
-  padding: 14px 12px 76px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hah-desktop-app.hah-patient-compact .hah-left-pane > .hah-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 12px 14px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane .hah-card-inner {
@@ -7164,6 +7178,19 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       centre.classList.toggle('is-narrow', layoutState.narrow);
       centre.classList.toggle('is-tight', layoutState.tight);
       logCol.classList.toggle('is-narrow', layoutState.logNarrow);
+
+      // Re-parent nav so compact mode's floating pill sits inside the
+      // resizable left pane (scrolling content stops above it, width
+      // follows pane width).
+      const nav = document.getElementById('hahNav');
+      const leftPane = app.querySelector('.hah-left-pane');
+      if (nav && leftPane) {
+        if (layoutState.compact) {
+          if (nav.parentElement !== leftPane) leftPane.appendChild(nav);
+        } else {
+          if (nav.parentElement === leftPane) app.insertBefore(nav, leftPane);
+        }
+      }
       window.HAHBoard.__patientLayoutState = layoutState;
     }
 
@@ -8561,6 +8588,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (screen && typeof screen.afterRender === 'function') {
       screen.afterRender(state, rightPane);
     }
+    // Re-apply responsive layout (including compact-mode nav re-parenting)
+    // after innerHTML has wiped the left pane.
+    window.dispatchEvent(new CustomEvent('hah:panes-resized'));
   }
 
   function bindResizeHandles() {
@@ -8925,7 +8955,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T16:43:53.028060',
+  builtAt: '2026-04-18T16:56:17.066874',
   entry: 'desktop.html'
 };
 </script>
