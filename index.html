@@ -6343,7 +6343,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const members = (boardSel.members || []).filter((m) => m !== 'Other');
     if ((boardSel.otherText || '').trim()) members.push((boardSel.otherText || '').trim());
     const lines = ['H@H BOARD ROUND — ' + stamp];
-    if (members.length) lines.push("Who's on board: " + members.join(', '));
+    if (members.length) lines.push('Present: ' + members.join(', '));
+    if (members.length && (vm.referralSource || '').trim()) lines.push('');
     if ((vm.referralSource || '').trim()) lines.push('Referred from ' + vm.referralSource.trim());
     lines.push('');
 
@@ -6366,7 +6367,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (newBloods || prevBloods) {
       lines.push('BLOODS');
       if (newBloods)  lines.push('Today:    ' + newBloods);
-      if (prevBloods) lines.push('Trend:    ' + prevBloods);
+      if (prevBloods) lines.push(formatBloodsDateLabel(vm) + ': ' + prevBloods);
       lines.push('');
     }
     if ((fields.plan || '').trim()) {
@@ -8077,9 +8078,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_015_release.html',
-  source: 'hospital_at_home_board_v0_8_015_source.zip',
-  builtAt: '2026-04-18T08:53:44.432710',
+  filename: 'hospital_at_home_board_v0_8_016_release.html',
+  source: 'hospital_at_home_board_v0_8_016_source.zip',
+  builtAt: '2026-04-18T09:04:49.798354',
   entry: 'desktop.html'
 };
 </script>
