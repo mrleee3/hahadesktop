@@ -5910,7 +5910,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   const DRAFT_PREFIX       = 'hah_draft:';
   const BOARD_MEMBER_OPTIONS = ['LK', 'SS', 'GM', 'AA', 'JT', 'Other'];
   const PLAN_PRESETS = [
-    { key: 'gp-hf-fu', label: 'GP HF F/U', text: 'GP to please review diuretics and repeat U&Es in 1–2 weeks.' }
+    { key: 'gp-hf-fu', label: 'GP HF F/U', text: 'GP to please review diuretics and repeat U&Es in 1–2 weeks' },
+    { key: 'hf-mon', label: 'HF MON', text: 'Aim for 0.5-1kg weight loss/day - if greater flag with Dr' }
   ];
   const BOARD_SELECTION_PREFIX = 'hah_board_selection:';
 
@@ -6719,6 +6720,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function normalisePlanLine(text) {
     return String(text || '')
       .replace(/^\s*\d+[\.)]\s*/, '')
+      .replace(/[.]\s*$/, '')
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
@@ -8228,9 +8230,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_018_release.html',
-  source: 'hospital_at_home_board_v0_8_018_source.zip',
-  builtAt: '2026-04-18T09:34:56.826328',
+  filename: 'hospital_at_home_board_v0_8_019_release.html',
+  source: 'hospital_at_home_board_v0_8_019_source.zip',
+  builtAt: '2026-04-18T09:43:59.260295',
   entry: 'desktop.html'
 };
 </script>
