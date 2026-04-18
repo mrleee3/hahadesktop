@@ -122,6 +122,7 @@ html, body {
 .hah-desktop-body { min-width: 1440px; }
 
 .hah-desktop-app {
+  position: relative;
   width: 100%;
   height: 100dvh;
   display: grid;
@@ -545,6 +546,12 @@ html, body {
   font-size: 12.5px;
   color: var(--desk-text-muted);
   line-height: 1.35;
+}
+
+
+.hah-desktop-app.is-resizing-panes,
+.hah-desktop-app.is-resizing-panes * {
+  transition: none !important;
 }
 
 </style>
@@ -2198,17 +2205,31 @@ html, body {
 /* ─── Patient compact / narrow mode ─────────────────────────────────── */
 
 .hah-desktop-app.hah-patient-compact {
-  --desk-nav-w: 70px;
-  --desk-left-w: 208px;
+  --desk-nav-w: 0px;
+  --desk-left-w: 252px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-nav {
-  gap: 10px;
-  padding: 14px 8px;
+  position: absolute;
+  left: 12px;
+  bottom: 14px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border-right: none;
+  background: transparent;
+  z-index: 26;
+}
+
+.hah-desktop-app.hah-patient-compact .hah-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane {
-  padding: 14px 12px;
+  padding: 14px 12px 72px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane .hah-card-inner {
@@ -2231,11 +2252,11 @@ html, body {
 }
 
 .hah-desktop-app.hah-patient-compact .hah-jump-list {
-  gap: 5px;
+  gap: 6px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-jump-btn {
-  padding: 8px 9px;
+  padding: 8px 10px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-jump-name {
@@ -2308,7 +2329,6 @@ html, body {
 
 .hah-pt-log-col.is-narrow .hah-log-field + .hah-log-field {
   padding-top: 8px;
-  border-top: 1px dashed rgba(25,45,72,0.08);
 }
 
 .hah-pt-log-col.is-narrow .hah-log-entry {
@@ -6733,6 +6753,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     function applyLayoutClasses() {
       layoutState.raf = 0;
+      if (window.HAHBoard.__resizingPanes) return;
 
       const appWidth = app.clientWidth || window.innerWidth || 0;
       const mainWidth = mainPane.clientWidth || 0;
@@ -6741,20 +6762,20 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       const refWidth = refCol ? refCol.clientWidth || 0 : 0;
 
       layoutState.compact = layoutState.compact
-        ? (appWidth <= 1670 || mainWidth <= 900)
-        : (appWidth <= 1580 || mainWidth <= 820);
+        ? (appWidth <= 1740 || mainWidth <= 1000)
+        : (appWidth <= 1630 || mainWidth <= 920);
 
       layoutState.narrow = layoutState.narrow
-        ? (centreWidth <= 1025)
-        : (centreWidth <= 940);
+        ? (centreWidth <= 1090)
+        : (centreWidth <= 980);
 
       layoutState.tight = layoutState.tight
-        ? (centreWidth <= 820 || refWidth <= 285)
-        : (centreWidth <= 740 || refWidth <= 250);
+        ? (centreWidth <= 860 || refWidth <= 300)
+        : (centreWidth <= 780 || refWidth <= 265);
 
       layoutState.logNarrow = layoutState.logNarrow
-        ? (logWidth <= 660)
-        : (logWidth <= 590);
+        ? (logWidth <= 840)
+        : (logWidth <= 760);
 
       app.classList.toggle('hah-patient-compact', layoutState.compact);
       centre.classList.toggle('is-narrow', layoutState.narrow);
@@ -6764,6 +6785,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     }
 
     function requestApply() {
+      if (window.HAHBoard.__resizingPanes) return;
       if (layoutState.raf) return;
       layoutState.raf = window.requestAnimationFrame(applyLayoutClasses);
     }
@@ -6780,9 +6802,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       if (refCol) ro.observe(refCol);
     }
     window.addEventListener('resize', requestApply, { passive: true });
+    window.addEventListener('hah:panes-resized', requestApply);
 
     window.HAHBoard.__patientLayoutCleanup = function () {
       window.removeEventListener('resize', requestApply);
+      window.removeEventListener('hah:panes-resized', requestApply);
       if (layoutState.raf) window.cancelAnimationFrame(layoutState.raf);
       if (ro) ro.disconnect();
     };
@@ -8120,6 +8144,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           .getPropertyValue(side === 'left' ? '--desk-left-w' : '--desk-right-w'), 10
       );
       handle.classList.add('is-dragging');
+      window.HAHBoard.__resizingPanes = true;
+      rootEl.classList.add('is-resizing-panes');
 
       function onMove(e) {
         const dx = e.clientX - startX;
@@ -8142,6 +8168,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           localStorage.setItem(PANE_L_KEY, parseInt(lw, 10));
           localStorage.setItem(PANE_R_KEY, parseInt(rw, 10));
         } catch (_) {}
+        window.HAHBoard.__resizingPanes = false;
+        rootEl.classList.remove('is-resizing-panes');
+        window.dispatchEvent(new CustomEvent('hah:panes-resized'));
       }
 
       document.addEventListener('mousemove', onMove);
@@ -8457,9 +8486,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_020_release.html',
-  source: 'hospital_at_home_board_v0_8_020_source.zip',
-  builtAt: '2026-04-18T10:30:09.431520',
+  filename: 'hospital_at_home_board_v0_8_021_release.html',
+  source: 'hospital_at_home_board_v0_8_021_source.zip',
+  builtAt: '2026-04-18T10:50:19.102569',
   entry: 'desktop.html'
 };
 </script>
