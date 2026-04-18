@@ -1084,6 +1084,13 @@ html, body {
   white-space: nowrap;
 }
 
+.hah-pt-age-sex {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  white-space: nowrap;
+}
+
 .hah-pt-meta-row {
   display: flex;
   flex-wrap: wrap;
@@ -6588,27 +6595,44 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function renderPatientHeader(vm, state) {
     const patient = vm.patient;
+    const ageSex = [patient.age || '', patient.sex || ''].filter(Boolean).join('');
+    const los = buildLengthOfStayLabel(vm.admissionDate);
     const metaParts = [
-      [patient.age || '', patient.sex || ''].filter(Boolean).join(' / '),
       vm.referralSource ? 'Referred from ' + vm.referralSource : '',
+      vm.admissionDate ? 'Admitted ' + vm.admissionDate : '',
+      los,
       patient.pathway || '',
-      vm.admissionDate ? 'On service since ' + vm.admissionDate : '',
-      patient.acp ? 'ACP noted' : '',
       patient.escalationSummary && !/^DNAR(\s*\+\s*ACP)?$/i.test(patient.escalationSummary) && patient.escalationSummary !== 'Full escalation' ? patient.escalationSummary : ''
     ].filter(Boolean);
+
+    const rightFlags = [
+      patient.iv ? c.badge('IV', 'neutral') : '',
+      patient.oxygenLpm > 0 ? c.badge('O₂ ' + patient.oxygenLpm + 'L', 'warn') : '',
+      patient.acp ? c.badge('ACP', 'neutral') : '',
+      patient.dnar ? c.badge('DNAR', 'danger') : ''
+    ].filter(Boolean).join('');
+
     return `<div class="hah-pt-header-bar">
       <div class="hah-pt-header-top">
         <div class="hah-pt-header-main">
           <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
-          <div class="hah-pt-header-chips">
-            ${c.badge(patient.boardStatus || 'Not discussed', 'neutral')}
-            ${c.badge(patient.dischargeReadiness || 'Not ready', patient.dischargeReadiness === 'Ready' ? 'good' : patient.dischargeReadiness === 'Possible today' || patient.dischargeReadiness === 'Likely tomorrow' ? 'warn' : 'neutral')}
-          </div>
+          ${ageSex ? `<span class="hah-pt-age-sex">${c.escapeHtml(ageSex)}</span>` : ''}
         </div>
-        <div class="hah-pt-header-alerts">${patient.dnar ? c.badge('DNAR', 'danger') : ''}</div>
+        <div class="hah-pt-header-alerts">${rightFlags}</div>
       </div>
       ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map((part) => `<span class="hah-pt-meta-item">${c.escapeHtml(part)}</span>`).join('')}</div>` : ''}
     </div>`;
+  }
+
+  function buildLengthOfStayLabel(admissionDate) {
+    const ts = parseAdmissionDate(admissionDate);
+    if (!ts) return '';
+    const start = new Date(ts);
+    const now = new Date();
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const days = Math.max(0, Math.floor((nowDay - startDay) / 86400000));
+    return `LOS ${days}d`;
   }
 
   function renderObsStrip(vm, state) {
@@ -6633,6 +6657,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       { label: 'Latest entry', value: latestBoard ? formatCompactDateTime(latestBoard.timestamp) : 'None yet' },
       { label: 'Latest bloods', value: bloodLabel },
       { label: 'Open tasks', value: String(taskCount) },
+      { label: 'Discharge', value: vm.patient.dischargeReadiness || 'Not ready' },
       { label: 'Primary blocker', value: blocker }
     ];
     return `<div class="hah-status-strip">${statusItems.map((item) => `<div class="hah-status-cell"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-status-val">${c.escapeHtml(item.value)}</div></div>`).join('')}</div>`;
@@ -8998,9 +9023,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_021_release.html',
-  source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T19:30:11.098617',
+  filename: 'hospital_at_home_board_v0_8_030_release.html',
+  source: 'hospital_at_home_board_v0_8_030_source.zip',
+  builtAt: '2026-04-18T19:45:07.198896',
   entry: 'desktop.html'
 };
 </script>
