@@ -1042,10 +1042,9 @@ html, body {
 
 .hah-pt-header-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 16px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 10px;
   background: rgba(255,255,255,0.92);
   border: 1px solid var(--desk-border);
   border-radius: 16px;
@@ -1055,12 +1054,27 @@ html, body {
   backdrop-filter: blur(14px);
 }
 
-.hah-pt-header-identity {
+.hah-pt-header-top {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hah-pt-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   flex-wrap: wrap;
+}
+
+.hah-pt-header-chips,
+.hah-pt-header-alerts {
+  display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .hah-pt-name {
@@ -1070,53 +1084,26 @@ html, body {
   white-space: nowrap;
 }
 
-.hah-pt-meta {
-  font-size: 12px;
-  color: var(--desk-text-muted);
-  white-space: nowrap;
-}
-
-.hah-pt-header-controls {
+.hah-pt-meta-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.hah-pt-select-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hah-pt-select-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  gap: 6px 12px;
   color: var(--desk-text-muted);
-}
-
-.hah-pt-select {
-  padding: 5px 9px;
-  border: 1px solid var(--desk-border);
-  border-radius: 10px;
   font-size: 12px;
-  font-weight: 500;
-  background: rgba(255,255,255,0.9);
-  color: var(--desk-text);
-  cursor: pointer;
 }
 
-.hah-pt-select:focus {
-  outline: none;
-  border-color: rgba(47,111,237,0.4);
-  box-shadow: 0 0 0 3px rgba(47,111,237,0.1);
+.hah-pt-meta-item { position: relative; }
+.hah-pt-meta-item:not(:last-child)::after {
+  content: '·';
+  margin-left: 12px;
+  color: rgba(0,0,0,0.22);
 }
 
 /* ─── Obs strip ──────────────────────────────────────────────────────── */
 
-.hah-obs-strip {
+.hah-obs-strip,
+.hah-status-strip {
   display: flex;
   gap: 0;
   padding: 0;
@@ -1126,16 +1113,19 @@ html, body {
   overflow: hidden;
 }
 
-.hah-obs-cell {
+.hah-obs-cell,
+.hah-status-cell {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 14px;
   border-right: 1px solid var(--desk-border);
+  min-width: 0;
 }
 
-.hah-obs-cell:last-child {
+.hah-obs-cell:last-child,
+.hah-status-cell:last-child {
   border-right: none;
 }
 
@@ -1147,12 +1137,18 @@ html, body {
   color: var(--desk-text-muted);
 }
 
-.hah-obs-val {
+.hah-obs-val,
+.hah-status-val {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--desk-text);
   line-height: 1.1;
+}
+
+.hah-status-val {
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .hah-obs-cell.is-warn  .hah-obs-val { color: #b45309; }
@@ -6576,7 +6572,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     return `<div class="hah-pt-workspace">
       ${renderPatientHeader(vm, state)}
-      ${renderObsStrip(vm)}
+      ${renderObsStrip(vm, state)}
       <div class="hah-pt-centre-split">
         <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds, state)}</div>
         <div class="hah-pt-ref-col">
@@ -6592,30 +6588,54 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function renderPatientHeader(vm, state) {
     const patient = vm.patient;
-    const meta    = [patient.age || '', patient.sex || '', patient.location || '', patient.pathway || '',
-      vm.admissionDate ? 'Adm ' + vm.admissionDate : ''].filter(Boolean).join(' · ');
-    const escalation = patient.escalationSummary && patient.escalationSummary !== 'None' ? c.badge(patient.escalationSummary, 'warn') : '';
+    const metaParts = [
+      [patient.age || '', patient.sex || ''].filter(Boolean).join(' / '),
+      vm.referralSource ? 'Referred from ' + vm.referralSource : '',
+      patient.pathway || '',
+      vm.admissionDate ? 'On service since ' + vm.admissionDate : '',
+      patient.acp ? 'ACP noted' : '',
+      patient.escalationSummary && !/^DNAR(\s*\+\s*ACP)?$/i.test(patient.escalationSummary) && patient.escalationSummary !== 'Full escalation' ? patient.escalationSummary : ''
+    ].filter(Boolean);
     return `<div class="hah-pt-header-bar">
-      <div class="hah-pt-header-identity">
-        <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
-        ${priorityBadge(patient.priority)}
-        ${c.badge(patient.currentStatus, 'neutral')}
-        ${c.badge(patient.boardStatus || 'Not discussed', 'neutral')}
-        ${c.badge('D/C: ' + (patient.dischargeReadiness || 'Not ready'), 'neutral')}
-        ${patient.dnar ? c.badge('DNAR', 'danger') : ''}
-        ${escalation}
-        <span class="hah-pt-meta">${c.escapeHtml(meta)}</span>
+      <div class="hah-pt-header-top">
+        <div class="hah-pt-header-main">
+          <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
+          <div class="hah-pt-header-chips">
+            ${c.badge(patient.boardStatus || 'Not discussed', 'neutral')}
+            ${c.badge(patient.dischargeReadiness || 'Not ready', patient.dischargeReadiness === 'Ready' ? 'good' : patient.dischargeReadiness === 'Possible today' || patient.dischargeReadiness === 'Likely tomorrow' ? 'warn' : 'neutral')}
+          </div>
+        </div>
+        <div class="hah-pt-header-alerts">${patient.dnar ? c.badge('DNAR', 'danger') : ''}</div>
       </div>
+      ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map((part) => `<span class="hah-pt-meta-item">${c.escapeHtml(part)}</span>`).join('')}</div>` : ''}
     </div>`;
   }
 
-  function renderObsStrip(vm) {
+  function renderObsStrip(vm, state) {
     const items = vm.obsItems.filter((i) => i.value && i.value !== '—').slice(0, 7);
-    if (!items.length) return '';
-    return `<div class="hah-obs-strip">${items.map((item) => {
-      const cls = isObsDanger(item.label, item.value) ? ' is-danger' : isObsWarn(item.label, item.value) ? ' is-warn' : '';
-      return `<div class="hah-obs-cell${cls}"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-obs-val">${c.escapeHtml(item.value)}</div></div>`;
-    }).join('')}</div>`;
+    if (items.length) {
+      return `<div class="hah-obs-strip">${items.map((item) => {
+        const cls = isObsDanger(item.label, item.value) ? ' is-danger' : isObsWarn(item.label, item.value) ? ' is-warn' : '';
+        return `<div class="hah-obs-cell${cls}"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-obs-val">${c.escapeHtml(item.value)}</div></div>`;
+      }).join('')}</div>`;
+    }
+
+    const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
+    const latestBoard = encounters.find((e) => e.type === 'board_round') || encounters[0] || null;
+    let taskCount = 0;
+    try {
+      const tasksVm = d.buildTasksViewModel({ ...state, tasks: { ...(state.tasks || {}), savedView: 'all-open', filters: { patientId: vm.patient.id } } });
+      taskCount = Array.isArray(tasksVm && tasksVm.rows) ? tasksVm.rows.length : 0;
+    } catch (_) {}
+    const bloodLabel = vm.bloodSamples && vm.bloodSamples.length ? vm.bloodSamples[0].time : 'No recent bloods';
+    const blocker = (vm.patient.blockers && vm.patient.blockers[0]) || 'No active blocker';
+    const statusItems = [
+      { label: 'Latest entry', value: latestBoard ? formatCompactDateTime(latestBoard.timestamp) : 'None yet' },
+      { label: 'Latest bloods', value: bloodLabel },
+      { label: 'Open tasks', value: String(taskCount) },
+      { label: 'Primary blocker', value: blocker }
+    ];
+    return `<div class="hah-status-strip">${statusItems.map((item) => `<div class="hah-status-cell"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-status-val">${c.escapeHtml(item.value)}</div></div>`).join('')}</div>`;
   }
 
   function renderBoardRoundLog(entries, state) {
@@ -7613,6 +7633,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function splitLines(text) {
     return String(text || '').split('\n').map((l) => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean);
   }
+  function formatCompactDateTime(iso) {
+    if (!iso) return '—';
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
   function formatEntryDate(iso) {
     if (!iso) return '—';
     const dt = new Date(iso); if (isNaN(dt.getTime())) return String(iso);
@@ -8973,7 +9000,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T17:03:01.370114',
+  builtAt: '2026-04-18T19:30:11.098617',
   entry: 'desktop.html'
 };
 </script>
