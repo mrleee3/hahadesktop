@@ -1014,6 +1014,22 @@ html, body {
 /* inlined: css/desktop-patient.css */
 /* ─── Patient workspace ──────────────────────────────────────────────── */
 
+/*  CARD-HEAD BASE
+    All card head rows share this layout (board round log, MDM widgets,
+    reference widgets, note preview, patient list header). Individual rules
+    only override colour/tint — layout comes from here. */
+.hah-log-head,
+.hah-mdm-head,
+.hah-ref-head,
+.hah-note-preview-head,
+.hah-list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
 .hah-pt-workspace {
   display: flex;
   flex-direction: column;
@@ -1168,12 +1184,8 @@ html, body {
 .hah-log-card .hah-log-dot { display: none; }
 
 .hah-log-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
   background: rgba(55, 138, 221, 0.08);
-  border-bottom: 1px solid rgba(55, 138, 221, 0.2);
+  border-bottom-color: rgba(55, 138, 221, 0.2);
 }
 
 .hah-log-dot {
@@ -1363,12 +1375,8 @@ html, body {
 .hah-mdm-widget .hah-mdm-dot { display: none; }
 
 .hah-mdm-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.08);
 }
 
 .hah-mdm-dot {
@@ -1460,12 +1468,9 @@ html, body {
 }
 
 .hah-ref-head {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.08);
 }
 
 .hah-ref-label {
@@ -1915,12 +1920,9 @@ html, body {
 }
 
 .hah-note-preview-head {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.08);
 }
 
 .hah-note-preview-label {
@@ -2160,12 +2162,8 @@ html, body {
 /* ─── MDM widget head ────────────────────────────────────────────────── */
 
 .hah-mdm-widget .hah-mdm-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.08);
 }
 
 .hah-mdm-widget[data-mdm-type="micro_mdm"] .hah-mdm-head {
@@ -2235,7 +2233,6 @@ html, body {
 
 .hah-desktop-app.hah-patient-compact {
   --desk-nav-w: 0px;
-  --desk-left-w: 252px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-nav {
@@ -2244,21 +2241,37 @@ html, body {
   bottom: 14px;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 0;
+  gap: 4px;
+  padding: 6px 8px;
   border-right: none;
-  background: transparent;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(25,45,72,0.08);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(17,37,63,0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   z-index: 26;
+}
+
+/* Accent bar flips from left edge (column nav) to top edge (row nav) */
+.hah-desktop-app.hah-patient-compact .hah-nav-btn.is-active::before {
+  left: 8px;
+  right: 8px;
+  top: -6px;
+  bottom: auto;
+  width: auto;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-nav-btn {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: 10px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane {
-  padding: 14px 12px 72px;
+  padding: 14px 12px 76px;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane .hah-card-inner {
@@ -2557,23 +2570,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 }
 
 .hah-list-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
   background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom-color: rgba(0,0,0,0.08);
 }
 
 .hah-list-title {
   font-size: 12px;
   font-weight: 600;
   color: var(--desk-text);
-}
-
-.hah-list-count {
-  font-size: 11px;
-  color: var(--desk-text-muted);
   margin-right: auto;
 }
 
@@ -6459,8 +6463,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     const listHead = `
       <div class="hah-list-head">
-        <span class="hah-list-title">Patients</span>
-        <span class="hah-list-count">${sortedRows.length}</span>
+        <span class="hah-list-title">Patient list</span>
         <div class="hah-list-sort-wrap">
           <button type="button" class="hah-list-sort-btn${sortMenuOpen ? ' is-open' : ''}"
             data-patient-action="toggle-sort-menu" title="Sort: ${c.escapeHtml(sortLabel)}">
@@ -8922,7 +8925,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T16:26:26.780695',
+  builtAt: '2026-04-18T16:43:53.028060',
   entry: 'desktop.html'
 };
 </script>
