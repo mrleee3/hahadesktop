@@ -1546,6 +1546,71 @@ html, body {
   margin-bottom: 14px;
 }
 
+.hah-composer-subtitle {
+  margin: -2px 0 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--desk-text-muted);
+}
+
+.hah-board-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hah-board-members-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+}
+
+.hah-board-members-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hah-board-member-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.75);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.hah-board-member-chip:hover {
+  border-color: rgba(25,45,72,0.2);
+  color: var(--desk-text);
+}
+
+.hah-board-member-chip.is-active {
+  background: rgba(47,111,237,0.11);
+  color: rgba(47,111,237,0.92);
+  border-color: rgba(47,111,237,0.25);
+}
+
+.hah-board-members-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--desk-border);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--desk-text);
+  background: rgba(255,255,255,0.9);
+}
+
+.hah-board-members-input:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+  box-shadow: 0 0 0 3px rgba(47,111,237,0.08);
+}
+
 .hah-composer-tab {
   padding: 4px 12px;
   border-radius: 20px;
@@ -1809,8 +1874,8 @@ html, body {
 .hah-note-preview-text {
   margin: 0;
   padding: 10px 12px 12px;
-  font-size: 11.5px;
-  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  font-size: 12px;
+  font-family: inherit;
   line-height: 1.65;
   color: var(--desk-text);
   white-space: pre-wrap;
@@ -5795,6 +5860,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   const BOARD_STATUS_CYCLE = ['Not discussed', 'In discussion', 'Discussed', 'Actioned', 'Deferred'];
   const DISCHARGE_CYCLE    = ['Not ready', 'Possible today', 'Likely tomorrow', 'Ready'];
   const DRAFT_PREFIX       = 'hah_draft:';
+  const BOARD_MEMBER_OPTIONS = ['LK', 'SS', 'GM', 'AA', 'JT', 'Other'];
+  const BOARD_SELECTION_PREFIX = 'hah_board_selection:';
 
   function saveDraft(patientId, type, fields) {
     try { localStorage.setItem(DRAFT_PREFIX + patientId + ':' + type, JSON.stringify({ fields, at: Date.now() })); } catch (_) {}
@@ -5804,6 +5871,31 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
   function clearDraft(patientId, type) {
     try { localStorage.removeItem(DRAFT_PREFIX + patientId + ':' + type); } catch (_) {}
+  }
+
+  function getBoardSelectionStoreKey() {
+    return BOARD_SELECTION_PREFIX + todayIso();
+  }
+
+  function loadBoardSelectionToday() {
+    try {
+      const raw = localStorage.getItem(getBoardSelectionStoreKey());
+      if (!raw) return { members: [], otherText: '' };
+      const parsed = JSON.parse(raw);
+      const members = Array.isArray(parsed.members) ? parsed.members.filter(Boolean) : [];
+      const otherText = parsed.otherText ? String(parsed.otherText) : '';
+      return { members, otherText };
+    } catch (_) {
+      return { members: [], otherText: '' };
+    }
+  }
+
+  function saveBoardSelectionToday(selection) {
+    const payload = {
+      members: Array.isArray(selection && selection.members) ? selection.members.slice() : [],
+      otherText: selection && selection.otherText ? String(selection.otherText) : ''
+    };
+    try { localStorage.setItem(getBoardSelectionStoreKey(), JSON.stringify(payload)); } catch (_) {}
   }
 
   function todayIso()    { return new Date().toISOString().split('T')[0]; }
@@ -6050,18 +6142,31 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function renderRightPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
-    if (!vm) return c.stack([c.card('New entry', c.emptyState('No patient selected', 'Open a patient from the board.'))]);
+    if (!vm) return c.stack([c.card("Today's board round", c.emptyState('No patient selected', 'Open a patient from the board.'), { subtitle: "Select a patient to continue today’s note." })]);
     const composerType = (state.patient && state.patient.composerType) || 'board_round';
     const isLocked     = !!(state.patient && state.patient.composerLocked);
     const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
+    const boardSel     = loadBoardSelectionToday();
+    const heading      = getComposerHeading(composerType, isLocked);
+    const subheading   = getComposerSubheading(composerType, isLocked, lastRound);
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
         data-composer-type="${c.escapeHtml(t.key)}">${c.escapeHtml(t.label)}</button>`;
     }).join('');
     return c.stack([
-      c.card('New entry', `
+      c.card(heading, `
       <div class="hah-composer-tabs">${typeTabs}</div>
+      <div class="hah-board-members">
+        <div class="hah-board-members-label">Who's on board</div>
+        <div class="hah-board-members-chips">
+          ${renderBoardMemberChips(boardSel)}
+        </div>
+        <div class="hah-board-members-other" id="hahBoardMembersOtherWrap"${boardSel.members.includes('Other') ? '' : ' style="display:none"'}>
+          <input type="text" id="hahBoardMembersOther" class="hah-board-members-input" placeholder="Other board member(s)" value="${c.escapeHtml(boardSel.otherText || '')}">
+        </div>
+      </div>
+      <div class="hah-composer-subtitle">${c.escapeHtml(subheading)}</div>
       <div class="hah-composer-form" id="hahComposerForm">
         ${renderComposerForm(composerType, lastRound, vm)}
       </div>
@@ -6088,6 +6193,37 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     `),
       `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">Discharge</button>`
     ]);
+  }
+
+  function getComposerHeading(type, isLocked) {
+    if (type === 'board_round') return isLocked ? "Today's board round" : "Today's board round";
+    if (type === 'micro_mdm')   return isLocked ? "Today's Micro MDM"   : "Today's Micro MDM";
+    if (type === 'resp_mdm')    return isLocked ? "Today's Resp MDM"    : "Today's Resp MDM";
+    return isLocked ? "Today's other note" : "Today's other note";
+  }
+
+  function getComposerSubheading(type, isLocked, lastRound) {
+    const base = type === 'board_round'
+      ? "Continue today’s H@H board round note."
+      : type === 'micro_mdm'
+        ? "Capture today’s Micro MDM advice and updates."
+        : type === 'resp_mdm'
+          ? "Capture today’s respiratory MDM outcome and plan."
+          : "Capture today’s clinical update.";
+    const tail = isLocked
+      ? ' This entry is completed — choose Edit to amend or New note to start again.'
+      : (lastRound && type === 'board_round')
+        ? ' Issues and plan can be carried forward from the latest completed board round.'
+        : '';
+    return base + tail;
+  }
+
+  function renderBoardMemberChips(selection) {
+    const sel = selection || { members: [], otherText: '' };
+    return BOARD_MEMBER_OPTIONS.map((label) => {
+      const active = sel.members.includes(label) ? ' is-active' : '';
+      return `<button type="button" class="hah-board-member-chip${active}" data-board-member="${c.escapeHtml(label)}">${c.escapeHtml(label)}</button>`;
+    }).join('');
   }
 
   function renderComposerForm(type, lastRound, vm) {
@@ -6166,7 +6302,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       issues: val('cform-issues'), progress: val('cform-progress'),
       bloods: val('cform-bloods'), plan: val('cform-plan'),
       dischargeDate: val('cform-discharge-date'),
-      dischargeReady: bool('cform-ready-chip')
+      dischargeReady: bool('cform-ready-chip'),
+      boardMembers: loadBoardSelectionToday().members,
+      boardOtherText: loadBoardSelectionToday().otherText
     };
     if (type === 'micro_mdm') return { question: val('cform-question'), recommendation: val('cform-recommendation'), followUp: val('cform-followup') };
     if (type === 'resp_mdm')  return { summary: val('cform-summary'),   recommendation: val('cform-recommendation'), action:   val('cform-action') };
@@ -6177,7 +6315,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (type !== 'board_round') return '';
     const now   = new Date();
     const stamp = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const lines = ['BOARD ROUND — ' + stamp, ''];
+    const lines = ['H@H BOARD ROUND — ' + stamp, ''];
 
     const issueText = (fields.issues || '').trim();
     if (issueText) {
@@ -6224,6 +6362,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     if (draft && draft.fields) restoreFields(draft.fields, type);
 
     autoExpandAll(pane);
+
+    bindBoardMemberControls(pane);
 
     if (isLocked) {
       pane.querySelectorAll('.hah-cform-textarea').forEach((ta) => {
@@ -6308,6 +6448,49 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     bindCopyBtn(pane);
     refreshPreview(vm, type);
+  }
+
+  function bindBoardMemberControls(pane) {
+    const chips = pane.querySelectorAll('[data-board-member]');
+    const otherWrap = pane.querySelector('#hahBoardMembersOtherWrap');
+    const otherInput = pane.querySelector('#hahBoardMembersOther');
+
+    function currentSelection() {
+      return loadBoardSelectionToday();
+    }
+
+    function renderSelection(sel) {
+      chips.forEach((chip) => {
+        const label = chip.getAttribute('data-board-member');
+        chip.classList.toggle('is-active', sel.members.includes(label));
+      });
+      if (otherWrap) otherWrap.style.display = sel.members.includes('Other') ? '' : 'none';
+      if (otherInput && otherInput.value !== (sel.otherText || '')) otherInput.value = sel.otherText || '';
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const label = chip.getAttribute('data-board-member');
+        const sel = currentSelection();
+        const has = sel.members.includes(label);
+        sel.members = has ? sel.members.filter((m) => m !== label) : sel.members.concat(label);
+        if (!sel.members.includes('Other')) sel.otherText = '';
+        saveBoardSelectionToday(sel);
+        renderSelection(sel);
+      });
+    });
+
+    if (otherInput) {
+      otherInput.addEventListener('input', () => {
+        const sel = currentSelection();
+        sel.otherText = otherInput.value || '';
+        if (sel.otherText && !sel.members.includes('Other')) sel.members = sel.members.concat('Other');
+        saveBoardSelectionToday(sel);
+        renderSelection(sel);
+      });
+    }
+
+    renderSelection(currentSelection());
   }
 
   function bindCopyBtn(pane) {
@@ -7851,7 +8034,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-18T07:55:50.740825',
+  builtAt: '2026-04-18T08:34:53.727386',
   entry: 'desktop.html'
 };
 </script>
