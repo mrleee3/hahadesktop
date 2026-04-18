@@ -7202,6 +7202,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     applyLayoutClasses();
 
+    // Expose for shell to call synchronously after re-renders
+    window.HAHBoard.applyPatientLayout = applyLayoutClasses;
+
     let ro = null;
     if (typeof ResizeObserver === 'function') {
       ro = new ResizeObserver(() => requestApply());
@@ -8581,6 +8584,16 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const mainPane  = rootEl.querySelector('#hahMainPane');
     const rightPane = rootEl.querySelector('#hahRightPane');
     if (!leftPane || !mainPane || !rightPane) return;
+
+    // If the nav was previously re-parented into the left pane (compact
+    // mode), move it back onto the app before we wipe innerHTML so it
+    // survives the render. The layout code will re-parent it if needed.
+    const nav = rootEl.querySelector('#hahNav');
+    const app = rootEl.querySelector('#hahDesktopApp');
+    if (nav && leftPane.contains(nav) && app) {
+      app.insertBefore(nav, leftPane);
+    }
+
     leftPane.innerHTML  = renderLeftPane(state);
     mainPane.innerHTML  = renderMainPane(state);
     rightPane.innerHTML = renderRightPane(state);
@@ -8589,8 +8602,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       screen.afterRender(state, rightPane);
     }
     // Re-apply responsive layout (including compact-mode nav re-parenting)
-    // after innerHTML has wiped the left pane.
-    window.dispatchEvent(new CustomEvent('hah:panes-resized'));
+    // after innerHTML has wiped the left pane. Run synchronously to avoid
+    // a frame flash of missing nav.
+    if (typeof window.HAHBoard.applyPatientLayout === 'function') {
+      window.HAHBoard.applyPatientLayout();
+    } else {
+      window.dispatchEvent(new CustomEvent('hah:panes-resized'));
+    }
   }
 
   function bindResizeHandles() {
@@ -8955,7 +8973,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-18T16:56:17.066874',
+  builtAt: '2026-04-18T17:03:01.370114',
   entry: 'desktop.html'
 };
 </script>
