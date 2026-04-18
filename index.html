@@ -1704,6 +1704,53 @@ html, body {
   border-color: rgba(180,83,9,0.18);
 }
 
+.hah-plan-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.hah-plan-presets-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+}
+
+.hah-plan-presets-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hah-plan-preset-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.78);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.hah-plan-preset-chip:hover {
+  border-color: rgba(25,45,72,0.2);
+  color: var(--desk-text);
+}
+
+.hah-plan-preset-chip.is-locked,
+.hah-plan-preset-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hah-cform-textarea.hah-preset-flash {
+  border-color: rgba(47,111,237,0.35);
+  box-shadow: 0 0 0 4px rgba(47,111,237,0.08);
+}
+
 .hah-composer-actions {
   display: flex;
   justify-content: flex-end;
@@ -5862,6 +5909,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   const DISCHARGE_CYCLE    = ['Not ready', 'Possible today', 'Likely tomorrow', 'Ready'];
   const DRAFT_PREFIX       = 'hah_draft:';
   const BOARD_MEMBER_OPTIONS = ['LK', 'SS', 'GM', 'AA', 'JT', 'Other'];
+  const PLAN_PRESETS = [
+    { key: 'gp-hf-fu', label: 'GP HF F/U', text: 'GP to please review diuretics and repeat U&Es in 1–2 weeks.' }
+  ];
   const BOARD_SELECTION_PREFIX = 'hah_board_selection:';
 
   function saveDraft(patientId, type, fields) {
@@ -6282,6 +6332,12 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           <label class="hah-cform-label">Plan</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3"
             placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
+          <div class="hah-plan-presets">
+            <div class="hah-plan-presets-label">Common plan actions</div>
+            <div class="hah-plan-presets-chips">
+              ${PLAN_PRESETS.map((preset) => `<button type="button" class="hah-plan-preset-chip" data-patient-action="insert-plan-preset" data-plan-preset-key="${c.escapeHtml(preset.key)}">${c.escapeHtml(preset.label)}</button>`).join('')}
+            </div>
+          </div>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Estimated discharge</label>
@@ -6426,6 +6482,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       const dateInput = pane.querySelector('#cform-discharge-date');
       if (dateInput) { dateInput.disabled = true; dateInput.classList.add('is-locked'); }
       pane.querySelectorAll('.hah-dchip').forEach((chip) => { chip.disabled = true; chip.classList.add('is-locked'); });
+      pane.querySelectorAll('.hah-plan-preset-chip').forEach((chip) => { chip.disabled = true; chip.classList.add('is-locked'); });
       refreshPreview(vm, type);
       bindCopyBtn(pane);
       return;
@@ -6647,6 +6704,70 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     el.classList.add('is-visible');
   }
 
+
+  function getPlanPresetByKey(key) {
+    return PLAN_PRESETS.find((preset) => preset.key === key) || null;
+  }
+
+  function splitPlanParagraphs(text) {
+    return String(text || '')
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function normalisePlanLine(text) {
+    return String(text || '')
+      .replace(/^\s*\d+[\.)]\s*/, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function nextPlanNumber(existingText) {
+    const nums = String(existingText || '')
+      .split('\n')
+      .map((line) => {
+        const m = line.match(/^\s*(\d+)[\.)]\s/);
+        return m ? Number(m[1]) : null;
+      })
+      .filter((n) => Number.isFinite(n));
+    return nums.length ? Math.max(...nums) + 1 : 1;
+  }
+
+  function insertPlanPresetIntoComposer(presetKey, patientId, composerType) {
+    if (composerType !== 'board_round') return false;
+    const preset = getPlanPresetByKey(presetKey);
+    const planEl = document.getElementById('cform-plan');
+    if (!preset || !planEl) return false;
+
+    const existingText = planEl.value || '';
+    const existingParagraphs = splitPlanParagraphs(existingText);
+    const existingNormalised = existingParagraphs.map(normalisePlanLine);
+    const presetNorm = normalisePlanLine(preset.text);
+    const alreadyExists = existingNormalised.includes(presetNorm);
+
+    if (alreadyExists) {
+      planEl.focus();
+      planEl.classList.remove('hah-preset-flash');
+      void planEl.offsetWidth;
+      planEl.classList.add('hah-preset-flash');
+      return true;
+    }
+
+    const number = nextPlanNumber(existingText);
+    const newLine = `${number}. ${preset.text}`;
+    const spacer = existingText.trim() ? '\n' : '';
+    planEl.value = `${existingText.trimEnd()}${spacer}${newLine}`.trim();
+    planEl.classList.remove('is-pulled');
+    autoExpand(planEl);
+    planEl.focus();
+    const pane = document.querySelector('#hahRightPane');
+    if (pane) showAutosaveIndicator(pane);
+    saveDraft(patientId, composerType, collectComposerFields(composerType));
+    return true;
+  }
+
   function handleClick(event, state) {
     const target = event.target.closest('[data-patient-action]');
     if (!target) return false;
@@ -6743,6 +6864,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       refreshPreview(vm, composerType);
       patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
       return true;
+    }
+
+    if (action === 'insert-plan-preset' && vm) {
+      const composerType = (state.patient && state.patient.composerType) || 'board_round';
+      const presetKey = target.getAttribute('data-plan-preset-key');
+      const inserted = insertPlanPresetIntoComposer(presetKey, vm.patient.id, composerType);
+      if (inserted) refreshPreview(vm, composerType);
+      return inserted;
     }
 
     if (action === 'toggle-mdm-earlier') {
@@ -8099,9 +8228,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_016_release.html',
-  source: 'hospital_at_home_board_v0_8_016_source.zip',
-  builtAt: '2026-04-18T09:23:43.900399',
+  filename: 'hospital_at_home_board_v0_8_018_release.html',
+  source: 'hospital_at_home_board_v0_8_018_source.zip',
+  builtAt: '2026-04-18T09:34:56.826328',
   entry: 'desktop.html'
 };
 </script>
