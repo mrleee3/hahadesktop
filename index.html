@@ -1926,26 +1926,25 @@ html, body {
 .hah-discharge-btn {
   display: block;
   width: 100%;
-  padding: 10px 16px;
+  padding: 11px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  background: transparent;
-  color: rgba(185, 28, 28, 0.85);
-  font-size: 12.5px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .hah-discharge-btn:hover {
-  background: rgba(220, 38, 38, 0.08);
+  background: rgba(220, 38, 38, 0.15);
   border-color: rgba(220, 38, 38, 0.5);
-  color: #b91c1c;
 }
 
 .hah-discharge-btn:active {
-  background: rgba(220, 38, 38, 0.14);
+  background: rgba(220, 38, 38, 0.22);
   transform: scale(0.997);
 }
 
@@ -1958,41 +1957,14 @@ html, body {
   gap: 12px;
 }
 
-/* ─── MDM widget collapsible state ───────────────────────────────────── */
+/* ─── MDM widget head ────────────────────────────────────────────────── */
 
 .hah-mdm-widget .hah-mdm-head {
-  width: 100%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 9px 12px;
-  text-align: left;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background 120ms ease;
-  font-family: inherit;
-}
-
-.hah-mdm-widget .hah-mdm-head:hover {
-  background: rgba(47,111,237,0.04);
-}
-
-.hah-mdm-widget.is-collapsed .hah-mdm-head {
-  border-bottom: none;
-}
-
-.hah-mdm-chevron {
-  margin-left: 4px;
-  font-size: 10px;
-  color: var(--desk-text-muted);
-  transition: transform 180ms ease;
-  display: inline-block;
-  transform: rotate(0deg);
-}
-
-.hah-mdm-chevron.is-open {
-  transform: rotate(90deg);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--desk-border);
 }
 
 .hah-mdm-chevron-sm {
@@ -2114,6 +2086,42 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 .flatpickr-day:hover {
   background: rgba(47,111,237,0.1) !important;
+}
+
+/* ─── Board round log — show older ───────────────────────────────────── */
+
+.hah-log-earlier {
+  border-top: 1px dashed var(--desk-border);
+  background: rgba(0,0,0,0.012);
+}
+
+.hah-log-earlier-toggle {
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  text-align: left;
+  letter-spacing: 0.02em;
+  transition: color 120ms ease;
+}
+
+.hah-log-earlier-toggle:hover {
+  color: rgba(47,111,237,0.9);
+}
+
+.hah-log-earlier-list {
+  border-top: 1px solid var(--desk-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.hah-log-earlier-list .hah-log-entry {
+  opacity: 0.85;
 }
 
 </style>
@@ -5804,7 +5812,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       ${renderPatientHeader(vm, state)}
       ${renderObsStrip(vm)}
       <div class="hah-pt-centre-split">
-        <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds)}</div>
+        <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds, state)}</div>
         <div class="hah-pt-ref-col">
           ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms, state)}
           ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
@@ -5844,14 +5852,30 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     }).join('')}</div>`;
   }
 
-  function renderBoardRoundLog(entries) {
+  function renderBoardRoundLog(entries, state) {
+    const showOlder = !!(state && state.patient && state.patient.logShowOlder);
     const header = `<div class="hah-log-head">
       <div class="hah-log-dot" style="background:#378ADD"></div>
       <span class="hah-log-title">Board round log</span>
       <span class="hah-log-count">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}</span>
     </div>`;
-    if (!entries.length) return `<div class="hah-log-card">${header}<div class="hah-log-empty">No board round entries yet. Use the composer to add today's entry.</div></div>`;
-    return `<div class="hah-log-card">${header}<div class="hah-log-entries">${entries.map((e, i) => renderBoardRoundEntry(e, i === 0)).join('')}</div></div>`;
+    if (!entries.length) {
+      return `<div class="hah-log-card">${header}<div class="hah-log-empty">No board round entries yet. Use the composer to add today's entry.</div></div>`;
+    }
+
+    const latest  = entries[0];
+    const earlier = entries.slice(1);
+    const latestHtml = renderBoardRoundEntry(latest, true);
+    const earlierHtml = earlier.length ? `
+      <div class="hah-log-earlier${showOlder ? ' is-open' : ''}">
+        <button type="button" class="hah-log-earlier-toggle" data-patient-action="toggle-log-older">
+          <span class="hah-mdm-chevron-sm${showOlder ? ' is-open' : ''}">▸</span>
+          ${showOlder ? 'Hide' : 'Show'} older (${earlier.length})
+        </button>
+        ${showOlder ? `<div class="hah-log-earlier-list">${earlier.map((e) => renderBoardRoundEntry(e, false)).join('')}</div>` : ''}
+      </div>` : '';
+
+    return `<div class="hah-log-card">${header}<div class="hah-log-entries">${latestHtml}</div>${earlierHtml}</div>`;
   }
 
   function renderBoardRoundEntry(enc, isLatest) {
@@ -5879,43 +5903,38 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
 
   function renderMdmWidget(type, label, colour, entries, state) {
-    const expandedMap = (state && state.patient && state.patient.mdmExpanded) || {};
-    const isExpanded  = type in expandedMap ? expandedMap[type] : (entries.length > 0);
-    const hasEntries  = entries.length > 0;
-    const countText   = entries.length ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') : 'None';
-    const showEarlier = !!(state && state.patient && state.patient.mdmEarlier && state.patient.mdmEarlier[type]);
+    const showOlder = !!(state && state.patient && state.patient.mdmEarlier && state.patient.mdmEarlier[type]);
+    const hasEntries = entries.length > 0;
+    const countText  = entries.length
+      ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies')
+      : 'No entries';
     const earlierEntries = entries.slice(1);
 
-    const headToggle = `
-      <button type="button" class="hah-mdm-head" data-patient-action="toggle-mdm-expand" data-mdm-type="${c.escapeHtml(type)}">
+    const head = `
+      <div class="hah-mdm-head">
         <div class="hah-mdm-dot" style="background:${colour}"></div>
         <span class="hah-mdm-label">${c.escapeHtml(label)}</span>
         <span class="hah-mdm-count">${c.escapeHtml(countText)}</span>
-        <span class="hah-mdm-chevron${isExpanded ? ' is-open' : ''}">▸</span>
-      </button>`;
-
-    if (!isExpanded) {
-      return `<div class="hah-mdm-widget is-collapsed">${headToggle}</div>`;
-    }
+      </div>`;
 
     const bodyHtml = hasEntries
       ? renderMdmEntry(entries[0])
       : `<div class="hah-mdm-empty">No ${c.escapeHtml(label)} input for this admission.</div>`;
 
-    const earlierHtml = earlierEntries.length ? `
-      <div class="hah-mdm-earlier">
+    const olderHtml = earlierEntries.length ? `
+      <div class="hah-mdm-earlier${showOlder ? ' is-open' : ''}">
         <button type="button" class="hah-mdm-earlier-toggle"
           data-patient-action="toggle-mdm-earlier" data-mdm-type="${c.escapeHtml(type)}">
-          <span class="hah-mdm-chevron-sm${showEarlier ? ' is-open' : ''}">▸</span>
-          ${showEarlier ? 'Hide' : 'Show'} earlier entries (${earlierEntries.length})
+          <span class="hah-mdm-chevron-sm${showOlder ? ' is-open' : ''}">▸</span>
+          ${showOlder ? 'Hide' : 'Show'} older (${earlierEntries.length})
         </button>
-        ${showEarlier ? `<div class="hah-mdm-earlier-list">${earlierEntries.map((e) => renderMdmEntry(e, true)).join('')}</div>` : ''}
+        ${showOlder ? `<div class="hah-mdm-earlier-list">${earlierEntries.map((e) => renderMdmEntry(e, true)).join('')}</div>` : ''}
       </div>` : '';
 
     return `<div class="hah-mdm-widget">
-      ${headToggle}
+      ${head}
       <div class="hah-mdm-body">${bodyHtml}</div>
-      ${earlierHtml}
+      ${olderHtml}
       <button type="button" class="hah-mdm-add" data-patient-action="open-composer"
         data-encounter-type="${c.escapeHtml(type)}">+ Add ${c.escapeHtml(label)} entry</button>
     </div>`;
@@ -6415,20 +6434,17 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       return true;
     }
 
-    if (action === 'toggle-mdm-expand') {
-      const mdmType = target.getAttribute('data-mdm-type');
-      if (!mdmType) return false;
-      const current = (state.patient && state.patient.mdmExpanded) || {};
-      const wasOpen = mdmType in current ? current[mdmType] : true;
-      store.setState({ patient: { mdmExpanded: { ...current, [mdmType]: !wasOpen } } });
-      return true;
-    }
-
     if (action === 'toggle-mdm-earlier') {
       const mdmType = target.getAttribute('data-mdm-type');
       if (!mdmType) return false;
       const current = (state.patient && state.patient.mdmEarlier) || {};
       store.setState({ patient: { mdmEarlier: { ...current, [mdmType]: !current[mdmType] } } });
+      return true;
+    }
+
+    if (action === 'toggle-log-older') {
+      const current = !!(state.patient && state.patient.logShowOlder);
+      store.setState({ patient: { logShowOlder: !current } });
       return true;
     }
 
@@ -7774,7 +7790,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_001_release.html',
   source: 'hospital_at_home_board_v0_8_001_source.zip',
-  builtAt: '2026-04-18T07:19:41.765341',
+  builtAt: '2026-04-18T07:31:06.550270',
   entry: 'desktop.html'
 };
 </script>
