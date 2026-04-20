@@ -7392,43 +7392,266 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     </div>`;
   }
 
-  const BLOOD_ANALYTES_ALL = [
-    { key: 'CRP',  label: 'CRP',  re: /\bCRP\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v, sex) => v > 50 ? 'high' : v > 5 ? 'warn' : null },
-    { key: 'WCC',  label: 'WCC',  re: /\bWCC\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v > 11 ? 'high' : v < 4 ? 'low' : null },
-    { key: 'Hb',   label: 'Hb',   re: /\bHb\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v, sex) => {
-        const lo = (sex || '').toUpperCase() === 'F' ? 120 : 130;
-        const hi = (sex || '').toUpperCase() === 'F' ? 160 : 170;
-        return v < lo ? 'low' : v > hi ? 'high' : null;
-      }},
-    { key: 'Na',   label: 'Na',   re: /\bNa\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 133 ? 'low' : v > 146 ? 'high' : null },
-    { key: 'K',    label: 'K',    re: /\bK\+?\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 3.5 ? 'low' : v > 5.0 ? 'high' : null },
-    { key: 'Cr',   label: 'Cr',   re: /\bCr\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v, sex) => {
-        const hi = (sex || '').toUpperCase() === 'F' ? 98 : 111;
-        return v > hi ? 'high' : null;
-      }},
-    { key: 'Plt',  label: 'Plt',  re: /\bPlt\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 150 ? 'low' : v > 400 ? 'high' : null },
-    { key: 'Bili', label: 'Bili', re: /\bBili\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v > 21 ? 'high' : null },
-    { key: 'ALT',  label: 'ALT',  re: /\bALT\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v > 56 ? 'high' : null },
-    { key: 'Alb',  label: 'Alb',  re: /\bAlb\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 35 ? 'low' : null },
-    { key: 'Mg',   label: 'Mg',   re: /\bMg\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 0.7 ? 'low' : v > 1.0 ? 'high' : null },
-    { key: 'Phos', label: 'Phos', re: /\bPhos\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v < 0.8 ? 'low' : v > 1.5 ? 'high' : null },
-    { key: 'CK',   label: 'CK',   re: /\bCK\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v > 200 ? 'high' : null },
-    { key: 'Lac',  label: 'Lac',  re: /\bLac\s+(-?\d+(?:\.\d+)?)/i,
-      flag: (v) => v > 2 ? 'high' : null }
-  ];
+  // Each analyte: key, label, aliases (for regex), unit, range, flag fn, fullName, notes
+  // Regex is built dynamically: \b(?:alias1|alias2|...)\s+VALUE
+  function mkRe(aliases) {
+    const pat = aliases.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    return new RegExp('\\b(?:' + pat + ')\\s*[=:]?\\s*(-?\\d+(?:\\.\\d+)?)', 'i');
+  }
+
+  const BLOOD_DB = [
+    { key:'CRP',    label:'CRP',    aliases:['CRP','C-reactive protein','CRP (mg/L)'],
+      unit:'mg/L',    range:'<5',
+      flag:(v)=>v>50?'high':v>5?'warn':null,
+      fullName:'C-Reactive Protein',
+      notes:'Acute phase reactant. Rises in infection, inflammation, tissue injury. Halving time ~19h — useful for monitoring treatment response.' },
+    { key:'WCC',    label:'WCC',    aliases:['WCC','WBC','white cells','white cell count','leukocytes','leucocytes','WBC count'],
+      unit:'×10⁹/L', range:'4.0–11.0',
+      flag:(v)=>v>11?'high':v<4?'low':null,
+      fullName:'White Cell Count',
+      notes:'Raised in bacterial infection, steroids. Reduced in viral illness, immunosuppression, some medications.' },
+    { key:'Neut',   label:'Neut',   aliases:['Neut','Neuts','Neutrophils','Neutrophil'],
+      unit:'×10⁹/L', range:'1.8–7.5',
+      flag:(v)=>v>7.5?'high':v<1.8?'low':null,
+      fullName:'Neutrophil Count',
+      notes:'Neutrophilia: bacterial infection, steroids, stress. Neutropenia: viral, drugs, bone marrow suppression. <1.0 = severe neutropenia.' },
+    { key:'Lymph',  label:'Lymph',  aliases:['Lymph','Lymphs','Lymphocytes','Lymphocyte'],
+      unit:'×10⁹/L', range:'1.0–4.0',
+      flag:(v)=>v>4?'high':v<1?'low':null,
+      fullName:'Lymphocyte Count',
+      notes:'Lymphopenia common in viral illness, steroids, malnutrition. Lymphocytosis in viral infections, CLL.' },
+    { key:'Hb',     label:'Hb',     aliases:['Hb','Hgb','Hemoglobin','Haemoglobin'],
+      unit:'g/L',    range:'M 130–170 · F 120–160',
+      flag:(v,sex)=>{const lo=(sex||'').toUpperCase()==='F'?120:130;const hi=(sex||'').toUpperCase()==='F'?160:170;return v<lo?'low':v>hi?'high':null;},
+      fullName:'Haemoglobin',
+      notes:'Monitor trend in H@H. Dilutional fall in fluid overload. Transfusion threshold typically <70 (80 in cardiac disease).' },
+    { key:'Plt',    label:'Plt',    aliases:['Plt','Plts','Platelets','Platelet','PLAT'],
+      unit:'×10⁹/L', range:'150–400',
+      flag:(v)=>v<150?'low':v>400?'high':null,
+      fullName:'Platelets',
+      notes:'Thrombocytopenia: sepsis, HIT, haematological disease. Reactive thrombocytosis common post-infection/surgery.' },
+    { key:'MCV',    label:'MCV',    aliases:['MCV','mean cell volume','mean corpuscular volume'],
+      unit:'fL',     range:'80–100',
+      flag:(v)=>v<80?'low':v>100?'high':null,
+      fullName:'Mean Cell Volume',
+      notes:'Low (microcytic): iron deficiency, thalassaemia. High (macrocytic): B12/folate deficiency, alcohol, hypothyroidism, drugs.' },
+    { key:'Na',     label:'Na',     aliases:['Na','Sodium','Sod'],
+      unit:'mmol/L', range:'133–146',
+      flag:(v)=>v<133?'low':v>146?'high':null,
+      fullName:'Sodium',
+      notes:'Dysnatraemia common in frail elderly. Hyponatraemia: check hydration, medications, SIADH. Correct cautiously to avoid osmotic demyelination.' },
+    { key:'K',      label:'K',      aliases:['K','K+','Potassium','Pot'],
+      unit:'mmol/L', range:'3.5–5.0',
+      flag:(v)=>v<3.5?'low':v>5.0?'high':null,
+      fullName:'Potassium',
+      notes:'Hypokalaemia risk: diuretics, vomiting, diarrhoea. Hyperkalaemia: AKI, ACEi/ARB. ECG changes if <3.0 or >6.0.' },
+    { key:'Cr',     label:'Cr',     aliases:['Cr','Creat','Creatinine','Cre','CREA'],
+      unit:'µmol/L', range:'M 64–111 · F 50–98',
+      flag:(v,sex)=>{const hi=(sex||'').toUpperCase()==='F'?98:111;return v>hi?'high':null;},
+      fullName:'Creatinine',
+      notes:'Consider eGFR and trend. Affected by muscle mass — may underestimate AKI in frail/elderly. Check medication doses at elevated levels.' },
+    { key:'Ur',     label:'Ur',     aliases:['Ur','Urea','BUN','Blood urea nitrogen'],
+      unit:'mmol/L', range:'2.5–7.8',
+      flag:(v)=>v>7.8?'high':v<2.5?'low':null,
+      fullName:'Urea',
+      notes:'Raised with dehydration, GI bleeding, high protein diet, AKI/CKD. Urea:Cr ratio >100 suggests pre-renal cause.' },
+    { key:'eGFR',   label:'eGFR',   aliases:['eGFR','GFR','estimated GFR'],
+      unit:'mL/min/1.73m²', range:'>60',
+      flag:(v)=>v<30?'high':v<60?'warn':null,
+      fullName:'Estimated Glomerular Filtration Rate',
+      notes:'CKD staging: G1 >90, G2 60–89, G3a 45–59, G3b 30–44, G4 15–29, G5 <15. Review nephrotoxic drug doses.' },
+    { key:'Bicarb', label:'Bicarb', aliases:['Bicarb','HCO3','HCO3-','Bicarbonate','TCO2'],
+      unit:'mmol/L', range:'22–29',
+      flag:(v)=>v<22?'low':v>29?'high':null,
+      fullName:'Bicarbonate',
+      notes:'Low: metabolic acidosis (AKI, DKA, sepsis, diarrhoea). High: metabolic alkalosis (vomiting, diuretics, steroids).' },
+    { key:'Ca',     label:'Ca',     aliases:['Ca','Ca2+','Calcium','Corrected Ca','Adj Ca'],
+      unit:'mmol/L', range:'2.20–2.60',
+      flag:(v)=>v<2.2?'low':v>2.6?'high':null,
+      fullName:'Calcium (adjusted)',
+      notes:'Correct for albumin: adj Ca = Ca + 0.02×(40−Alb). Hypercalcaemia: malignancy, PTH excess. Hypocalcaemia: vitamin D deficiency, hypoalbuminaemia.' },
+    { key:'Phos',   label:'Phos',   aliases:['Phos','Phosphate','PO4','Phosphorus','Inorganic phosphate','iP'],
+      unit:'mmol/L', range:'0.80–1.50',
+      flag:(v)=>v<0.8?'low':v>1.5?'high':null,
+      fullName:'Phosphate',
+      notes:'Low in malnutrition, refeeding syndrome, hyperparathyroidism. High in AKI/CKD. Monitor in TPN and refeeding protocols.' },
+    { key:'Mg',     label:'Mg',     aliases:['Mg','Mag','Mg2+','Magnesium','Magnesium level'],
+      unit:'mmol/L', range:'0.70–1.00',
+      flag:(v)=>v<0.7?'low':v>1.0?'high':null,
+      fullName:'Magnesium',
+      notes:'Hypomagnesaemia: diuretics, malabsorption, alcohol. Affects K and Ca handling — correct Mg before addressing refractory hypokalaemia.' },
+    { key:'Alb',    label:'Alb',    aliases:['Alb','Albumin'],
+      unit:'g/L',    range:'35–50',
+      flag:(v)=>v<35?'low':null,
+      fullName:'Albumin',
+      notes:'Marker of nutrition and chronic illness. Low albumin affects drug binding. Adjust calcium for low albumin. Falls acutely in inflammation.' },
+    { key:'Bili',   label:'Bili',   aliases:['Bili','Bilirubin','Tbili','Total bilirubin','TBil'],
+      unit:'µmol/L', range:'<21',
+      flag:(v)=>v>21?'high':null,
+      fullName:'Bilirubin (total)',
+      notes:'Raised in liver disease, haemolysis, hepatic congestion in CCF. Conjugated vs unconjugated pattern guides diagnosis.' },
+    { key:'ALT',    label:'ALT',    aliases:['ALT','Alanine aminotransferase','SGPT','Alanine transaminase'],
+      unit:'U/L',    range:'<56',
+      flag:(v)=>v>56?'high':null,
+      fullName:'Alanine Aminotransferase',
+      notes:'Hepatocellular marker. Elevated in hepatitis, NAFLD, drug toxicity (including antibiotics, statins). Highest sensitivity for liver cell injury.' },
+    { key:'AST',    label:'AST',    aliases:['AST','Aspartate aminotransferase','SGOT'],
+      unit:'U/L',    range:'<40',
+      flag:(v)=>v>40?'high':null,
+      fullName:'Aspartate Aminotransferase',
+      notes:'Raised in liver disease, MI, rhabdomyolysis. Less liver-specific than ALT. AST:ALT >2 suggests alcohol-related liver disease.' },
+    { key:'ALP',    label:'ALP',    aliases:['ALP','Alk phos','Alkaline phosphatase','AlkPhos'],
+      unit:'U/L',    range:'30–130',
+      flag:(v)=>v>130?'high':v<30?'low':null,
+      fullName:'Alkaline Phosphatase',
+      notes:'Raised in cholestatic liver disease, bone disease, pregnancy. Isolated ALP rise with normal transaminases suggests biliary or bone origin.' },
+    { key:'GGT',    label:'GGT',    aliases:['GGT','Gamma GT','γGT','Gamma-GT','GGT (U/L)'],
+      unit:'U/L',    range:'M <73 · F <38',
+      flag:(v,sex)=>v>((sex||'').toUpperCase()==='F'?38:73)?'high':null,
+      fullName:'Gamma-Glutamyltransferase',
+      notes:'Sensitive but non-specific. Elevated by alcohol, liver disease, drugs (inc. anticonvulsants). High GGT with raised ALP suggests hepatobiliary origin.' },
+    { key:'TP',     label:'TP',     aliases:['TP','Total protein','TotProt'],
+      unit:'g/L',    range:'60–80',
+      flag:(v)=>v<60?'low':v>80?'high':null,
+      fullName:'Total Protein',
+      notes:'Low in malnutrition, liver disease, protein-losing enteropathy/nephropathy. High may indicate dehydration or paraprotein.' },
+    { key:'Glu',    label:'Glu',    aliases:['Glu','Glucose','BGL','BSL','Blood sugar','Blood glucose','RBG','FBG','CBG'],
+      unit:'mmol/L', range:'4.0–7.0 (fasting)',
+      flag:(v)=>v>10?'high':v<4?'low':null,
+      fullName:'Blood Glucose',
+      notes:'Hyperglycaemia: diabetes, steroids, stress, infection, parenteral nutrition. Hypoglycaemia: insulin/sulphonylurea, liver failure, fasting.' },
+    { key:'HbA1c',  label:'HbA1c',  aliases:['HbA1c','A1c','Glycated Hb','Glycated haemoglobin','Glycohaemoglobin','HbA1C'],
+      unit:'mmol/mol', range:'<48',
+      flag:(v)=>v>=48?'high':null,
+      fullName:'Glycated Haemoglobin',
+      notes:'Reflects average glucose over 8–12 weeks. Target in H@H diabetics typically <53–58. Not reliable in haemolysis, haemoglobinopathy.' },
+    { key:'TSH',    label:'TSH',    aliases:['TSH','Thyroid stimulating hormone','Thyrotropin'],
+      unit:'mU/L',   range:'0.27–4.20',
+      flag:(v)=>v>4.2?'high':v<0.27?'low':null,
+      fullName:'Thyroid-Stimulating Hormone',
+      notes:'High TSH: hypothyroidism. Low TSH: hyperthyroidism, sick euthyroid, steroids. If abnormal, check fT4.' },
+    { key:'fT4',    label:'fT4',    aliases:['fT4','Free T4','FT4','Free thyroxine','T4'],
+      unit:'pmol/L', range:'12–22',
+      flag:(v)=>v>22?'high':v<12?'low':null,
+      fullName:'Free Thyroxine (T4)',
+      notes:'Interpret with TSH. Low fT4 with high TSH = primary hypothyroidism. Low fT4 with low/normal TSH = secondary hypothyroidism or sick euthyroid.' },
+    { key:'CK',     label:'CK',     aliases:['CK','CPK','Creatine kinase','Creatine phosphokinase','CK total'],
+      unit:'U/L',    range:'<200',
+      flag:(v)=>v>200?'high':null,
+      fullName:'Creatine Kinase',
+      notes:'Markedly raised in rhabdomyolysis (falls, immobility, statin myopathy). Ensure adequate hydration. Check serial levels.' },
+    { key:'Trop',   label:'Trop',   aliases:['Trop','Troponin','TnT','TnI','TropT','TropI','hs-Trop','hsTrop','hs Trop','hsTnT'],
+      unit:'ng/L',   range:'<14',
+      flag:(v)=>v>52?'high':v>14?'warn':null,
+      fullName:'Troponin (high-sensitivity)',
+      notes:'Raised in ACS, PE, myocarditis, type 2 MI (sepsis, demand ischaemia). Serial measurements (0/3h) improve specificity. >52 ng/L highly specific for MI at most centres.' },
+    { key:'BNP',    label:'BNP',    aliases:['BNP','NT-proBNP','NT proBNP','NTproBNP','proBNP','Pro-BNP','B-type natriuretic','Brain natriuretic'],
+      unit:'pg/mL',  range:'<100 (BNP) / <300 (NT-proBNP)',
+      flag:(v)=>v>400?'high':v>100?'warn':null,
+      fullName:'B-type Natriuretic Peptide',
+      notes:'Elevated in heart failure, volume overload, PE, AF. NT-proBNP cut-offs age-adjusted. Serial values guide diuresis in H@H heart failure.' },
+    { key:'Fer',    label:'Fer',    aliases:['Fer','Ferritin','Serum ferritin'],
+      unit:'µg/L',   range:'M 30–400 · F 13–150',
+      flag:(v)=>v<13?'low':v>400?'high':null,
+      fullName:'Ferritin',
+      notes:'Low = iron deficiency (may be masked by inflammation). High in infection/inflammation, liver disease, haemochromatosis. Interpret with CRP.' },
+    { key:'B12',    label:'B12',    aliases:['B12','Vitamin B12','Vit B12','Cobalamin','B-12'],
+      unit:'pmol/L', range:'148–720',
+      flag:(v)=>v<148?'low':null,
+      fullName:'Vitamin B12',
+      notes:'Low: pernicious anaemia, malabsorption, veganism. Causes macrocytic anaemia, peripheral neuropathy, subacute combined degeneration.' },
+    { key:'Folate', label:'Folate', aliases:['Folate','Folic acid','Serum folate','Fol'],
+      unit:'nmol/L', range:'>7',
+      flag:(v)=>v<7?'low':null,
+      fullName:'Folate',
+      notes:'Low: poor diet, malabsorption, alcohol. Causes macrocytic anaemia. Check with B12. Supplement before pregnancy.' },
+    { key:'INR',    label:'INR',    aliases:['INR','PT','Prothrombin','Prothrombin ratio','PT/INR'],
+      unit:'ratio',  range:'0.9–1.2',
+      flag:(v)=>v>1.2?'high':null,
+      fullName:'International Normalised Ratio',
+      notes:'Therapeutic range: VTE 2–3, mechanical valve 2.5–3.5. >5 risk of bleeding. Affected by: warfarin, liver disease, vitamin K deficiency, DIC.' },
+    { key:'APTT',   label:'APTT',   aliases:['APTT','APTT ratio','aPTT','Activated partial thromboplastin','PTT'],
+      unit:'seconds', range:'23–35',
+      flag:(v)=>v>35?'high':null,
+      fullName:'Activated Partial Thromboplastin Time',
+      notes:'Prolonged in heparin therapy, haemophilia, lupus anticoagulant, DIC, liver disease. Therapeutic heparin typically targets ratio 1.5–2.5.' },
+    { key:'Fib',    label:'Fib',    aliases:['Fib','Fibrinogen','Fibrinogen level'],
+      unit:'g/L',    range:'2.0–4.5',
+      flag:(v)=>v<2?'low':v>4.5?'high':null,
+      fullName:'Fibrinogen',
+      notes:'Low in DIC, severe liver disease, major bleeding. High in infection, inflammation (acute phase reactant). Critical when <1.5 g/L.' },
+    { key:'DDimer', label:'D-dimer', aliases:['D-dimer','DDimer','D dimer','D-Dimer','Dd'],
+      unit:'µg/L FEU', range:'<500',
+      flag:(v)=>v>500?'high':null,
+      fullName:'D-Dimer',
+      notes:'Sensitive but not specific. Raised in DVT/PE, sepsis, pregnancy, post-op, malignancy. Used in low pre-test probability pathways only.' },
+    { key:'Lac',    label:'Lac',    aliases:['Lac','Lactate','Lactic acid','Blood lactate'],
+      unit:'mmol/L', range:'<2.0',
+      flag:(v)=>v>4?'high':v>2?'warn':null,
+      fullName:'Lactate',
+      notes:'Raised in sepsis, tissue hypoperfusion, metformin toxicity, liver failure. >4 = severe hypoperfusion. Serial measurement guides resuscitation.' },
+    { key:'CysC',   label:'CysC',   aliases:['CysC','Cystatin C','Cystatin','Cys C'],
+      unit:'mg/L',   range:'0.51–0.98',
+      flag:(v)=>v>0.98?'high':null,
+      fullName:'Cystatin C',
+      notes:'Alternative GFR marker, less affected by muscle mass. Useful when creatinine may underestimate renal function (frail, elderly, malnutrition).' },
+    { key:'NH3',    label:'NH3',    aliases:['NH3','Ammonia','Ammonium'],
+      unit:'µmol/L', range:'11–48',
+      flag:(v)=>v>48?'high':null,
+      fullName:'Ammonia',
+      notes:'Raised in hepatic encephalopathy, urea cycle disorders, GI bleeding with liver disease. Collect on ice, process immediately.' },
+    { key:'Cortisol', label:'Cortisol', aliases:['Cortisol','Serum cortisol','AM cortisol'],
+      unit:'nmol/L', range:'Morning: 200–700',
+      flag:(v)=>v<100?'low':null,
+      fullName:'Cortisol',
+      notes:'Low morning cortisol may suggest adrenal insufficiency — consider if unexplained hypotension, hyponatraemia, or failure to recover from illness.' },
+    { key:'LDH',    label:'LDH',    aliases:['LDH','Lactate dehydrogenase'],
+      unit:'U/L',    range:'140–280',
+      flag:(v)=>v>280?'high':null,
+      fullName:'Lactate Dehydrogenase',
+      notes:'Non-specific marker of cell damage. Raised in haemolysis, malignancy (particularly lymphoma), pulmonary infarction, liver disease.' },
+    { key:'Urate',  label:'Urate',  aliases:['Urate','Uric acid','UA'],
+      unit:'µmol/L', range:'M 200–430 · F 140–360',
+      flag:(v,sex)=>v>((sex||'').toUpperCase()==='F'?360:430)?'high':null,
+      fullName:'Urate',
+      notes:'Raised in gout, renal failure, diuretic use, high purine diet. Allopurinol or febuxostat for prevention. Acute gout does not always correlate with level.' },
+    { key:'ESR',    label:'ESR',    aliases:['ESR','Erythrocyte sedimentation rate','Sed rate'],
+      unit:'mm/hr',  range:'M <15 · F <20',
+      flag:(v)=>v>20?'high':null,
+      fullName:'Erythrocyte Sedimentation Rate',
+      notes:'Raised in inflammation, infection, malignancy, anaemia. Very high (>100) in temporal arteritis, multiple myeloma. Slower to change than CRP.' },
+    { key:'Prot',   label:'Prot',   aliases:['Prot','Protein','Serum protein','Total protein','TP'],
+      unit:'g/L',    range:'60–80',
+      flag:(v)=>v<60?'low':v>80?'high':null,
+      fullName:'Total Protein',
+      notes:'Low in malnutrition, liver disease, protein-losing states. High may indicate dehydration or paraprotein. Consider SPEP if isolated rise.' },
+    { key:'Prealb', label:'Prealb', aliases:['Prealb','Prealbumin','Transthyretin','TTR'],
+      unit:'mg/L',   range:'180–360',
+      flag:(v)=>v<180?'low':null,
+      fullName:'Prealbumin (Transthyretin)',
+      notes:'Short half-life (2 days) — sensitive nutritional marker, responds faster than albumin. Reduced in acute illness/inflammation.' },
+    { key:'CaAdj',  label:'Ca(adj)', aliases:['CaAdj','AdjCa','Adj calcium','Corrected calcium','Corrected Ca','Adj Ca'],
+      unit:'mmol/L', range:'2.20–2.60',
+      flag:(v)=>v<2.2?'low':v>2.6?'high':null,
+      fullName:'Adjusted Calcium',
+      notes:'Corrected for albumin: adj Ca = Ca + 0.02×(40−Alb). Use adjusted calcium for clinical decisions. True hypercalcaemia requires exclusion of low albumin.' },
+    { key:'Hct',    label:'Hct',    aliases:['Hct','Haematocrit','PCV','Packed cell volume'],
+      unit:'L/L',    range:'M 0.40–0.52 · F 0.37–0.47',
+      flag:(v,sex)=>{const lo=(sex||'').toUpperCase()==='F'?0.37:0.40;const hi=(sex||'').toUpperCase()==='F'?0.47:0.52;return v<lo?'low':v>hi?'high':null;},
+      fullName:'Haematocrit',
+      notes:'Proportion of blood volume occupied by red cells. Rises in dehydration, polycythaemia. Falls in anaemia, haemodilution.' },
+    { key:'RDW',    label:'RDW',    aliases:['RDW','Red cell distribution width'],
+      unit:'%',      range:'11.5–15.0',
+      flag:(v)=>v>15?'high':null,
+      fullName:'Red Cell Distribution Width',
+      notes:'High RDW indicates mixed picture (iron + B12 deficiency, recent transfusion). Low MCV + high RDW suggests iron deficiency early.' },
+    { key:'Bili_conj', label:'Bili(c)', aliases:['Conjugated bilirubin','Direct bilirubin','Direct bili','Conjugated bili'],
+      unit:'µmol/L', range:'<5',
+      flag:(v)=>v>5?'high':null,
+      fullName:'Conjugated (Direct) Bilirubin',
+      notes:'Predominantly elevated in obstructive jaundice and hepatocellular disease. Differentiates biliary obstruction from haemolysis.' }
+  ].map((a) => ({ ...a, re: mkRe(a.aliases) }));
+
   const BLOOD_DEFAULT_ORDER = ['CRP','WCC','Hb','Na','K','Cr'];
   const BLOOD_ORDER_KEY = 'hah_blood_analyte_order';
 
@@ -7445,9 +7668,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const form = raw.form || {};
     const sex  = vm.patient.sex || '';
     const showOptions = !!(state.patient && state.patient.bloodOptionsOpen);
-    const analyteOrder = getBloodAnalyteOrder();
-    const analyteMap = Object.fromEntries(BLOOD_ANALYTES_ALL.map((a) => [a.key, a]));
-    const ANALYTES = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
 
     // Build date→vals maps from both sources
 
@@ -7458,30 +7678,84 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         const parts = line.split('|').map((p) => p.trim());
         const dateRaw = parts[0] || '';
         const date = dateRaw.replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
+        const dateLabel = date === todayStr ? 'Today' : date;
         if (!date) return;
-        if (!mobileMap[date]) mobileMap[date] = {};
+        if (!mobileMap[dateLabel]) mobileMap[dateLabel] = {};
         const rest = parts.slice(1).join(' ');
-        BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
+        BLOOD_DB.forEach(({ key, re }) => {
           const m = rest.match(re);
-          if (m) mobileMap[date][key] = parseFloat(m[1]);
+          if (m) mobileMap[dateLabel][key] = parseFloat(m[1]);
         });
       });
 
     // 2. Desktop composer: board_round encounters with fields.bloods (free text)
+    // Each line may start with a date: "18/04: CRP 78" or "18 Apr CRP 78" or just "CRP 78"
+    const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const DATE_LINE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
+    const DATE_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
+    const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+    function formatEmbeddedDate(d, m, y) {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const month = months[(+m) - 1] || '';
+      const date = d + ' ' + month;
+      return date === todayStr ? 'Today' : date;
+    }
+
     const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
     const composerMap = {};
     encounters
       .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
       .forEach((e) => {
         const dt = new Date(e.timestamp);
-        const date = isNaN(dt.getTime()) ? null
+        const encDateStr = isNaN(dt.getTime()) ? null
           : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        if (!date) return;
-        if (!composerMap[date]) composerMap[date] = {};
-        const rest = String(e.fields.bloods).trim();
-        BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
-          const m = rest.match(re);
-          if (m) composerMap[date][key] = parseFloat(m[1]);
+        const encounterDate = encDateStr === todayStr ? 'Today' : (encDateStr || null);
+
+        String(e.fields.bloods).split(/\n+/).forEach((rawLine) => {
+          let line = rawLine.trim();
+          if (!line) return;
+          let date = encounterDate;
+
+          // Try extracting date prefix: DD/MM or DD/MM/YY(YY)
+          let m;
+          m = line.match(DATE_LINE_RE);
+          if (m) {
+            date = formatEmbeddedDate(m[1], m[2], m[3]);
+            line = line.slice(m[0].length).trim();
+          } else {
+            m = line.match(DATE_TEXT_RE);
+            if (m) {
+              const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+              if (mo) {
+                date = formatEmbeddedDate(m[1], mo, null);
+                line = line.slice(m[0].length).trim();
+              }
+            }
+          }
+
+          if (!date || !line) return;
+          if (!composerMap[date]) composerMap[date] = {};
+
+          // Parse known analytes
+          BLOOD_DB.forEach(({ key, re }) => {
+            const hit = line.match(re);
+            if (hit) composerMap[date][key] = parseFloat(hit[1]);
+          });
+
+          // Capture unrecognised WORD NUMBER pairs so they appear in table
+          const remaining = line.replace(/\d{1,2}[\/\-\.]\d{1,2}/g, ''); // strip date-like patterns
+          const unknownRe = /\b([A-Za-z][A-Za-z0-9\-]*)\s+(\d+(?:\.\d+)?)/g;
+          let hit2;
+          while ((hit2 = unknownRe.exec(remaining)) !== null) {
+            const candidate = hit2[1];
+            // Skip if already captured by a known analyte (avoid double-counting)
+            const alreadyKnown = BLOOD_DB.some((a) => a.re.test(candidate + ' ' + hit2[2]));
+            if (!alreadyKnown) {
+              const uKey = '_u_' + candidate.toUpperCase();
+              if (!composerMap[date][uKey]) composerMap[date][uKey] = parseFloat(hit2[2]);
+            }
+          }
         });
       });
 
@@ -7489,12 +7763,32 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const allDates = [...new Set([...Object.keys(composerMap), ...Object.keys(mobileMap)])];
     const cols = allDates.slice(0, 5).map((date) => {
       const vals = Object.assign({}, mobileMap[date] || {}, composerMap[date] || {});
-      return { date, vals };
+      // Relabel today
+      const label = date;
+      return { date: label, vals };
     });
 
     if (!cols.length || !cols.some((col) => Object.keys(col.vals).length > 0)) return '';
 
-    // Options panel
+    // Build ordered analyte list: known in user order first, then any unknowns present
+    const analyteOrder = getBloodAnalyteOrder();
+    const analyteMap   = Object.fromEntries(BLOOD_DB.map((a) => [a.key, a]));
+    const ANALYTES     = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
+
+    // Collect unknown analyte keys (prefixed _u_) from all cols
+    const unknownKeys = [...new Set(cols.flatMap((col) =>
+      Object.keys(col.vals).filter((k) => k.startsWith('_u_'))
+    ))];
+    const unknownAnalytes = unknownKeys.map((k) => ({
+      key: k,
+      label: k.replace('_u_', ''),
+      fullName: k.replace('_u_', ''),
+      range: '—', unit: '', notes: 'Reference range not available.',
+      flag: () => null,
+      unknown: true
+    }));
+    const allAnalytes = [...ANALYTES, ...unknownAnalytes];
+
     const optionsPanel = showOptions ? `
       <div class="dbl-options-panel">
         <div class="dbl-options-title">Analyte order</div>
@@ -7518,7 +7812,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       ${cols.map((col, ci) => `<th class="dbl-date-col${ci === 0 ? ' is-latest' : ''}">${c.escapeHtml(col.date)}</th>`).join('')}
     </tr>`;
 
-    const tbody = ANALYTES.map(({ key, label, flag }) => {
+    const tbody = allAnalytes.map(({ key, label, flag, unknown }) => {
       const hasValues = cols.some((col) => col.vals[key] !== undefined);
       if (!hasValues) return '';
       const cells = cols.map((col, ci) => {
@@ -8463,23 +8757,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     }, true);
   }
 
-  const BLOOD_TOOLTIP_DATA = {
-    CRP:  { name: 'C-Reactive Protein',     unit: 'mg/L',     range: '<5',             notes: 'Acute phase reactant. Rises with infection, inflammation, tissue injury. Halving time ~19h — useful for treatment response.' },
-    WCC:  { name: 'White Cell Count',       unit: '×10⁹/L',   range: '4.0–11.0',       notes: 'Raised in bacterial infection, steroids. Reduced in viral illness, immunosuppression, some medications.' },
-    Hb:   { name: 'Haemoglobin',            unit: 'g/L',      range: 'M 130–170 · F 120–160', notes: 'Monitor trend in H@H. Dilutional fall in fluid overload. Transfusion threshold typically <70 (80 in cardiac disease).' },
-    Na:   { name: 'Sodium',                 unit: 'mmol/L',   range: '133–146',         notes: 'Dysnatraemia common in frail elderly. Hyponatraemia: check hydration, medications, SIADH. Correct cautiously.' },
-    K:    { name: 'Potassium',              unit: 'mmol/L',   range: '3.5–5.0',         notes: 'Hypokalaemia risk: diuretics, vomiting, diarrhoea. Hyperkalaemia: AKI, ACEi/ARB, Addison\'s. ECG changes if <3.0 or >6.0.' },
-    Cr:   { name: 'Creatinine',             unit: 'µmol/L',   range: 'M 64–111 · F 50–98', notes: 'Consider eGFR and trend. Affected by muscle mass — may underestimate AKI in frail/elderly. Check medication doses.' },
-    Plt:  { name: 'Platelets',              unit: '×10⁹/L',   range: '150–400',         notes: 'Thrombocytopenia in sepsis, haematological disease, HIT. Reactive thrombocytosis common post-infection/surgery.' },
-    Bili: { name: 'Bilirubin (total)',      unit: 'µmol/L',   range: '<21',             notes: 'Raised in liver disease, haemolysis, hepatic congestion in CCF. Conjugated vs unconjugated pattern guides diagnosis.' },
-    ALT:  { name: 'Alanine Aminotransferase', unit: 'U/L',    range: '<56',             notes: 'Hepatocellular marker. Elevated in hepatitis, NAFLD, drug toxicity (inc. antibiotics). Check LFT pattern.' },
-    Alb:  { name: 'Albumin',               unit: 'g/L',      range: '35–50',            notes: 'Marker of nutrition and chronic illness. Low albumin affects drug binding (inc. phenytoin). Affects calcium interpretation.' },
-    Mg:   { name: 'Magnesium',             unit: 'mmol/L',   range: '0.70–1.00',        notes: 'Hypomagnesaemia: diuretics, malabsorption, alcohol. Affects K and Ca handling — correct Mg before K.' },
-    Phos: { name: 'Phosphate',             unit: 'mmol/L',   range: '0.80–1.50',        notes: 'Low in malnutrition, refeeding syndrome, hyperparathyroidism. High in AKI/CKD. Monitor in TPN/refeeding.' },
-    CK:   { name: 'Creatine Kinase',       unit: 'U/L',      range: '<200',             notes: 'Markedly raised in rhabdomyolysis (falls, immobility, statin myopathy). Ensure adequate hydration if elevated.' },
-    Lac:  { name: 'Lactate',               unit: 'mmol/L',   range: '<2.0',             notes: 'Raised in sepsis, tissue hypoperfusion, metformin toxicity, liver failure. Serial measurement guides resuscitation response.' }
-  };
-
   function initBloodTooltip() {
     if (window.HAHBoard.__bloodTooltipBound) return;
     window.HAHBoard.__bloodTooltipBound = true;
@@ -8489,17 +8766,23 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     tip.style.display = 'none';
     document.body.appendChild(tip);
 
+    const dbMap = Object.fromEntries(BLOOD_DB.map((a) => [a.key, a]));
+
     document.addEventListener('mouseover', (e) => {
       const th = e.target.closest('.dbl-analyte[data-key]');
       if (!th) { tip.style.display = 'none'; return; }
       const key = th.getAttribute('data-key');
-      const info = BLOOD_TOOLTIP_DATA[key];
-      if (!info) { tip.style.display = 'none'; return; }
-      tip.innerHTML = `
-        <div class="dbl-tip-name">${info.name}</div>
-        <div class="dbl-tip-range"><span class="dbl-tip-label">Range</span> ${info.range} ${info.unit}</div>
-        <div class="dbl-tip-notes">${info.notes}</div>
-        <div class="dbl-tip-source">GSTT / Viapath</div>`;
+      const info = dbMap[key];
+      if (!info) {
+        // Unknown analyte — show basic tooltip
+        tip.innerHTML = `<div class="dbl-tip-name">${key}</div><div class="dbl-tip-notes">No reference data available for this analyte.</div>`;
+      } else {
+        tip.innerHTML = `
+          <div class="dbl-tip-name">${info.fullName || info.label}</div>
+          <div class="dbl-tip-range"><span class="dbl-tip-label">Range</span> ${info.range} ${info.unit}</div>
+          <div class="dbl-tip-notes">${info.notes}</div>
+          <div class="dbl-tip-source">GSTT / Viapath</div>`;
+      }
       tip.style.display = 'block';
       const rect = th.getBoundingClientRect();
       const tipW = 240;
@@ -9854,7 +10137,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T22:08:49.005449',
+  builtAt: '2026-04-20T22:25:42.058671',
   entry: 'desktop.html'
 };
 </script>
