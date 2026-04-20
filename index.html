@@ -7670,6 +7670,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const showOptions = !!(state.patient && state.patient.bloodOptionsOpen);
 
     // Build date→vals maps from both sources
+    const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
     // 1. Mobile app: pipe-delimited "15 Apr|CRP 45 Na 138 ..."
     const mobileMap = {};
@@ -7693,7 +7694,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
     const DATE_LINE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
     const DATE_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
-    const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
     function formatEmbeddedDate(d, m, y) {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -10137,7 +10137,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T22:25:42.058671',
+  builtAt: '2026-04-20T22:33:10.227399',
   entry: 'desktop.html'
 };
 </script>
