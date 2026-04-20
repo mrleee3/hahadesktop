@@ -3090,6 +3090,136 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   font-weight: 700;
 }
 
+/* ─── Blood results widget refinements ───────────────────────────────── */
+
+.hah-ref-options-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--desk-border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.hah-ref-options-btn:hover,
+.hah-ref-options-btn.is-open {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  border-color: rgba(47,111,237,0.2);
+}
+
+/* Latest column emphasis */
+.dbl-date-col.is-latest {
+  color: var(--desk-text);
+  font-weight: 800;
+}
+
+.dbl-cell.is-latest .dbl-val {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Trend arrows — neutral colour, not inheriting cell's red */
+.dbl-trend {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  margin-left: 2px;
+}
+
+/* Options panel */
+.dbl-options-panel {
+  border-top: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.02);
+  padding: 10px 12px 8px;
+}
+
+.dbl-options-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+  margin-bottom: 8px;
+}
+
+.dbl-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dbl-options-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.dbl-options-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+  flex: 1;
+}
+
+.dbl-options-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.dbl-options-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--desk-border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.8);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--desk-text-muted);
+  transition: background 120ms ease;
+}
+
+.dbl-options-btn:hover {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.9);
+  border-color: rgba(47,111,237,0.2);
+}
+
+.dbl-options-btn-gap {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+
+.dbl-options-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dbl-options-add {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(47,111,237,0.25);
+  border-radius: 8px;
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.dbl-options-add:hover {
+  background: rgba(47,111,237,0.15);
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -3805,7 +3935,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false },
     tasks: {
       filters: {},
       sort: 'due',
@@ -6994,7 +7124,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
           ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
           ${renderMedsWidget(vm)}
-          ${renderBloodsWidget(vm)}
+          ${renderBloodsWidget(vm, state)}
         </div>
       </div>
     </div>`;
@@ -7206,40 +7336,124 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     </div>`;
   }
 
-  function renderBloodsWidget(vm) {
-    const raw = vm.patient.sourcePatient || {};
+  const BLOOD_ANALYTES_ALL = [
+    { key: 'CRP',  label: 'CRP',  re: /\bCRP\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v, sex) => v > 50 ? 'high' : v > 5 ? 'warn' : null },
+    { key: 'WCC',  label: 'WCC',  re: /\bWCC\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v > 11 ? 'high' : v < 4 ? 'low' : null },
+    { key: 'Hb',   label: 'Hb',   re: /\bHb\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v, sex) => {
+        const lo = (sex || '').toUpperCase() === 'F' ? 120 : 130;
+        const hi = (sex || '').toUpperCase() === 'F' ? 160 : 170;
+        return v < lo ? 'low' : v > hi ? 'high' : null;
+      }},
+    { key: 'Na',   label: 'Na',   re: /\bNa\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 133 ? 'low' : v > 146 ? 'high' : null },
+    { key: 'K',    label: 'K',    re: /\bK\+?\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 3.5 ? 'low' : v > 5.0 ? 'high' : null },
+    { key: 'Cr',   label: 'Cr',   re: /\bCr\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v, sex) => {
+        const hi = (sex || '').toUpperCase() === 'F' ? 98 : 111;
+        return v > hi ? 'high' : null;
+      }},
+    { key: 'Plt',  label: 'Plt',  re: /\bPlt\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 150 ? 'low' : v > 400 ? 'high' : null },
+    { key: 'Bili', label: 'Bili', re: /\bBili\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v > 21 ? 'high' : null },
+    { key: 'ALT',  label: 'ALT',  re: /\bALT\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v > 56 ? 'high' : null },
+    { key: 'Alb',  label: 'Alb',  re: /\bAlb\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 35 ? 'low' : null },
+    { key: 'Mg',   label: 'Mg',   re: /\bMg\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 0.7 ? 'low' : v > 1.0 ? 'high' : null },
+    { key: 'Phos', label: 'Phos', re: /\bPhos\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v < 0.8 ? 'low' : v > 1.5 ? 'high' : null },
+    { key: 'CK',   label: 'CK',   re: /\bCK\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v > 200 ? 'high' : null },
+    { key: 'Lac',  label: 'Lac',  re: /\bLac\s+(-?\d+(?:\.\d+)?)/i,
+      flag: (v) => v > 2 ? 'high' : null }
+  ];
+  const BLOOD_DEFAULT_ORDER = ['CRP','WCC','Hb','Na','K','Cr'];
+  const BLOOD_ORDER_KEY = 'hah_blood_analyte_order';
+
+  function getBloodAnalyteOrder() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(BLOOD_ORDER_KEY) || 'null');
+      if (Array.isArray(saved) && saved.length) return saved;
+    } catch (_) {}
+    return BLOOD_DEFAULT_ORDER.slice();
+  }
+
+  function renderBloodsWidget(vm, state) {
+    const raw  = vm.patient.sourcePatient || {};
     const form = raw.form || {};
-    const bloodText = String(form.bloods || '').trim();
-    if (!bloodText) return '';
+    const sex  = vm.patient.sex || '';
+    const showOptions = !!(state.patient && state.patient.bloodOptionsOpen);
+    const analyteOrder = getBloodAnalyteOrder();
+    const analyteMap = Object.fromEntries(BLOOD_ANALYTES_ALL.map((a) => [a.key, a]));
+    const ANALYTES = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
 
-    const ANALYTES = [
-      { key: 'CRP',  label: 'CRP',  re: /\bCRP\s+(-?\d+(?:\.\d+)?)/i,  flag: (v) => v > 10 ? (v > 50 ? 'high' : 'warn') : null },
-      { key: 'WCC',  label: 'WCC',  re: /\bWCC\s+(-?\d+(?:\.\d+)?)/i,  flag: (v) => v > 11 ? 'high' : v < 4 ? 'low' : null },
-      { key: 'Hb',   label: 'Hb',   re: /\bHb\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v < 130 ? 'low' : null },
-      { key: 'Na',   label: 'Na',   re: /\bNa\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v < 135 ? 'low' : v > 145 ? 'high' : null },
-      { key: 'K',    label: 'K',    re: /\bK\+?\s+(-?\d+(?:\.\d+)?)/i, flag: (v) => v < 3.5 ? 'low' : v > 5.5 ? 'high' : null },
-      { key: 'Cr',   label: 'Cr',   re: /\bCr\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v > 120 ? 'high' : null }
-    ];
+    // Build columns from mobile-app pipe-delimited data
+    const mobileCols = (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
+      .slice(0, 5).map((line) => {
+        const parts = line.split('|').map((p) => p.trim());
+        const dateRaw = parts[0] || '';
+        const date = dateRaw.replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
+        const rest = parts.slice(1).join(' ');
+        return { date, rest };
+      });
 
-    const lines = bloodText.split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 5);
-    const cols = lines.map((line) => {
-      const parts = line.split('|').map((p) => p.trim());
-      const date  = parts[0] || '';
-      const rest  = parts.slice(1).join(' ');
-      const vals  = {};
-      ANALYTES.forEach(({ key, re }) => {
-        const m = rest.match(re);
+    // Build columns from desktop composer board_round encounters
+    const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
+    const composerCols = encounters
+      .filter((e) => e.type === 'board_round' && e.fields && e.fields.bloods && String(e.fields.bloods).trim())
+      .map((e) => {
+        const dt = new Date(e.timestamp);
+        const date = isNaN(dt.getTime()) ? 'Entry'
+          : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        return { date, rest: String(e.fields.bloods).trim(), fromComposer: true };
+      });
+
+    // Merge: prefer mobile data if same date exists; newest first; cap at 5
+    const allCols = [...mobileCols, ...composerCols];
+    const seen = new Set();
+    const cols = allCols.filter((col) => {
+      const k = col.date.toLowerCase().replace(/\s+/g, '-');
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    }).slice(0, 5).map((col) => {
+      const vals = {};
+      BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
+        const m = col.rest.match(re);
         if (m) vals[key] = parseFloat(m[1]);
       });
-      return { date, vals };
+      return { date: col.date, vals };
     });
 
-    const hasAny = cols.some((col) => Object.keys(col.vals).length > 0);
-    if (!hasAny) return '';
+    if (!cols.length || !cols.some((col) => Object.keys(col.vals).length > 0)) return '';
+
+    // Options panel
+    const optionsPanel = showOptions ? `
+      <div class="dbl-options-panel">
+        <div class="dbl-options-title">Analyte order</div>
+        <div class="dbl-options-list">
+          ${analyteOrder.map((key, idx) => `
+          <div class="dbl-options-row" data-analyte="${c.escapeHtml(key)}">
+            <span class="dbl-options-name">${c.escapeHtml(key)}</span>
+            <div class="dbl-options-btns">
+              ${idx > 0 ? `<button type="button" class="dbl-options-btn" data-patient-action="blood-order-up" data-analyte="${c.escapeHtml(key)}" title="Move up">↑</button>` : '<span class="dbl-options-btn-gap"></span>'}
+              ${idx < analyteOrder.length - 1 ? `<button type="button" class="dbl-options-btn" data-patient-action="blood-order-down" data-analyte="${c.escapeHtml(key)}" title="Move down">↓</button>` : '<span class="dbl-options-btn-gap"></span>'}
+            </div>
+          </div>`).join('')}
+        </div>
+        <div class="dbl-options-footer">
+          <button type="button" class="dbl-options-add" data-patient-action="blood-options-close">Done</button>
+        </div>
+      </div>` : '';
 
     const thead = `<tr class="dbl-head-row">
       <th class="dbl-analyte-col"></th>
-      ${cols.map((col) => `<th class="dbl-date-col">${c.escapeHtml(col.date)}</th>`).join('')}
+      ${cols.map((col, ci) => `<th class="dbl-date-col${ci === 0 ? ' is-latest' : ''}">${c.escapeHtml(col.date)}</th>`).join('')}
     </tr>`;
 
     const tbody = ANALYTES.map(({ key, label, flag }) => {
@@ -7248,14 +7462,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       const cells = cols.map((col, ci) => {
         const val = col.vals[key];
         if (val === undefined) return '<td class="dbl-cell dbl-empty">—</td>';
-        const fClass = flag(val);
-        const trend = ci < cols.length - 1 && cols[ci + 1].vals[key] !== undefined
-          ? (val > cols[ci + 1].vals[key] ? '↑' : val < cols[ci + 1].vals[key] ? '↓' : '')
+        const fClass = flag(val, sex);
+        // Trend arrows only on most-recent column (ci === 0)
+        const trend = (ci === 0 && cols[1] && cols[1].vals[key] !== undefined)
+          ? (val > cols[1].vals[key] ? '↑' : val < cols[1].vals[key] ? '↓' : '')
           : '';
-        const trendClass = fClass ? ` dbl-trend-${fClass}` : '';
-        return `<td class="dbl-cell${fClass ? ' dbl-' + fClass : ''}">
+        return `<td class="dbl-cell${fClass ? ' dbl-' + fClass : ''}${ci === 0 ? ' is-latest' : ''}">
           <span class="dbl-val">${val % 1 === 0 ? val : val.toFixed(1)}</span>
-          ${trend ? `<span class="dbl-trend${trendClass}">${trend}</span>` : ''}
+          ${trend ? `<span class="dbl-trend">${trend}</span>` : ''}
         </td>`;
       }).join('');
       return `<tr><th class="dbl-analyte">${c.escapeHtml(label)}</th>${cells}</tr>`;
@@ -7264,8 +7478,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     return `<div class="hah-ref-widget">
       <div class="hah-ref-head">
         <span class="hah-ref-label">Blood results</span>
-        <span class="hah-ref-count">${lines.length} sample${lines.length === 1 ? '' : 's'}</span>
+        <button type="button" class="hah-ref-options-btn${showOptions ? ' is-open' : ''}"
+          data-patient-action="toggle-blood-options" title="Options">⋯</button>
       </div>
+      ${optionsPanel}
       <div class="hah-ref-body hah-ref-body--bloods">
         <div class="dbl-table-wrap">
           <table class="dbl-table">
@@ -7962,6 +8178,24 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
 
     if (action === 'jump')       { const pid = target.getAttribute('data-patient-id'); if (!pid) return false; store.setState({ selectedPatientId: pid, patient: { sortMenuOpen: false } }); router.goToPatient(pid); return true; }
+    if (action === 'toggle-blood-options') {
+      const now = !!(state.patient && state.patient.bloodOptionsOpen);
+      store.setState({ patient: { bloodOptionsOpen: !now } }); return true;
+    }
+    if (action === 'blood-options-close') {
+      store.setState({ patient: { bloodOptionsOpen: false } }); return true;
+    }
+    if (action === 'blood-order-up' || action === 'blood-order-down') {
+      const key = target.getAttribute('data-analyte');
+      if (!key) return false;
+      const order = (function(){ try { const s = JSON.parse(localStorage.getItem('hah_blood_analyte_order') || 'null'); return Array.isArray(s) && s.length ? s : ['CRP','WCC','Hb','Na','K','Cr']; } catch(_) { return ['CRP','WCC','Hb','Na','K','Cr']; } })();
+      const idx = order.indexOf(key);
+      if (idx < 0) return false;
+      if (action === 'blood-order-up' && idx > 0) { const t = order[idx - 1]; order[idx - 1] = order[idx]; order[idx] = t; }
+      if (action === 'blood-order-down' && idx < order.length - 1) { const t = order[idx + 1]; order[idx + 1] = order[idx]; order[idx] = t; }
+      try { localStorage.setItem('hah_blood_analyte_order', JSON.stringify(order)); } catch (_) {}
+      store.setState({ patient: { bloodOptionsOpen: true } }); return true;
+    }
     if (action === 'toggle-sort-menu') {
       const now = !!(state.patient && state.patient.sortMenuOpen);
       store.setState({ patient: { sortMenuOpen: !now } });
@@ -9508,7 +9742,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T21:28:52.272427',
+  builtAt: '2026-04-20T21:47:45.020245',
   entry: 'desktop.html'
 };
 </script>
