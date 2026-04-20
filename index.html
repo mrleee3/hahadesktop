@@ -3220,6 +3220,62 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   background: rgba(47,111,237,0.15);
 }
 
+/* ─── Analyte hover tooltip ──────────────────────────────────────────── */
+
+.dbl-analyte-tip {
+  position: fixed;
+  z-index: 200;
+  width: 240px;
+  background: rgba(20,35,58,0.97);
+  color: #e8edf3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.dbl-tip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.dbl-tip-range {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 6px;
+}
+
+.dbl-tip-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-right: 4px;
+}
+
+.dbl-tip-notes {
+  font-size: 11px;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+
+.dbl-tip-source {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.04em;
+}
+
+.dbl-analyte {
+  cursor: help;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -7393,41 +7449,47 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const analyteMap = Object.fromEntries(BLOOD_ANALYTES_ALL.map((a) => [a.key, a]));
     const ANALYTES = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
 
-    // Build columns from mobile-app pipe-delimited data
-    const mobileCols = (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
-      .slice(0, 5).map((line) => {
+    // Build date→vals maps from both sources
+
+    // 1. Mobile app: pipe-delimited "15 Apr|CRP 45 Na 138 ..."
+    const mobileMap = {};
+    (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
+      .slice(0, 5).forEach((line) => {
         const parts = line.split('|').map((p) => p.trim());
         const dateRaw = parts[0] || '';
         const date = dateRaw.replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
+        if (!date) return;
+        if (!mobileMap[date]) mobileMap[date] = {};
         const rest = parts.slice(1).join(' ');
-        return { date, rest };
+        BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
+          const m = rest.match(re);
+          if (m) mobileMap[date][key] = parseFloat(m[1]);
+        });
       });
 
-    // Build columns from desktop composer board_round encounters
+    // 2. Desktop composer: board_round encounters with fields.bloods (free text)
     const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
-    const composerCols = encounters
-      .filter((e) => e.type === 'board_round' && e.fields && e.fields.bloods && String(e.fields.bloods).trim())
-      .map((e) => {
+    const composerMap = {};
+    encounters
+      .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
+      .forEach((e) => {
         const dt = new Date(e.timestamp);
-        const date = isNaN(dt.getTime()) ? 'Entry'
+        const date = isNaN(dt.getTime()) ? null
           : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        return { date, rest: String(e.fields.bloods).trim(), fromComposer: true };
+        if (!date) return;
+        if (!composerMap[date]) composerMap[date] = {};
+        const rest = String(e.fields.bloods).trim();
+        BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
+          const m = rest.match(re);
+          if (m) composerMap[date][key] = parseFloat(m[1]);
+        });
       });
 
-    // Merge: prefer mobile data if same date exists; newest first; cap at 5
-    const allCols = [...mobileCols, ...composerCols];
-    const seen = new Set();
-    const cols = allCols.filter((col) => {
-      const k = col.date.toLowerCase().replace(/\s+/g, '-');
-      if (seen.has(k)) return false;
-      seen.add(k); return true;
-    }).slice(0, 5).map((col) => {
-      const vals = {};
-      BLOOD_ANALYTES_ALL.forEach(({ key, re }) => {
-        const m = col.rest.match(re);
-        if (m) vals[key] = parseFloat(m[1]);
-      });
-      return { date: col.date, vals };
+    // 3. Merge: all dates from both sources, composer values take priority on overlap
+    const allDates = [...new Set([...Object.keys(composerMap), ...Object.keys(mobileMap)])];
+    const cols = allDates.slice(0, 5).map((date) => {
+      const vals = Object.assign({}, mobileMap[date] || {}, composerMap[date] || {});
+      return { date, vals };
     });
 
     if (!cols.length || !cols.some((col) => Object.keys(col.vals).length > 0)) return '';
@@ -7463,16 +7525,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         const val = col.vals[key];
         if (val === undefined) return '<td class="dbl-cell dbl-empty">—</td>';
         const fClass = flag(val, sex);
-        // Trend arrows only on most-recent column (ci === 0)
-        const trend = (ci === 0 && cols[1] && cols[1].vals[key] !== undefined)
-          ? (val > cols[1].vals[key] ? '↑' : val < cols[1].vals[key] ? '↓' : '')
-          : '';
         return `<td class="dbl-cell${fClass ? ' dbl-' + fClass : ''}${ci === 0 ? ' is-latest' : ''}">
           <span class="dbl-val">${val % 1 === 0 ? val : val.toFixed(1)}</span>
-          ${trend ? `<span class="dbl-trend">${trend}</span>` : ''}
         </td>`;
       }).join('');
-      return `<tr><th class="dbl-analyte">${c.escapeHtml(label)}</th>${cells}</tr>`;
+      return `<tr><th class="dbl-analyte" data-key="${c.escapeHtml(key)}">${c.escapeHtml(label)}</th>${cells}</tr>`;
     }).filter(Boolean).join('');
 
     return `<div class="hah-ref-widget">
@@ -7763,6 +7820,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
 
   function afterRender(state, pane) {
+    initBloodTooltip();
     setupResponsivePatientLayout();
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
@@ -8403,6 +8461,60 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       if (event.target.closest('.hah-sort-menu')) return;
       store.setState({ patient: { sortMenuOpen: false } });
     }, true);
+  }
+
+  const BLOOD_TOOLTIP_DATA = {
+    CRP:  { name: 'C-Reactive Protein',     unit: 'mg/L',     range: '<5',             notes: 'Acute phase reactant. Rises with infection, inflammation, tissue injury. Halving time ~19h — useful for treatment response.' },
+    WCC:  { name: 'White Cell Count',       unit: '×10⁹/L',   range: '4.0–11.0',       notes: 'Raised in bacterial infection, steroids. Reduced in viral illness, immunosuppression, some medications.' },
+    Hb:   { name: 'Haemoglobin',            unit: 'g/L',      range: 'M 130–170 · F 120–160', notes: 'Monitor trend in H@H. Dilutional fall in fluid overload. Transfusion threshold typically <70 (80 in cardiac disease).' },
+    Na:   { name: 'Sodium',                 unit: 'mmol/L',   range: '133–146',         notes: 'Dysnatraemia common in frail elderly. Hyponatraemia: check hydration, medications, SIADH. Correct cautiously.' },
+    K:    { name: 'Potassium',              unit: 'mmol/L',   range: '3.5–5.0',         notes: 'Hypokalaemia risk: diuretics, vomiting, diarrhoea. Hyperkalaemia: AKI, ACEi/ARB, Addison\'s. ECG changes if <3.0 or >6.0.' },
+    Cr:   { name: 'Creatinine',             unit: 'µmol/L',   range: 'M 64–111 · F 50–98', notes: 'Consider eGFR and trend. Affected by muscle mass — may underestimate AKI in frail/elderly. Check medication doses.' },
+    Plt:  { name: 'Platelets',              unit: '×10⁹/L',   range: '150–400',         notes: 'Thrombocytopenia in sepsis, haematological disease, HIT. Reactive thrombocytosis common post-infection/surgery.' },
+    Bili: { name: 'Bilirubin (total)',      unit: 'µmol/L',   range: '<21',             notes: 'Raised in liver disease, haemolysis, hepatic congestion in CCF. Conjugated vs unconjugated pattern guides diagnosis.' },
+    ALT:  { name: 'Alanine Aminotransferase', unit: 'U/L',    range: '<56',             notes: 'Hepatocellular marker. Elevated in hepatitis, NAFLD, drug toxicity (inc. antibiotics). Check LFT pattern.' },
+    Alb:  { name: 'Albumin',               unit: 'g/L',      range: '35–50',            notes: 'Marker of nutrition and chronic illness. Low albumin affects drug binding (inc. phenytoin). Affects calcium interpretation.' },
+    Mg:   { name: 'Magnesium',             unit: 'mmol/L',   range: '0.70–1.00',        notes: 'Hypomagnesaemia: diuretics, malabsorption, alcohol. Affects K and Ca handling — correct Mg before K.' },
+    Phos: { name: 'Phosphate',             unit: 'mmol/L',   range: '0.80–1.50',        notes: 'Low in malnutrition, refeeding syndrome, hyperparathyroidism. High in AKI/CKD. Monitor in TPN/refeeding.' },
+    CK:   { name: 'Creatine Kinase',       unit: 'U/L',      range: '<200',             notes: 'Markedly raised in rhabdomyolysis (falls, immobility, statin myopathy). Ensure adequate hydration if elevated.' },
+    Lac:  { name: 'Lactate',               unit: 'mmol/L',   range: '<2.0',             notes: 'Raised in sepsis, tissue hypoperfusion, metformin toxicity, liver failure. Serial measurement guides resuscitation response.' }
+  };
+
+  function initBloodTooltip() {
+    if (window.HAHBoard.__bloodTooltipBound) return;
+    window.HAHBoard.__bloodTooltipBound = true;
+
+    const tip = document.createElement('div');
+    tip.className = 'dbl-analyte-tip';
+    tip.style.display = 'none';
+    document.body.appendChild(tip);
+
+    document.addEventListener('mouseover', (e) => {
+      const th = e.target.closest('.dbl-analyte[data-key]');
+      if (!th) { tip.style.display = 'none'; return; }
+      const key = th.getAttribute('data-key');
+      const info = BLOOD_TOOLTIP_DATA[key];
+      if (!info) { tip.style.display = 'none'; return; }
+      tip.innerHTML = `
+        <div class="dbl-tip-name">${info.name}</div>
+        <div class="dbl-tip-range"><span class="dbl-tip-label">Range</span> ${info.range} ${info.unit}</div>
+        <div class="dbl-tip-notes">${info.notes}</div>
+        <div class="dbl-tip-source">GSTT / Viapath</div>`;
+      tip.style.display = 'block';
+      const rect = th.getBoundingClientRect();
+      const tipW = 240;
+      let left = rect.left - tipW - 10;
+      if (left < 6) left = rect.right + 10; // flip right if no space
+      const top = Math.max(6, Math.min(rect.top - 4, window.innerHeight - tip.offsetHeight - 6));
+      tip.style.left  = left + 'px';
+      tip.style.top   = top  + 'px';
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      if (!e.relatedTarget || !e.relatedTarget.closest('.dbl-analyte[data-key]')) {
+        tip.style.display = 'none';
+      }
+    });
   }
 
   window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender };
@@ -9742,7 +9854,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T21:47:45.020245',
+  builtAt: '2026-04-20T22:08:49.005449',
   entry: 'desktop.html'
 };
 </script>
