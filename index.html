@@ -1089,8 +1089,8 @@ html, body {
 }
 
 .hah-pt-name {
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   letter-spacing: -0.025em;
   white-space: nowrap;
   overflow: hidden;
@@ -2978,6 +2978,116 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* ─── Desktop blood results table ────────────────────────────────────── */
+
+.hah-ref-body--bloods {
+  padding: 0;
+}
+
+.dbl-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dbl-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+}
+
+.dbl-head-row th {
+  background: rgba(0,0,0,0.02);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  white-space: nowrap;
+}
+
+.dbl-analyte-col {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 44px;
+}
+
+.dbl-date-col {
+  text-align: center;
+  min-width: 56px;
+}
+
+.dbl-date-col:first-of-type {
+  font-weight: 800;
+  color: var(--desk-text);
+}
+
+.dbl-analyte {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  background: rgba(0,0,0,0.015);
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.dbl-table tbody tr:last-child .dbl-analyte,
+.dbl-table tbody tr:last-child .dbl-cell {
+  border-bottom: none;
+}
+
+.dbl-cell {
+  text-align: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  vertical-align: middle;
+}
+
+.dbl-cell.dbl-empty {
+  color: rgba(0,0,0,0.2);
+}
+
+.dbl-cell.dbl-high,
+.dbl-cell.dbl-low {
+  background: rgba(220,38,38,0.05);
+}
+
+.dbl-val {
+  font-weight: 600;
+  color: var(--desk-text);
+}
+
+.dbl-cell.dbl-high .dbl-val,
+.dbl-cell.dbl-low  .dbl-val {
+  color: #b91c1c;
+}
+
+.dbl-trend {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  margin-left: 2px;
+}
+
+.dbl-trend.dbl-trend-high,
+.dbl-trend.dbl-trend-low {
+  color: #b91c1c;
+}
+
+/* Most-recent column slightly bolder */
+.dbl-table tbody td:nth-child(2) .dbl-val {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 </style>
@@ -4880,17 +4990,23 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     {
       id: 'p-001', name: 'Mary Jenkins', age: 84, location: 'Home East', pathway: 'Respiratory', clinician: 'Dr S', oxygenLpm: 2,
       iv: false, dnar: true, acp: true, latestReviewAt: '2026-04-15T09:20:00', reviewDueAt: '2026-04-15T16:00:00',
-      changedSinceYesterday: true, bloodNote: 'CRP ↑ 64 · Cr ↓ 112 · Na 133', obsNote: 'CREWS 3 · sats 93% on 2L', dischargeHint: 'not-ready', blocker: 'Awaiting repeat bloods', boardStatus: 'Not discussed', summaryLine: 'LRTI with oxygen requirement'
+      changedSinceYesterday: true, bloodNote: 'CRP ↑ 64 · Cr ↓ 112 · Na 133', obsNote: 'CREWS 3 · sats 93% on 2L', dischargeHint: 'not-ready', blocker: 'Awaiting repeat bloods', boardStatus: 'Not discussed', summaryLine: 'LRTI with oxygen requirement',
+      referralSource: 'GP', doa: '2026-04-11',
+      form: { bloods: '15 Apr|CRP 64 WCC 14.2 Hb 108 Na 133 K 3.8 Cr 112\n14 Apr|CRP 88 WCC 16.1 Hb 110 Na 131 K 3.6 Cr 119\n13 Apr|CRP 112 WCC 18.4 Hb 112 Na 129 K 3.5 Cr 126\n12 Apr|CRP 148 WCC 20.2 Hb 114 Na 132 K 4.0 Cr 130\n11 Apr|CRP 182 WCC 22.1 Hb 116 Na 135 K 4.1 Cr 112' }
     },
     {
       id: 'p-002', name: 'Arthur Cole', age: 78, location: 'Home North', pathway: 'CHF', clinician: 'Dr L', oxygenLpm: 0,
       iv: true, dnar: false, acp: false, latestReviewAt: '2026-04-15T08:10:00', reviewDueAt: '2026-04-15T14:00:00',
-      changedSinceYesterday: false, bloodNote: 'Cr stable · weight down', obsNote: 'NEWS 2 · oedema improving', dischargeHint: 'possible-today', blocker: 'Awaiting TTO', boardStatus: 'In discussion', summaryLine: 'Heart failure improving'
+      changedSinceYesterday: false, bloodNote: 'Cr stable · weight down', obsNote: 'NEWS 2 · oedema improving', dischargeHint: 'possible-today', blocker: 'Awaiting TTO', boardStatus: 'In discussion', summaryLine: 'Heart failure improving',
+      referralSource: 'A&E', doa: '2026-04-13',
+      form: { bloods: '15 Apr|CRP 18 WCC 7.2 Hb 102 Na 138 K 5.1 Cr 144\n14 Apr|CRP 22 WCC 7.8 Hb 101 Na 137 K 5.3 Cr 148\n13 Apr|CRP 28 WCC 8.1 Hb 99 Na 136 K 5.6 Cr 152' }
     },
     {
       id: 'p-003', name: 'Rita Sharma', age: 69, location: 'Home South', pathway: 'Cellulitis', clinician: 'Dr S', oxygenLpm: 0,
       iv: true, dnar: false, acp: false, latestReviewAt: '2026-04-14T17:30:00', reviewDueAt: '2026-04-15T10:30:00',
-      changedSinceYesterday: true, bloodNote: 'CRP ↓ 58 · WCC improving', obsNote: 'Stable obs', dischargeHint: 'likely-tomorrow', blocker: 'IV antibiotic due', boardStatus: 'Not discussed', summaryLine: 'Cellulitis on IV treatment'
+      changedSinceYesterday: true, bloodNote: 'CRP ↓ 58 · WCC improving', obsNote: 'Stable obs', dischargeHint: 'likely-tomorrow', blocker: 'IV antibiotic due', boardStatus: 'Not discussed', summaryLine: 'Cellulitis on IV treatment',
+      referralSource: 'GP', doa: '2026-04-12',
+      form: { bloods: '15 Apr|CRP 58 WCC 11.4 Hb 126 Na 140 K 4.2 Cr 88\n14 Apr|CRP 84 WCC 14.2 Hb 128 Na 141 K 4.1 Cr 90\n13 Apr|CRP 122 WCC 17.8 Hb 130 Na 139 K 4.3 Cr 86\n12 Apr|CRP 168 WCC 21.2 Hb 131 Na 138 K 4.4 Cr 84' }
     }
   ];
 
@@ -6878,7 +6994,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
           ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
           ${renderMedsWidget(vm)}
-          ${renderNarrativeWidget(vm)}
+          ${renderBloodsWidget(vm)}
         </div>
       </div>
     </div>`;
@@ -6889,7 +7005,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const ageSex = [patient.age || '', patient.sex || ''].filter(Boolean).join('');
     const losMeta = buildLengthOfStayMeta(vm.admissionDate);
     const metaParts = [
-      vm.referralSource ? { text: vm.referralSource } : null,
+      vm.referralSource ? { text: vm.referralSource + ' referral' } : null,
       vm.admissionDate  ? { text: 'Adm ' + vm.admissionDate } : null,
       losMeta,
       patient.pathway ? { text: patient.pathway } : null,
@@ -7090,11 +7206,74 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     </div>`;
   }
 
-  function renderNarrativeWidget(vm) {
-    if (!vm.reviewText) return '';
+  function renderBloodsWidget(vm) {
+    const raw = vm.patient.sourcePatient || {};
+    const form = raw.form || {};
+    const bloodText = String(form.bloods || '').trim();
+    if (!bloodText) return '';
+
+    const ANALYTES = [
+      { key: 'CRP',  label: 'CRP',  re: /\bCRP\s+(-?\d+(?:\.\d+)?)/i,  flag: (v) => v > 10 ? (v > 50 ? 'high' : 'warn') : null },
+      { key: 'WCC',  label: 'WCC',  re: /\bWCC\s+(-?\d+(?:\.\d+)?)/i,  flag: (v) => v > 11 ? 'high' : v < 4 ? 'low' : null },
+      { key: 'Hb',   label: 'Hb',   re: /\bHb\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v < 130 ? 'low' : null },
+      { key: 'Na',   label: 'Na',   re: /\bNa\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v < 135 ? 'low' : v > 145 ? 'high' : null },
+      { key: 'K',    label: 'K',    re: /\bK\+?\s+(-?\d+(?:\.\d+)?)/i, flag: (v) => v < 3.5 ? 'low' : v > 5.5 ? 'high' : null },
+      { key: 'Cr',   label: 'Cr',   re: /\bCr\s+(-?\d+(?:\.\d+)?)/i,   flag: (v) => v > 120 ? 'high' : null }
+    ];
+
+    const lines = bloodText.split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 5);
+    const cols = lines.map((line) => {
+      const parts = line.split('|').map((p) => p.trim());
+      const date  = parts[0] || '';
+      const rest  = parts.slice(1).join(' ');
+      const vals  = {};
+      ANALYTES.forEach(({ key, re }) => {
+        const m = rest.match(re);
+        if (m) vals[key] = parseFloat(m[1]);
+      });
+      return { date, vals };
+    });
+
+    const hasAny = cols.some((col) => Object.keys(col.vals).length > 0);
+    if (!hasAny) return '';
+
+    const thead = `<tr class="dbl-head-row">
+      <th class="dbl-analyte-col"></th>
+      ${cols.map((col) => `<th class="dbl-date-col">${c.escapeHtml(col.date)}</th>`).join('')}
+    </tr>`;
+
+    const tbody = ANALYTES.map(({ key, label, flag }) => {
+      const hasValues = cols.some((col) => col.vals[key] !== undefined);
+      if (!hasValues) return '';
+      const cells = cols.map((col, ci) => {
+        const val = col.vals[key];
+        if (val === undefined) return '<td class="dbl-cell dbl-empty">—</td>';
+        const fClass = flag(val);
+        const trend = ci < cols.length - 1 && cols[ci + 1].vals[key] !== undefined
+          ? (val > cols[ci + 1].vals[key] ? '↑' : val < cols[ci + 1].vals[key] ? '↓' : '')
+          : '';
+        const trendClass = fClass ? ` dbl-trend-${fClass}` : '';
+        return `<td class="dbl-cell${fClass ? ' dbl-' + fClass : ''}">
+          <span class="dbl-val">${val % 1 === 0 ? val : val.toFixed(1)}</span>
+          ${trend ? `<span class="dbl-trend${trendClass}">${trend}</span>` : ''}
+        </td>`;
+      }).join('');
+      return `<tr><th class="dbl-analyte">${c.escapeHtml(label)}</th>${cells}</tr>`;
+    }).filter(Boolean).join('');
+
     return `<div class="hah-ref-widget">
-      <div class="hah-ref-head"><span class="hah-ref-label">Clinical narrative</span><span class="hah-ref-count">${formatEntryDate(vm.patient.latestReviewAt)}</span></div>
-      <div class="hah-ref-body"><div class="hah-ref-narrative">${c.escapeHtml(vm.reviewText)}</div></div>
+      <div class="hah-ref-head">
+        <span class="hah-ref-label">Blood results</span>
+        <span class="hah-ref-count">${lines.length} sample${lines.length === 1 ? '' : 's'}</span>
+      </div>
+      <div class="hah-ref-body hah-ref-body--bloods">
+        <div class="dbl-table-wrap">
+          <table class="dbl-table">
+            <thead>${thead}</thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      </div>
     </div>`;
   }
 
@@ -9329,7 +9508,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T21:17:00.663096',
+  builtAt: '2026-04-20T21:28:52.272427',
   entry: 'desktop.html'
 };
 </script>
