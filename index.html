@@ -3371,30 +3371,40 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 /* ─── Patient header DNAR / ACP flags (matching mobile app) ──────────── */
 
+.hah-pt-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,0.08);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
 .hah-pt-flag.is-dnar {
   background: #fbf2f8;
   color: #8a2c6b;
-  border: 1px solid #e7c7da;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  border-color: #e7c7da;
 }
 
 .hah-pt-flag.is-acp {
   background: rgba(217,119,6,0.1);
   color: #92400e;
-  border: 1.5px solid rgba(217,119,6,0.4);
-  font-size: 11px;
-  font-weight: 700;
+  border-color: rgba(217,119,6,0.4);
 }
 
 /* ─── ACP card ───────────────────────────────────────────────────────── */
 
 .hah-acp-edit-btn {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
-  border-radius: 20px;
+  border-radius: 999px;
   border: 1px solid var(--desk-border);
   background: transparent;
   color: rgba(47,111,237,0.9);
@@ -3410,34 +3420,46 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .hah-acp-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: baseline;
+  gap: 4px;
   font-size: 12.5px;
-  font-weight: 500;
-  color: var(--desk-text);
   line-height: 1.4;
 }
 
-.hah-acp-row.is-dnacpr {
-  color: #8a2c6b;
-  font-weight: 700;
+.hah-acp-row.is-single {
+  grid-template-columns: 1fr;
 }
 
 .hah-acp-field-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
-  margin-right: 4px;
 }
 
-.hah-acp-notes {
+.hah-acp-field-value {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--desk-text);
+}
+
+.hah-acp-row.is-dnacpr .hah-acp-field-value {
+  color: #8a2c6b;
+  font-weight: 700;
+}
+
+.hah-acp-notes-text {
   color: var(--desk-text-muted);
   font-size: 12px;
   font-weight: 400;
+  line-height: 1.4;
 }
 
 .hah-acp-empty {
@@ -7786,10 +7808,19 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const tep    = acp.tep          || '';
     const notes  = acp.notes        || '';
 
-    const dnacprLabel = dnacpr === 'yes' ? 'DNACPR: Yes' : dnacpr === 'no' ? 'DNACPR: No' : dnacpr === 'unknown' ? 'DNACPR: Unknown' : '';
-    const formSeen    = acp.dnacprFormSeen ? ' · Form seen' : '';
-    const ucpLabel    = ucp === 'present' ? 'UCP: Present' : ucp === 'absent' ? 'UCP: Absent' : ucp === 'unknown' ? 'UCP: Unknown' : '';
-    const hasData     = dnacpr || ucp || tep || notes;
+    const dnacprText = dnacpr === 'yes' ? 'Yes' + (acp.dnacprFormSeen ? ' · Form seen' : '')
+                      : dnacpr === 'no' ? 'No'
+                      : dnacpr === 'unknown' ? 'Unknown' : '';
+    const ucpText    = ucp === 'present' ? 'Present' : ucp === 'absent' ? 'Absent' : ucp === 'unknown' ? 'Unknown' : '';
+    const hasData    = dnacpr || ucp || tep || notes;
+
+    function row(label, value, extraClass) {
+      if (!value) return '';
+      return `<div class="hah-acp-row${extraClass ? ' ' + extraClass : ''}">
+        <span class="hah-acp-field-label">${c.escapeHtml(label)}</span>
+        <span class="hah-acp-field-value">${c.escapeHtml(value)}</span>
+      </div>`;
+    }
 
     return `<div class="hah-ref-widget hah-acp-card">
       <div class="hah-ref-head">
@@ -7800,10 +7831,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       </div>
       ${hasData ? `
       <div class="hah-acp-body">
-        ${dnacprLabel ? `<div class="hah-acp-row ${dnacpr === 'yes' ? 'is-dnacpr' : ''}">${c.escapeHtml(dnacprLabel + formSeen)}</div>` : ''}
-        ${ucpLabel    ? `<div class="hah-acp-row">${c.escapeHtml(ucpLabel)}</div>` : ''}
-        ${tep         ? `<div class="hah-acp-row"><span class="hah-acp-field-label">TEP</span> ${c.escapeHtml(tep)}</div>` : ''}
-        ${notes       ? `<div class="hah-acp-row hah-acp-notes">${c.escapeHtml(notes)}</div>` : ''}
+        ${row('DNACPR', dnacprText, dnacpr === 'yes' ? 'is-dnacpr' : '')}
+        ${row('UCP', ucpText)}
+        ${row('TEP', tep)}
+        ${notes ? `<div class="hah-acp-row is-single"><span class="hah-acp-notes-text">${c.escapeHtml(notes)}</span></div>` : ''}
       </div>` : `
       <div class="hah-acp-empty">No ACP recorded for this admission.</div>`}
     </div>`;
@@ -10855,7 +10886,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T21:28:48.448390',
+  builtAt: '2026-04-21T21:46:35.290522',
   entry: 'desktop.html'
 };
 </script>
