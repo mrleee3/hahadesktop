@@ -3084,11 +3084,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   color: #b91c1c;
 }
 
-/* Most-recent column slightly bolder */
-.dbl-table tbody td:nth-child(2) .dbl-val {
-  font-size: 13px;
-  font-weight: 700;
-}
 
 /* ─── Blood results widget refinements ───────────────────────────────── */
 
@@ -3111,15 +3106,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   border-color: rgba(47,111,237,0.2);
 }
 
-/* Latest column emphasis */
+/* Latest column: bolder header only, cells same size as others */
 .dbl-date-col.is-latest {
   color: var(--desk-text);
   font-weight: 800;
-}
-
-.dbl-cell.is-latest .dbl-val {
-  font-size: 13px;
-  font-weight: 700;
 }
 
 /* Trend arrows — neutral colour, not inheriting cell's red */
@@ -7298,7 +7288,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const cols = [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       f.progress ? `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div><div class="hah-log-field-body">${c.escapeHtml(f.progress)}</div></div>` : '',
-      f.bloods   ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods</div><div class="hah-log-field-body">${c.escapeHtml(f.bloods)}</div></div>` : '',
       f.plan     ? `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div><div class="hah-log-field-body">${c.escapeHtml(f.plan)}${edd ? `\nEDD: ${edd}` : ''}</div></div>` : ''
     ].filter(Boolean);
     return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}">
@@ -7760,20 +7749,46 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       });
 
     // 3. Merge: all dates from both sources, composer values take priority on overlap
-    const allDates = [...new Set([...Object.keys(composerMap), ...Object.keys(mobileMap)])];
-    const cols = allDates.slice(0, 5).map((date) => {
-      const vals = Object.assign({}, mobileMap[date] || {}, composerMap[date] || {});
-      // Relabel today
-      const label = date;
-      return { date: label, vals };
-    });
+    // Parse and sort by actual date, newest first
+    function parseDateForSort(label) {
+      if (label === 'Today') return Date.now();
+      const MMAP = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      // "20 Apr" or "20 Apr 2026"
+      const m = label.match(/^(\d{1,2})\s+([a-z]{3})/i);
+      if (m) {
+        const mo = MMAP[(m[2] || '').toLowerCase()];
+        if (mo !== undefined) {
+          const yr = new Date().getFullYear();
+          return new Date(yr, mo, +m[1]).getTime();
+        }
+      }
+      const t = new Date(label).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+
+    const allDates = [...new Set([...Object.keys(composerMap), ...Object.keys(mobileMap)])]
+      .sort((a, b) => parseDateForSort(b) - parseDateForSort(a));
+
+    const cols = allDates.slice(0, 5).map((date) => ({
+      date,
+      vals: Object.assign({}, mobileMap[date] || {}, composerMap[date] || {})
+    }));
 
     if (!cols.length || !cols.some((col) => Object.keys(col.vals).length > 0)) return '';
 
-    // Build ordered analyte list: known in user order first, then any unknowns present
+    // Build ordered analyte list:
+    // 1. User's saved order (from options panel)
+    // 2. Any DB analytes that have data but aren't in the order
+    // 3. Any unrecognised analytes (_u_)
     const analyteOrder = getBloodAnalyteOrder();
     const analyteMap   = Object.fromEntries(BLOOD_DB.map((a) => [a.key, a]));
-    const ANALYTES     = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
+    const orderedAnalytes = analyteOrder.map((k) => analyteMap[k]).filter(Boolean);
+
+    // Auto-include DB analytes with data not already in order
+    const allDataKeys = [...new Set(cols.flatMap((col) => Object.keys(col.vals).filter((k) => !k.startsWith('_u_'))))];
+    const extraDBAnalytes = allDataKeys
+      .filter((k) => !analyteOrder.includes(k) && analyteMap[k])
+      .map((k) => analyteMap[k]);
 
     // Collect unknown analyte keys (prefixed _u_) from all cols
     const unknownKeys = [...new Set(cols.flatMap((col) =>
@@ -7787,7 +7802,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       flag: () => null,
       unknown: true
     }));
-    const allAnalytes = [...ANALYTES, ...unknownAnalytes];
+    const allAnalytes = [...orderedAnalytes, ...extraDBAnalytes, ...unknownAnalytes];
 
     const optionsPanel = showOptions ? `
       <div class="dbl-options-panel">
@@ -8092,12 +8107,48 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       lines.push(fields.progress.trim());
       lines.push('');
     }
-    const newBloods  = (fields.bloods || '').trim();
-    const prevBloods = vm.patient.bloodTrendSummary || '';
-    if (newBloods || prevBloods) {
+    const newBloods = (fields.bloods || '').trim();
+    if (newBloods) {
       lines.push('BLOODS');
-      if (newBloods)  lines.push('Today:    ' + newBloods);
-      if (prevBloods) lines.push(formatBloodsDateLabel(vm) + ': ' + prevBloods);
+      // Parse lines, extracting date prefixes and formatting as [date]: analyte result
+      const BMONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      const todayLabel = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      const B_DATE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
+      const B_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
+
+      const bloodLines = newBloods.split('\n').map((l) => l.trim()).filter(Boolean);
+      const encDate = todayLabel;
+      const bloodEntries = [];
+      let pendingDate = encDate;
+
+      bloodLines.forEach((raw) => {
+        let rest = raw;
+        let dt = pendingDate;
+        let m;
+        m = rest.match(B_DATE_RE);
+        if (m) {
+          const mo = +m[2] - 1;
+          const mo_months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          dt = m[1] + ' ' + mo_months[mo];
+          pendingDate = dt;
+          rest = rest.slice(m[0].length).trim();
+        } else {
+          m = rest.match(B_TEXT_RE);
+          if (m) {
+            const mo2 = BMONTHS[(m[2] || '').toLowerCase().slice(0,3)];
+            const mo_months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            if (mo2 !== undefined) { dt = m[1] + ' ' + mo_months[mo2]; pendingDate = dt; rest = rest.slice(m[0].length).trim(); }
+          }
+        }
+        if (rest) bloodEntries.push({ dt, rest });
+      });
+
+      // Sort oldest first, group by date
+      bloodEntries.sort((a, b) => {
+        const parse = (s) => { if (s === todayLabel) return Date.now(); const x = new Date(s + ' 2026').getTime(); return isNaN(x) ? 0 : x; };
+        return parse(a.dt) - parse(b.dt);
+      });
+      bloodEntries.forEach(({ dt, rest }) => lines.push(dt + ': ' + rest));
       lines.push('');
     }
     if ((fields.plan || '').trim()) {
@@ -10137,7 +10188,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-20T22:33:10.227399',
+  builtAt: '2026-04-21T20:15:44.279069',
   entry: 'desktop.html'
 };
 </script>
