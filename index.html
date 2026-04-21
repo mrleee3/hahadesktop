@@ -3369,23 +3369,254 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   color: #92400e;
 }
 
-/* ─── Patient header DNAR / ACP flags (mobile-app style) ─────────────── */
+/* ─── Patient header DNAR / ACP flags (matching mobile app) ──────────── */
 
 .hah-pt-flag.is-dnar {
-  background: #dc2626;
-  color: #fff;
-  border: none;
+  background: #fbf2f8;
+  color: #8a2c6b;
+  border: 1px solid #e7c7da;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .hah-pt-flag.is-acp {
-  background: rgba(217,119,6,0.12);
+  background: rgba(217,119,6,0.1);
   color: #92400e;
-  border: 1.5px solid rgba(217,119,6,0.35);
+  border: 1.5px solid rgba(217,119,6,0.4);
   font-size: 11px;
   font-weight: 700;
+}
+
+/* ─── ACP card ───────────────────────────────────────────────────────── */
+
+.hah-acp-edit-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--desk-border);
+  background: transparent;
+  color: rgba(47,111,237,0.9);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.hah-acp-edit-btn:hover {
+  background: rgba(47,111,237,0.07);
+}
+
+.hah-acp-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hah-acp-row {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--desk-text);
+  line-height: 1.4;
+}
+
+.hah-acp-row.is-dnacpr {
+  color: #8a2c6b;
+  font-weight: 700;
+}
+
+.hah-acp-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+  margin-right: 4px;
+}
+
+.hah-acp-notes {
+  color: var(--desk-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.hah-acp-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--desk-text-muted);
+  font-style: italic;
+}
+
+/* ─── ACP modal ──────────────────────────────────────────────────────── */
+
+.hah-acp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hah-acp-modal {
+  width: min(480px, calc(100vw - 32px));
+  background: rgba(255,255,255,0.98);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(15,23,42,0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: calc(100vh - 60px);
+}
+
+.hah-acp-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--desk-border);
+}
+
+.hah-acp-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--desk-text);
+  letter-spacing: -0.01em;
+}
+
+.hah-acp-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: rgba(0,0,0,0.04);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 120ms ease;
+}
+
+.hah-acp-modal-close:hover {
+  background: rgba(220,38,38,0.08);
+  color: #b91c1c;
+}
+
+.hah-acp-modal-body {
+  padding: 14px 18px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hah-acp-modal-note {
+  font-size: 11.5px;
+  color: var(--desk-text-muted);
+  margin: 0;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--desk-border);
+}
+
+.hah-acp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hah-acp-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-acp-choice-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.hah-acp-choice {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,0.1);
+  background: rgba(248,250,252,1);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--desk-text);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.hah-acp-choice:hover {
+  background: rgba(47,111,237,0.07);
+  border-color: rgba(47,111,237,0.25);
+}
+
+.hah-acp-choice.is-active {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.4);
+  color: rgba(47,111,237,0.95);
+}
+
+.hah-acp-choice--form.is-active {
+  background: #fbf2f8;
+  border-color: #e7c7da;
+  color: #8a2c6b;
+}
+
+.hah-acp-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--desk-border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--desk-text);
+  background: #fff;
+}
+
+.hah-acp-input:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+}
+
+.hah-acp-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 11px;
+  border: 1px solid var(--desk-border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--desk-text);
+  background: #fff;
+  resize: vertical;
+}
+
+.hah-acp-textarea:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+}
+
+.hah-acp-modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--desk-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: rgba(0,0,0,0.02);
 }
 
 </style>
@@ -4103,7 +4334,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false, acpModalOpen: false },
     tasks: {
       filters: {},
       sort: 'due',
@@ -5077,6 +5308,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const fields = cleanObject(newFields || {});
     if (enc.type === 'board_round') {
       const rawIssues = String(fields.issues || '').trim();
+      fields.issueRaw  = rawIssues;
       fields.issueLines = rawIssues
         ? rawIssues.split('\n').map((l) => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean)
         : [];
@@ -5170,6 +5402,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
     if (type === 'board_round') {
       const rawIssues = String(fields.issues || '').trim();
+      fields.issueRaw  = rawIssues;
       fields.issueLines = rawIssues
         ? rawIssues.split('\n').map((l) => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean)
         : [];
@@ -7273,7 +7506,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
 
   const WS_LAYOUT_KEY = 'hah_ws_layout';
-  const WS_DEFAULT_LAYOUT = { left: ['board_round', 'mdm_pair'], right: ['bloods', 'medications'] };
+  const WS_DEFAULT_LAYOUT = { left: ['board_round', 'mdm_pair'], right: ['acp', 'bloods', 'medications'] };
 
   function getWsLayout() {
     try {
@@ -7312,6 +7545,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
               ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms,  state)}
             </div>
           </div>`;
+        case 'acp':
+          return `<div class="hah-ws-section" data-section="acp" draggable="true">
+            ${renderAcpCard(vm)}
+          </div>`;
         case 'bloods':
           return `<div class="hah-ws-section" data-section="bloods" draggable="true">
             ${renderBloodsWidget(vm, state)}
@@ -7335,6 +7572,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         <div class="hah-ws-col" data-col="left">${leftHtml}</div>
         <div class="hah-ws-col" data-col="right">${rightHtml}</div>
       </div>
+      ${state.patient && state.patient.acpModalOpen ? renderAcpModal(vm) : ''}
     </div>`;
   }
 
@@ -7352,12 +7590,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         : null
     ].filter(Boolean);
 
-    // DNAR/ACP: check ops encounters first (composer-saved), fall back to patient data
-    const latestBoardRound = ops ? ops.getLastBoardRound(patient.id) : null;
-    const encDnar = latestBoardRound && latestBoardRound.fields && latestBoardRound.fields.dnar;
-    const encAcp  = latestBoardRound && latestBoardRound.fields && latestBoardRound.fields.acp;
-    const showDnar = patient.dnar || encDnar;
-    const showAcp  = patient.acp  || encAcp;
+    const ps      = ops ? ops.getPatientState(patient.id) : {};
+    const acpData = ps.acp || {};
+    const showDnar = patient.dnar || acpData.dnacprStatus === 'yes';
+    const showAcp  = patient.acp  || !!(acpData.dnacprStatus || acpData.tepStatus || acpData.notes || acpData.tep);
 
     const rightFlags = [
       showAcp  ? `<span class="hah-pt-flag is-acp">ACP</span>`  : '',
@@ -7451,7 +7687,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const f = enc.fields || {};
     // Preserve the original issue text format exactly as entered, including
     // sub-bullets (lines starting with "-"), numbering, and blank lines.
-    const rawIssues = String(f.issues || '').trim();
+    const rawIssues = String(f.issueRaw || f.issues || '').trim();
     const issuesHtml = rawIssues
       ? `<div class="hah-log-issues-text">${rawIssues.split('\n').map((l) => `<div>${c.escapeHtml(l) || '&nbsp;'}</div>`).join('')}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
@@ -7539,6 +7775,98 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         <div class="hah-mdm-entry-meta">${c.escapeHtml(latest.author || '')}</div>
         <div class="hah-mdm-field-body">${c.escapeHtml(f.note || '')}</div>
       </div></div>
+    </div>`;
+  }
+
+  function renderAcpCard(vm) {
+    const ps     = ops ? ops.getPatientState(vm.patient.id) : {};
+    const acp    = ps.acp || {};
+    const dnacpr = acp.dnacprStatus || '';
+    const ucp    = acp.tepStatus    || '';
+    const tep    = acp.tep          || '';
+    const notes  = acp.notes        || '';
+
+    const dnacprLabel = dnacpr === 'yes' ? 'DNACPR: Yes' : dnacpr === 'no' ? 'DNACPR: No' : dnacpr === 'unknown' ? 'DNACPR: Unknown' : '';
+    const formSeen    = acp.dnacprFormSeen ? ' · Form seen' : '';
+    const ucpLabel    = ucp === 'present' ? 'UCP: Present' : ucp === 'absent' ? 'UCP: Absent' : ucp === 'unknown' ? 'UCP: Unknown' : '';
+    const hasData     = dnacpr || ucp || tep || notes;
+
+    return `<div class="hah-ref-widget hah-acp-card">
+      <div class="hah-ref-head">
+        <span class="hah-ref-label">Advanced Care Plan</span>
+        <button type="button" class="hah-acp-edit-btn" data-patient-action="open-acp-modal">
+          ${hasData ? 'Edit' : '+ Add'}
+        </button>
+      </div>
+      ${hasData ? `
+      <div class="hah-acp-body">
+        ${dnacprLabel ? `<div class="hah-acp-row ${dnacpr === 'yes' ? 'is-dnacpr' : ''}">${c.escapeHtml(dnacprLabel + formSeen)}</div>` : ''}
+        ${ucpLabel    ? `<div class="hah-acp-row">${c.escapeHtml(ucpLabel)}</div>` : ''}
+        ${tep         ? `<div class="hah-acp-row"><span class="hah-acp-field-label">TEP</span> ${c.escapeHtml(tep)}</div>` : ''}
+        ${notes       ? `<div class="hah-acp-row hah-acp-notes">${c.escapeHtml(notes)}</div>` : ''}
+      </div>` : `
+      <div class="hah-acp-empty">No ACP recorded for this admission.</div>`}
+    </div>`;
+  }
+
+  function renderAcpModal(vm) {
+    const ps     = ops ? ops.getPatientState(vm.patient.id) : {};
+    const acp    = ps.acp || {};
+
+    function choiceRow(field, value, label) {
+      const active = acp[field] === value;
+      return `<button type="button" class="hah-acp-choice${active ? ' is-active' : ''}"
+        data-patient-action="acp-choice" data-acp-field="${c.escapeHtml(field)}" data-acp-value="${c.escapeHtml(value)}">${c.escapeHtml(label)}</button>`;
+    }
+
+    return `<div class="hah-acp-modal-overlay" id="hahAcpModal" data-patient-action="acp-modal-backdrop">
+      <div class="hah-acp-modal" role="dialog" aria-modal="true" aria-label="Advanced Care Plan">
+        <div class="hah-acp-modal-head">
+          <span class="hah-acp-modal-title">Advanced Care Plan</span>
+          <button type="button" class="hah-acp-modal-close" data-patient-action="close-acp-modal">×</button>
+        </div>
+        <div class="hah-acp-modal-body">
+          <p class="hah-acp-modal-note">Recorded here and reflected on the patient header and list view.</p>
+
+          <div class="hah-acp-section">
+            <div class="hah-acp-section-title">DNACPR</div>
+            <div class="hah-acp-choice-row">
+              ${choiceRow('dnacprStatus','yes','Yes')}
+              ${choiceRow('dnacprStatus','no','No')}
+              ${choiceRow('dnacprStatus','unknown','Unknown')}
+            </div>
+            ${acp.dnacprStatus === 'yes' ? `
+            <div class="hah-acp-choice-row" style="margin-top:6px">
+              <button type="button" class="hah-acp-choice hah-acp-choice--form${acp.dnacprFormSeen ? ' is-active' : ''}"
+                data-patient-action="acp-choice" data-acp-field="dnacprFormSeen" data-acp-value="${acp.dnacprFormSeen ? '' : '1'}">Form seen</button>
+            </div>` : ''}
+          </div>
+
+          <div class="hah-acp-section">
+            <div class="hah-acp-section-title">UCP (Urgent Care Plan)</div>
+            <div class="hah-acp-choice-row">
+              ${choiceRow('tepStatus','present','Present')}
+              ${choiceRow('tepStatus','absent','Absent')}
+              ${choiceRow('tepStatus','unknown','Unknown')}
+            </div>
+          </div>
+
+          <div class="hah-acp-section">
+            <div class="hah-acp-section-title">TEP</div>
+            <input type="text" id="hahAcpTep" class="hah-acp-input" placeholder="e.g. Hospital"
+              value="${c.escapeHtml(acp.tep || '')}">
+          </div>
+
+          <div class="hah-acp-section">
+            <div class="hah-acp-section-title">ACP notes</div>
+            <textarea id="hahAcpNotes" class="hah-acp-textarea" placeholder="Optional advanced care plan note">${c.escapeHtml(acp.notes || '')}</textarea>
+          </div>
+        </div>
+        <div class="hah-acp-modal-footer">
+          <button type="button" class="hah-inline-pill" data-patient-action="acp-clear">Clear</button>
+          <button type="button" class="hah-inline-pill is-primary" data-patient-action="acp-done">Done</button>
+        </div>
+      </div>
     </div>`;
   }
 
@@ -8188,13 +8516,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
               placeholder="Select date"
               min="${todayIso()}" value="${c.escapeHtml(prevDate)}">
           </div>
-        </div>
-        <div class="hah-cform-field">
-          <label class="hah-cform-label">DNAR / ACP</label>
-          <div class="hah-dnar-acp-row">
-            <button type="button" class="hah-alert-chip" id="cform-dnar" data-alert-type="dnar">DNAR</button>
-            <button type="button" class="hah-alert-chip hah-alert-chip--acp" id="cform-acp" data-alert-type="acp">ACP in place</button>
-          </div>
         </div>`;
     }
 
@@ -8793,6 +9114,43 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const vm = d.buildPatientWorkspaceModel(state);
 
     if (action === 'jump')       { const pid = target.getAttribute('data-patient-id'); if (!pid) return false; store.setState({ selectedPatientId: pid, patient: { sortMenuOpen: false } }); router.goToPatient(pid); return true; }
+    if (action === 'open-acp-modal') {
+      store.setState({ patient: { acpModalOpen: true } }); return true;
+    }
+    if (action === 'close-acp-modal') {
+      store.setState({ patient: { acpModalOpen: false } }); return true;
+    }
+    if (action === 'acp-modal-backdrop') {
+      if (event.target.id === 'hahAcpModal') store.setState({ patient: { acpModalOpen: false } });
+      return true;
+    }
+    if (action === 'acp-choice' && vm && ops) {
+      const field = target.getAttribute('data-acp-field');
+      const val   = target.getAttribute('data-acp-value');
+      if (!field) return false;
+      const ps  = ops.getPatientState(vm.patient.id);
+      const acp = Object.assign({}, ps.acp || {});
+      // Toggle: if already set to this value, clear it; otherwise set
+      if (field === 'dnacprFormSeen') {
+        acp.dnacprFormSeen = val === '1' && !acp.dnacprFormSeen ? true : false;
+      } else {
+        acp[field] = (acp[field] === val) ? '' : val;
+      }
+      ops.patchPatientState(vm.patient.id, { acp });
+      return true;
+    }
+    if (action === 'acp-done' && vm && ops) {
+      const tep   = (document.getElementById('hahAcpTep')   || {}).value || '';
+      const notes = (document.getElementById('hahAcpNotes') || {}).value || '';
+      const ps    = ops.getPatientState(vm.patient.id);
+      const acp   = Object.assign({}, ps.acp || {}, { tep: tep.trim(), notes: notes.trim() });
+      ops.patchPatientState(vm.patient.id, { acp });
+      store.setState({ patient: { acpModalOpen: false } }); return true;
+    }
+    if (action === 'acp-clear' && vm && ops) {
+      ops.patchPatientState(vm.patient.id, { acp: {} });
+      store.setState({ patient: { acpModalOpen: false } }); return true;
+    }
     if (action === 'toggle-blood-options') {
       const now = !!(state.patient && state.patient.bloodOptionsOpen);
       store.setState({ patient: { bloodOptionsOpen: !now } }); return true;
@@ -10497,7 +10855,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T20:56:44.540266',
+  builtAt: '2026-04-21T21:28:48.448390',
   entry: 'desktop.html'
 };
 </script>
