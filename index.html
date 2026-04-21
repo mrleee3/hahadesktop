@@ -1352,8 +1352,35 @@ html, body {
   transition: opacity 140ms ease, background 140ms ease;
 }
 
-.hah-log-entry:hover .hah-log-delete {
+.hah-log-edit {
+  margin-left: auto;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: transparent;
+  color: var(--desk-text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.hah-log-edit + .hah-log-delete {
+  margin-left: 4px;
+}
+
+.hah-log-entry:hover .hah-log-delete,
+.hah-log-entry:hover .hah-log-edit {
   opacity: 1;
+}
+
+.hah-log-edit:hover {
+  background: rgba(47,111,237,0.08);
+  border-color: rgba(47,111,237,0.3);
+  color: rgba(47,111,237,0.95);
 }
 
 .hah-log-delete:hover {
@@ -4605,6 +4632,131 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   align-items: stretch;
 }
 
+/* ─── Round history (Board rounds section) ───────────────────────────── */
+
+.hah-round-history-empty {
+  padding: 16px 12px;
+  font-size: 13px;
+  color: var(--desk-text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+.hah-round-history-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.hah-round-history-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 12px;
+}
+
+.hah-round-history-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--desk-text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-round-history-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  margin-left: 3px;
+}
+
+.hah-round-history-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-round-history-table-wrap {
+  overflow-x: auto;
+}
+
+.hah-round-history-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+}
+
+.hah-round-history-th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+  border-bottom: 1px solid var(--desk-border);
+  white-space: nowrap;
+}
+
+.hah-round-history-row:hover {
+  background: rgba(47,111,237,0.03);
+}
+
+.hah-round-history-cell {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  color: var(--desk-text);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-round-history-table tbody tr:last-child .hah-round-history-cell {
+  border-bottom: none;
+}
+
+.hah-round-history-date {
+  font-weight: 600;
+  color: var(--desk-text);
+}
+
+.hah-round-history-time {
+  font-size: 11px;
+  color: var(--desk-text-muted);
+  margin-top: 1px;
+}
+
+.hah-round-history-duration {
+  font-weight: 600;
+}
+
+.hah-round-history-muted {
+  color: var(--desk-text-muted);
+}
+
+.hah-round-history-bar-track {
+  width: 100%;
+  max-width: 120px;
+  height: 6px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hah-round-history-bar-fill {
+  height: 100%;
+  background: #16a34a;
+  border-radius: 999px;
+  transition: width 240ms cubic-bezier(0.22, 0.9, 0.18, 1);
+}
+
 </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
@@ -4798,8 +4950,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_054_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_054_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_056_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_056_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8064,13 +8216,10 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  // Module-level flag: set to true when a round ends, cleared when leaving patient screen
-  let __showRoundSummary = false;
-
   function renderCaseloadCard(m, filterSet) {
     const activeRound = ops ? ops.getActiveRound() : null;
     const lastSummary = ops ? ops.getLastRoundSummary() : null;
-    const showSummary = lastSummary && !lastSummary.dismissed && !activeRound && __showRoundSummary;
+    const showSummary = lastSummary && !lastSummary.dismissed && !activeRound;
     const avgLabel   = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
 
     function tile(label, value, filterKey, alert) {
@@ -8475,6 +8624,8 @@ window.HAHBoard = window.HAHBoard || {};
       <div class="hah-log-entry-bar">
         <span class="hah-log-entry-date${isLatest ? ' is-today' : ''}">${formatEntryDate(enc.timestamp)}</span>
         <span class="hah-log-author">${c.escapeHtml(enc.author || '')}</span>
+        <button type="button" class="hah-log-edit" data-patient-action="edit-encounter"
+          data-encounter-id="${c.escapeHtml(enc.id)}" title="Edit entry">Edit</button>
         <button type="button" class="hah-log-delete" data-patient-action="delete-encounter"
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
@@ -9912,6 +10063,8 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
     if (action === 'start-round' && ops) {
+      // Clear all scoped composer states so each patient gets a fresh draft
+      store.setState({ patient: { composerByPatient: {} } });
       ops.startRound();
       // If there's a selected patient, mark them in discussion
       if (vm && vm.patient && vm.patient.id) ops.enterPatient(vm.patient.id);
@@ -9943,17 +10096,15 @@ window.HAHBoard = window.HAHBoard || {};
     }
     if (action === 'end-round' && ops) {
       const summary = ops.endRound({});
-      __showRoundSummary = true;
       store.setState({ patient: { _roundEnded: Date.now() } });
       return true;
     }
     if (action === 'dismiss-round-summary' && ops) {
-      __showRoundSummary = false;
       ops.clearLastRoundSummaryFlag();
       return true;
     }
     if (action === 'reset-round' && ops) {
-      __showRoundSummary = false;
+      store.setState({ patient: { composerByPatient: {} } });
       ops.clearLastRoundSummaryFlag();
       ops.resetAllBoardStatuses();
       return true;
@@ -10181,6 +10332,22 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
 
+    if (action === 'edit-encounter' && vm && ops) {
+      const encId = target.getAttribute('data-encounter-id');
+      if (!encId) return false;
+      const encounters = ops.getEncountersForPatient(vm.patient.id) || [];
+      const enc = encounters.find((e) => e.id === encId);
+      if (!enc) return false;
+      // Switch composer to this encounter's type and load it into the composer
+      saveDraft(vm.patient.id, enc.type, enc.fields || {});
+      patchScopedComposerState(vm.patient.id, { locked: true, editId: encId });
+      store.setState({ patient: { composerType: enc.type } });
+      // Scroll right pane to composer
+      const rightPane = document.getElementById('hahRightPane');
+      if (rightPane) rightPane.scrollTo({ top: 0, behavior: 'smooth' });
+      return true;
+    }
+
     if (action === 'discharge-patient' && vm && ops) {
       const patient = vm.patient;
       const msg = 'Discharge ' + patient.name + ' from the service?\n\nThe patient will be removed from the active board. You can restore them from Settings.';
@@ -10392,11 +10559,7 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  function clearTransientState() {
-    __showRoundSummary = false;
-  }
-
-  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, clearTransientState };
+  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender };
 })();
 
 </script>
@@ -10888,8 +11051,82 @@ window.HAHBoard = window.HAHBoard || {};
 
         ${renderSectionHead('Operational balance', 'Who carries the work and which pathway mix is shaping today’s service.', vm.rangeLabel)}
         <section class="hah-insight-row-2">${opsPanels}</section>
+
+        ${renderSectionHead('Board rounds', 'Timing and completion metrics from recent rounds.', '')}
+        <div class="hah-soft-divider"></div>
+        <section class="hah-card">
+          <div class="hah-card-inner">
+            ${renderRoundHistoryTable()}
+          </div>
+        </section>
       </div>
     `;
+  }
+
+  function renderRoundHistoryTable() {
+    const ops = window.HAHBoard.ops;
+    const history = ops && typeof ops.getState === 'function' && ops.getState().roundHistory
+      ? ops.getState().roundHistory
+      : [];
+    if (!history.length) {
+      return '<div class="hah-round-history-empty">No board rounds recorded yet. Start a round from a patient page to begin tracking.</div>';
+    }
+    // Aggregate stats
+    const totalRounds = history.length;
+    const totalMin = Math.round(history.reduce((a, r) => a + (r.durationMs || 0), 0) / 60000);
+    const totalDiscussed = history.reduce((a, r) => a + (r.discussedCount || 0), 0);
+    const avgRoundMin = totalRounds ? (totalMin / totalRounds).toFixed(1) : '0';
+    const avgPerPtMin = totalDiscussed ? (totalMin / totalDiscussed).toFixed(1) : '0';
+
+    const stats = `
+      <div class="hah-round-history-stats">
+        <div class="hah-round-history-stat"><div class="hah-round-history-val">${totalRounds}</div><div class="hah-round-history-label">Rounds</div></div>
+        <div class="hah-round-history-stat"><div class="hah-round-history-val">${avgRoundMin}<span class="hah-round-history-unit">min</span></div><div class="hah-round-history-label">Avg round</div></div>
+        <div class="hah-round-history-stat"><div class="hah-round-history-val">${avgPerPtMin}<span class="hah-round-history-unit">min</span></div><div class="hah-round-history-label">Avg / patient</div></div>
+        <div class="hah-round-history-stat"><div class="hah-round-history-val">${totalDiscussed}</div><div class="hah-round-history-label">Total discussed</div></div>
+      </div>`;
+
+    const rows = history.slice(0, 30).map((r) => {
+      const start = new Date(r.startedAt);
+      const dateLabel = start.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const timeLabel = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const durationMin = r.durationMs ? Math.round(r.durationMs / 60000) : 0;
+      const avgPt = r.avgMsPerPatient ? (r.avgMsPerPatient / 60000).toFixed(1) : '—';
+      const discussedPct = r.patientCount ? Math.round((r.discussedCount / r.patientCount) * 100) : 0;
+      return `<tr class="hah-round-history-row">
+        <td class="hah-round-history-cell">
+          <div class="hah-round-history-date">${c.escapeHtml(dateLabel)}</div>
+          <div class="hah-round-history-time">${c.escapeHtml(timeLabel)}</div>
+        </td>
+        <td class="hah-round-history-cell hah-round-history-duration">${durationMin} min</td>
+        <td class="hah-round-history-cell">${r.discussedCount} / ${r.patientCount || 0}</td>
+        <td class="hah-round-history-cell hah-round-history-muted">${r.deferredCount || 0}</td>
+        <td class="hah-round-history-cell">${avgPt} min</td>
+        <td class="hah-round-history-cell">
+          <div class="hah-round-history-bar-track">
+            <div class="hah-round-history-bar-fill" style="width:${discussedPct}%"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `
+      ${stats}
+      <div class="hah-round-history-table-wrap">
+        <table class="hah-round-history-table">
+          <thead>
+            <tr>
+              <th class="hah-round-history-th">When</th>
+              <th class="hah-round-history-th">Duration</th>
+              <th class="hah-round-history-th">Discussed</th>
+              <th class="hah-round-history-th">Deferred</th>
+              <th class="hah-round-history-th">Avg / pt</th>
+              <th class="hah-round-history-th">Completion</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 
   function renderRightPane(state) {
@@ -11319,17 +11556,7 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
-  let __lastRenderedView = null;
-
   function renderFromState(state) {
-    const view = state.route.view;
-    if (__lastRenderedView === 'patient' && view !== 'patient') {
-      // Leaving patient screen — clear any transient patient-screen state
-      if (window.HAHBoard.patientScreen && typeof window.HAHBoard.patientScreen.clearTransientState === 'function') {
-        window.HAHBoard.patientScreen.clearTransientState();
-      }
-    }
-    __lastRenderedView = view;
     updateHeader(state);
     updateNav(state);
     updatePanes(state);
@@ -11770,9 +11997,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_054_release.html',
-  source: 'hospital_at_home_board_v0_8_054_source.zip',
-  builtAt: '2026-04-21T23:34:35.863982',
+  filename: 'hospital_at_home_board_v0_8_056_release.html',
+  source: 'hospital_at_home_board_v0_8_056_source.zip',
+  builtAt: '2026-04-21T23:47:21.385591',
   entry: 'desktop.html'
 };
 </script>
