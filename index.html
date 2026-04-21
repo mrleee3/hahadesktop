@@ -4517,25 +4517,25 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   <script>
 /* inlined: js/21b-desktop-update.js */
 /* ─── H@H Board — GitHub Pages update checker ───────────────────────────
-   Ported from the mobile app's 06-runtime.js.
-   Polls the GitHub Contents API every 2 minutes.
-   When the deployed file's SHA changes, shows a banner offering to reload
-   with full cache clearing — bypassing browser/CDN cache entirely.
+   Checks the latest commit SHA on the repo's default branch via the
+   GitHub API. Any push to the repo triggers the update banner —
+   regardless of filename. This avoids the versioned-filename problem
+   where a file-SHA check always shows "up to date" on first load.
 ────────────────────────────────────────────────────────────────────────── */
 
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME   = 'hospital_at_home_board_v0_8_049_release.html';
-  const SOURCE_FILENAME  = 'hospital_at_home_board_v0_8_049_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_049_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_049_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
-  const SHA_KEY          = 'hah_board_github_sha';
-  const PENDING_SHA_KEY  = 'hah_board_github_pending_sha';
-  const LAST_CHECK_KEY   = 'hah_board_github_last_check';
-  const CHECK_INTERVAL   = 2 * 60 * 1000;
+  const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
+  const PENDING_SHA_KEY = 'hah_board_pending_sha';
+  const LAST_CHECK_KEY  = 'hah_board_last_check';
+  const CHECK_INTERVAL  = 2 * 60 * 1000;
 
-  // ── helpers ──────────────────────────────────────────────────────────
+  // ── repo detection ────────────────────────────────────────────────────
 
   function getRepo() {
     try {
@@ -4543,13 +4543,12 @@ window.HAHBoard = window.HAHBoard || {};
       if (!/github\.io$/i.test(hostname)) return null;
       const owner = hostname.split('.')[0];
       const parts = (pathname || '/').split('/').filter(Boolean);
-      if (!parts.length) return null;
-      const repo = parts[0];
-      // The desktop HTML is the second path segment (e.g. /devlee/desktop-board.html)
-      const file = parts.slice(1).join('/') || 'index.html';
-      return { owner, repo, file };
+      const repo  = parts.length ? parts[0] : owner + '.github.io';
+      return { owner, repo };
     } catch (_) { return null; }
   }
+
+  // ── cache clearing ────────────────────────────────────────────────────
 
   async function clearCachesAndSW() {
     try {
@@ -4566,7 +4565,7 @@ window.HAHBoard = window.HAHBoard || {};
     } catch (_) {}
   }
 
-  // ── banner ───────────────────────────────────────────────────────────
+  // ── banner ────────────────────────────────────────────────────────────
 
   function ensureBanner() {
     let el = document.getElementById('hahBoardUpdateBanner');
@@ -4606,11 +4605,11 @@ window.HAHBoard = window.HAHBoard || {};
   function showBanner(sha) {
     const el = ensureBanner();
     const meta = el.querySelector('#hahBoardUpdateMeta');
-    if (meta) meta.textContent = `SHA ${String(sha || '').slice(0, 7)} · ${BUILD_ID}`;
+    if (meta) meta.textContent = 'Commit ' + String(sha || '').slice(0, 7) + ' · ' + BUILD_ID;
     el.style.display = 'flex';
   }
 
-  // ── apply update ─────────────────────────────────────────────────────
+  // ── apply update ──────────────────────────────────────────────────────
 
   async function applyUpdate() {
     const pending = String(
@@ -4619,12 +4618,11 @@ window.HAHBoard = window.HAHBoard || {};
     if (!pending) return;
     const btn = document.getElementById('hahBoardUpdateNow');
     if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
-    localStorage.setItem(SHA_KEY, pending);
+    localStorage.setItem(COMMIT_SHA_KEY, pending);
     localStorage.removeItem(PENDING_SHA_KEY);
     sessionStorage.removeItem(PENDING_SHA_KEY);
     await clearCachesAndSW();
     const next = new URL(window.location.href);
-    next.searchParams.set('_ghsha', pending.slice(0, 7));
     next.searchParams.set('_r', String(Date.now()));
     window.location.replace(next.toString());
   }
@@ -4635,22 +4633,25 @@ window.HAHBoard = window.HAHBoard || {};
     try {
       const cfg = getRepo();
       if (!cfg) return;
-      const now = Date.now();
+      const now  = Date.now();
       const last = Number(sessionStorage.getItem(LAST_CHECK_KEY) || '0');
       if (!force && last && (now - last) < CHECK_INTERVAL) return;
       sessionStorage.setItem(LAST_CHECK_KEY, String(now));
-      const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(cfg.file)}`;
+
+      // Check latest commit on the default branch
+      const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/commits/HEAD`;
       const res = await fetch(`${apiUrl}?t=${now}`, {
         cache: 'no-store',
         headers: { 'Accept': 'application/vnd.github+json' }
       });
       if (!res.ok) return;
-      const info = await res.json();
+      const info   = await res.json();
       const remote = String((info && info.sha) || '').trim();
-      const known  = String(localStorage.getItem(SHA_KEY) || '').trim();
+      const known  = String(localStorage.getItem(COMMIT_SHA_KEY) || '').trim();
       if (!remote) return;
       if (!known) {
-        localStorage.setItem(SHA_KEY, remote);
+        // First run — store current commit as known, no banner
+        localStorage.setItem(COMMIT_SHA_KEY, remote);
         hideBanner();
         return;
       }
@@ -4660,13 +4661,14 @@ window.HAHBoard = window.HAHBoard || {};
         hideBanner();
         return;
       }
+      // New commit detected
       localStorage.setItem(PENDING_SHA_KEY, remote);
       sessionStorage.setItem(PENDING_SHA_KEY, remote);
       showBanner(remote);
     } catch (_) {}
   }
 
-  // ── public API ───────────────────────────────────────────────────────
+  // ── public API ────────────────────────────────────────────────────────
 
   function getBuildInfo() {
     return { buildFilename: BUILD_FILENAME, sourceFilename: SOURCE_FILENAME, buildId: BUILD_ID };
@@ -11084,7 +11086,7 @@ window.HAHBoard = window.HAHBoard || {};
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_049_release.html',
   source: 'hospital_at_home_board_v0_8_049_source.zip',
-  builtAt: '2026-04-21T22:07:18.382851',
+  builtAt: '2026-04-21T22:14:05.709810',
   entry: 'desktop.html'
 };
 </script>
