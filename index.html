@@ -3672,15 +3672,15 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 }
 
 .hah-round-start-btn.is-secondary {
-  border-color: rgba(47,111,237,0.25);
-  background: transparent;
-  color: rgba(47,111,237,0.95);
+  border-color: rgba(22,163,74,0.3);
+  background: rgba(255,255,255,0.7);
+  color: #15803d;
   margin-top: 10px;
 }
 
 .hah-round-start-btn.is-secondary:hover {
-  background: rgba(47,111,237,0.07);
-  border-color: rgba(47,111,237,0.4);
+  background: rgba(22,163,74,0.1);
+  border-color: rgba(22,163,74,0.45);
 }
 
 /* Active round — subtle green border on card */
@@ -3739,10 +3739,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 /* ─── Post-round summary ─────────────────────────────────────────────── */
 
 .hah-round-summary {
-  background: rgba(34,197,94,0.06);
-  border: 1px solid rgba(34,197,94,0.2);
+  background: linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%);
+  border: 1px solid rgba(34,197,94,0.22);
   border-radius: 12px;
-  padding: 12px;
+  padding: 14px 14px 12px;
   margin-top: 2px;
 }
 
@@ -3750,7 +3750,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .hah-round-summary-title {
@@ -3762,12 +3762,12 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 }
 
 .hah-round-summary-dismiss {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
-  border-radius: 6px;
-  background: transparent;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.04);
   color: var(--desk-text-muted);
   font-size: 14px;
   line-height: 1;
@@ -3776,7 +3776,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 }
 
 .hah-round-summary-dismiss:hover {
-  background: rgba(0,0,0,0.06);
+  background: rgba(0,0,0,0.1);
   color: var(--desk-text);
 }
 
@@ -3790,18 +3790,21 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-  background: rgba(255,255,255,0.7);
-  border-radius: 8px;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(34,197,94,0.12);
+  border-radius: 10px;
+  min-height: 62px;
 }
 
 .hah-round-summary-val {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--desk-text);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3810,12 +3813,13 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   font-weight: 500;
   color: var(--desk-text-muted);
   margin-left: 2px;
+  letter-spacing: 0;
 }
 
 .hah-round-summary-label {
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
 }
@@ -4794,8 +4798,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_052_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_052_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_053_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_053_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -5377,10 +5381,10 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function startRound() {
-    // Clear any stale "In discussion" status from a previous round
+    // Reset all patient statuses for the new round — clean slate
     Object.keys(state.patientStates).forEach((pid) => {
       const ps = state.patientStates[pid];
-      if (ps && ps.boardStatus === 'In discussion') {
+      if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
         state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
       }
     });
@@ -7937,8 +7941,7 @@ window.HAHBoard = window.HAHBoard || {};
                       : '';
       const dotHtml = activeRound
         ? renderStatusDotOverlay(row, status, statusMenuFor === row.id)
-        : '';
-      const staticDot = activeRound ? '' : priorityDot(row.priority);
+        : renderStatusDotStatic(status);
       return `<div class="hah-patient-row-wrap${activeRound ? ' is-round-active' : ''}">
         <button type="button" class="hah-patient-row${active} ${statusTone}"
           data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
@@ -7946,9 +7949,9 @@ window.HAHBoard = window.HAHBoard || {};
             <span class="hah-patient-row-name">${c.escapeHtml(row.name)}</span>
             <span class="hah-patient-row-sub">${c.escapeHtml(status)}</span>
           </div>
-          ${staticDot}
+          ${!activeRound ? dotHtml : ''}
         </button>
-        ${dotHtml}
+        ${activeRound ? dotHtml : ''}
       </div>`;
     }).join('');
 
@@ -8196,6 +8199,14 @@ window.HAHBoard = window.HAHBoard || {};
               : priority === 'Low' ? '#16a34a'
               : '#94a3b8';
     return `<span class="hah-patient-row-dot" style="background:${tone}" title="Priority: ${c.escapeHtml(priority || 'Normal')}"></span>`;
+  }
+
+  function renderStatusDotStatic(status) {
+    const colour = status === 'Discussed' || status === 'Actioned' ? '#16a34a'
+                : status === 'In discussion' ? '#2f6fed'
+                : status === 'Deferred' ? '#f59e0b'
+                : '#cbd5e1';
+    return `<span class="hah-patient-row-dot" style="background:${colour}" title="${c.escapeHtml(status)}"></span>`;
   }
 
   function renderStatusDotOverlay(row, status, menuOpen) {
@@ -11720,9 +11731,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_052_release.html',
-  source: 'hospital_at_home_board_v0_8_052_source.zip',
-  builtAt: '2026-04-21T23:15:42.350882',
+  filename: 'hospital_at_home_board_v0_8_053_release.html',
+  source: 'hospital_at_home_board_v0_8_053_source.zip',
+  builtAt: '2026-04-21T23:25:31.492278',
   entry: 'desktop.html'
 };
 </script>
