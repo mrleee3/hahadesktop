@@ -1188,8 +1188,25 @@ html, body {
 /* ─── Centre split ───────────────────────────────────────────────────── */
 
 .hah-pt-centre-split {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hah-pt-log-col {
+  width: 100%;
+}
+
+.hah-pt-mdm-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.hah-pt-ref-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: 12px;
   align-items: start;
 }
@@ -2383,12 +2400,12 @@ html, body {
 }
 
 .hah-pt-centre-split.is-narrow {
-  grid-template-columns: minmax(0, 1.58fr) minmax(235px, 0.78fr);
   gap: 10px;
 }
 
-.hah-pt-centre-split.is-narrow .hah-pt-ref-col {
-  gap: 8px;
+.hah-pt-centre-split.is-narrow .hah-pt-mdm-row,
+.hah-pt-centre-split.is-narrow .hah-pt-ref-row {
+  grid-template-columns: 1fr;
 }
 
 .hah-pt-centre-split.is-narrow .hah-mdm-body,
@@ -7165,9 +7182,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       ${renderObsStrip(vm)}
       <div class="hah-pt-centre-split">
         <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds, state)}</div>
-        <div class="hah-pt-ref-col">
+        <div class="hah-pt-mdm-row">
           ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms, state)}
           ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
+        </div>
+        <div class="hah-pt-ref-row">
           ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
           ${renderMedsWidget(vm)}
           ${renderBloodsWidget(vm, state)}
@@ -8271,7 +8290,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const mainPane = document.querySelector('#hahMainPane');
     const centre = document.querySelector('.hah-pt-centre-split');
     const logCol = document.querySelector('.hah-pt-log-col');
-    const refCol = document.querySelector('.hah-pt-ref-col');
+    const refCol = document.querySelector('.hah-pt-mdm-row');
     if (!app || !mainPane || !centre || !logCol) return;
 
     if (window.HAHBoard.__patientLayoutCleanup) {
@@ -8352,7 +8371,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       ro.observe(mainPane);
       ro.observe(centre);
       ro.observe(logCol);
-      if (refCol) ro.observe(refCol);
+      if (refCol) ro.observe(refCol) // hah-pt-mdm-row;
     }
     window.addEventListener('resize', requestApply, { passive: true });
     window.addEventListener('hah:panes-resized', requestApply);
@@ -10188,7 +10207,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T20:15:44.279069',
+  builtAt: '2026-04-21T20:29:56.221725',
   entry: 'desktop.html'
 };
 </script>
