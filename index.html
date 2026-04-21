@@ -3651,65 +3651,42 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 42px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 14px;
   margin-top: 4px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
+  border: 1px solid rgba(22,163,74,0.3);
+  border-radius: 10px;
+  background: rgba(22,163,74,0.06);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.01em;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(22,163,74,0.25);
-  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .hah-round-start-btn:hover {
-  box-shadow: 0 4px 14px rgba(22,163,74,0.35);
-  filter: brightness(1.05);
-}
-
-.hah-round-start-btn:active {
-  transform: scale(0.98);
+  background: rgba(22,163,74,0.12);
+  border-color: rgba(22,163,74,0.45);
 }
 
 .hah-round-start-btn.is-secondary {
+  border-color: rgba(47,111,237,0.25);
   background: transparent;
   color: rgba(47,111,237,0.95);
-  box-shadow: none;
-  border: 1px solid rgba(47,111,237,0.25);
   margin-top: 10px;
-  height: 36px;
-  font-size: 12px;
 }
 
 .hah-round-start-btn.is-secondary:hover {
   background: rgba(47,111,237,0.07);
-  filter: none;
+  border-color: rgba(47,111,237,0.4);
 }
 
-/* Active round — zone styling */
+/* Active round — subtle green border on card */
 .hah-caseload-card.is-round-active {
-  border: 1px solid rgba(22,163,74,0.25);
-  box-shadow: 0 0 0 1px rgba(22,163,74,0.1) inset;
-}
-
-.hah-round-zone.is-active .hah-round-zone-title {
-  color: #15803d;
-  font-weight: 700;
-}
-
-.hah-round-elapsed {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--desk-text);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  margin-top: 2px;
+  border: 1px solid rgba(22,163,74,0.3);
+  box-shadow: 0 0 0 1px rgba(22,163,74,0.08) inset;
 }
 
 .hah-round-end-btn {
@@ -3843,17 +3820,25 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   color: var(--desk-text-muted);
 }
 
-/* ─── Patient row status dot & menu ──────────────────────────────────── */
+/* ─── Patient row status dot overlay (active round only) ─────────────── */
 
 .hah-patient-row-wrap {
   position: relative;
 }
 
-.hah-patient-status-wrap {
-  position: relative;
+.hah-patient-row-wrap.is-round-active .hah-patient-row {
+  padding-right: 30px; /* leave space for the overlay dot */
+}
+
+.hah-status-overlay {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .hah-status-dot {
@@ -3874,7 +3859,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   box-shadow: 0 0 0 2px rgba(47,111,237,0.25);
 }
 
-.hah-patient-status-wrap.is-open .hah-status-dot {
+.hah-status-overlay.is-open .hah-status-dot {
   transform: scale(1.2);
   box-shadow: 0 0 0 2px rgba(47,111,237,0.35);
 }
@@ -3912,6 +3897,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   text-align: left;
   font-family: inherit;
   transition: background 120ms ease;
+  white-space: nowrap;
 }
 
 .hah-status-menu-item:hover {
@@ -4808,8 +4794,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_051_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_051_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_052_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_052_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -5180,7 +5166,7 @@ window.HAHBoard = window.HAHBoard || {};
       auditTrail: Array.isArray(parsed && parsed.auditTrail) ? parsed.auditTrail.slice(0, MAX_AUDIT_ROWS) : [],
       roundSummaries: Array.isArray(parsed && parsed.roundSummaries) ? parsed.roundSummaries.slice(0, MAX_SUMMARY_ROWS) : [],
       activeRound: parsed && parsed.activeRound && typeof parsed.activeRound === 'object' ? parsed.activeRound : null,
-      roundHistory: Array.isArray(parsed && parsed.roundHistory) ? parsed.roundHistory.slice(0, MAX_SUMMARY_ROWS) : [],
+      roundHistory: Array.isArray(parsed && parsed.roundHistory) ? parsed.roundHistory.slice(0, 500) : [],
       updatedAt: parsed && parsed.updatedAt ? parsed.updatedAt : '',
       lastMutationId: parsed && parsed.lastMutationId ? parsed.lastMutationId : '',
       lastWriter: parsed && parsed.lastWriter ? parsed.lastWriter : ''
@@ -5498,7 +5484,7 @@ window.HAHBoard = window.HAHBoard || {};
       avgMsPerPatient: avgMs,
       timings
     };
-    state.roundHistory = [summary].concat(state.roundHistory || []).slice(0, MAX_SUMMARY_ROWS);
+    state.roundHistory = [summary].concat(state.roundHistory || []).slice(0, 500);
     state.activeRound = null;
     appendAudit({ type: 'round-ended', summary: 'Board round ended · ' + discussedCount + ' discussed · ' + Math.round(durationMs / 60000) + ' min' });
     saveState('round-ended', { summaryId: summary.id });
@@ -7950,17 +7936,19 @@ window.HAHBoard = window.HAHBoard || {};
                       : status === 'In discussion' ? 'is-now'
                       : '';
       const dotHtml = activeRound
-        ? renderStatusDot(row, status, statusMenuFor === row.id)
-        : priorityDot(row.priority);
-      return `<div class="hah-patient-row-wrap">
+        ? renderStatusDotOverlay(row, status, statusMenuFor === row.id)
+        : '';
+      const staticDot = activeRound ? '' : priorityDot(row.priority);
+      return `<div class="hah-patient-row-wrap${activeRound ? ' is-round-active' : ''}">
         <button type="button" class="hah-patient-row${active} ${statusTone}"
           data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
           <div class="hah-patient-row-main">
             <span class="hah-patient-row-name">${c.escapeHtml(row.name)}</span>
             <span class="hah-patient-row-sub">${c.escapeHtml(status)}</span>
           </div>
-          ${dotHtml}
+          ${staticDot}
         </button>
+        ${dotHtml}
       </div>`;
     }).join('');
 
@@ -8040,10 +8028,13 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
+  // Module-level flag: set to true when a round ends, cleared when leaving patient screen
+  let __showRoundSummary = false;
+
   function renderCaseloadCard(m, filterSet) {
     const activeRound = ops ? ops.getActiveRound() : null;
     const lastSummary = ops ? ops.getLastRoundSummary() : null;
-    const showSummary = lastSummary && !lastSummary.dismissed && !activeRound;
+    const showSummary = lastSummary && !lastSummary.dismissed && !activeRound && __showRoundSummary;
     const avgLabel   = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
 
     function tile(label, value, filterKey, alert) {
@@ -8076,20 +8067,17 @@ window.HAHBoard = window.HAHBoard || {};
     let zoneHtml = '';
 
     if (activeRound) {
-      // ── Active round: ring + elapsed + End button ──
+      // ── Active round: ring + remaining (same as pre-round zone) + End button ──
       const ringFrac = m.total ? m.discussed / m.total : 0;
       const ringCirc = 2 * Math.PI * 26;
       const ringFill = (ringFrac * ringCirc).toFixed(1);
       const ringEmpty = ringCirc.toFixed(1);
       const ringDisplay = m.total ? `${m.discussed}<tspan class="hah-ring-slash">/</tspan><tspan class="hah-ring-total">${m.total}</tspan>` : '—';
-      const startTs = new Date(activeRound.startedAt).getTime();
-      const elapsedMs = Math.max(0, Date.now() - startTs);
-      const elapsedText = formatElapsed(elapsedMs);
       const allDone = m.total > 0 && m.toGo === 0;
 
       zoneHtml = `
         <div class="hah-caseload-divider"></div>
-        <div class="hah-round-zone is-active">
+        <div class="hah-round-zone">
           <svg class="hah-ring" width="64" height="64" viewBox="0 0 64 64">
             <circle class="hah-ring-track" cx="32" cy="32" r="26" />
             <circle class="hah-ring-fill" cx="32" cy="32" r="26"
@@ -8099,12 +8087,12 @@ window.HAHBoard = window.HAHBoard || {};
             <text class="hah-ring-text" x="32" y="32" text-anchor="middle" dominant-baseline="central">${ringDisplay}</text>
           </svg>
           <div class="hah-round-zone-text">
-            <div class="hah-round-zone-title">Board round</div>
-            <div class="hah-round-elapsed" data-round-elapsed data-started-at="${c.escapeHtml(activeRound.startedAt)}">${elapsedText}</div>
-            ${m.total
-              ? (m.toGo === 0 ? '<div class="hah-round-zone-sub">All patients reviewed</div>'
-                  : `<div class="hah-round-zone-sub"><a class="hah-round-togo${filterSet.has('to-go') ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} remaining</a></div>`)
-              : '<div class="hah-round-zone-sub">No patients</div>'}
+            <div class="hah-round-zone-title">Round progress</div>
+            <div class="hah-round-zone-sub">
+              ${m.total
+                ? (m.toGo === 0 ? 'All discussed' : `<a class="hah-round-togo${filterSet.has('to-go') ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} to go</a>`)
+                : 'No patients'}
+            </div>
           </div>
         </div>
         ${allDone ? `
@@ -8210,7 +8198,7 @@ window.HAHBoard = window.HAHBoard || {};
     return `<span class="hah-patient-row-dot" style="background:${tone}" title="Priority: ${c.escapeHtml(priority || 'Normal')}"></span>`;
   }
 
-  function renderStatusDot(row, status, menuOpen) {
+  function renderStatusDotOverlay(row, status, menuOpen) {
     const colour = status === 'Discussed' || status === 'Actioned' ? '#16a34a'
                 : status === 'In discussion' ? '#2f6fed'
                 : status === 'Deferred' ? '#f59e0b'
@@ -8227,8 +8215,8 @@ window.HAHBoard = window.HAHBoard || {};
           <span class="hah-status-menu-dot" style="background:#cbd5e1"></span>Reset
         </button>` : ''}
       </div>` : '';
-    return `<span class="hah-patient-status-wrap${menuOpen ? ' is-open' : ''}">
-      <button type="button" class="hah-patient-row-dot hah-status-dot" style="background:${colour}"
+    return `<span class="hah-status-overlay${menuOpen ? ' is-open' : ''}">
+      <button type="button" class="hah-status-dot" style="background:${colour}"
         data-patient-action="toggle-status-menu" data-patient-id="${c.escapeHtml(row.id)}"
         title="${c.escapeHtml(status)}" aria-label="Change status"></button>
       ${menuHtml}
@@ -9423,7 +9411,6 @@ window.HAHBoard = window.HAHBoard || {};
   function afterRender(state, pane) {
     initBloodTooltip();
     initWsDragDrop();
-    initRoundElapsedTicker();
     setupResponsivePatientLayout();
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
@@ -9916,11 +9903,12 @@ window.HAHBoard = window.HAHBoard || {};
     }
     if (action === 'end-round' && ops) {
       const summary = ops.endRound({});
-      // Trigger rerender by bumping state
+      __showRoundSummary = true;
       store.setState({ patient: { _roundEnded: Date.now() } });
       return true;
     }
     if (action === 'dismiss-round-summary' && ops) {
+      __showRoundSummary = false;
       ops.clearLastRoundSummaryFlag();
       return true;
     }
@@ -10218,32 +10206,6 @@ window.HAHBoard = window.HAHBoard || {};
     }, true);
   }
 
-  function initRoundElapsedTicker() {
-    if (window.HAHBoard.__roundTicker) {
-      clearInterval(window.HAHBoard.__roundTicker);
-      window.HAHBoard.__roundTicker = null;
-    }
-    const el = document.querySelector('[data-round-elapsed]');
-    if (!el) return;
-    const startedAt = el.getAttribute('data-started-at');
-    if (!startedAt) return;
-    const startTs = new Date(startedAt).getTime();
-    function tick() {
-      const node = document.querySelector('[data-round-elapsed]');
-      if (!node) {
-        if (window.HAHBoard.__roundTicker) {
-          clearInterval(window.HAHBoard.__roundTicker);
-          window.HAHBoard.__roundTicker = null;
-        }
-        return;
-      }
-      const ms = Math.max(0, Date.now() - startTs);
-      node.textContent = formatElapsed(ms);
-    }
-    tick();
-    window.HAHBoard.__roundTicker = setInterval(tick, 1000);
-  }
-
   function initBloodTooltip() {
     if (window.HAHBoard.__bloodTooltipBound) return;
     window.HAHBoard.__bloodTooltipBound = true;
@@ -10384,7 +10346,11 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender };
+  function clearTransientState() {
+    __showRoundSummary = false;
+  }
+
+  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, clearTransientState };
 })();
 
 </script>
@@ -11303,7 +11269,17 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
+  let __lastRenderedView = null;
+
   function renderFromState(state) {
+    const view = state.route.view;
+    if (__lastRenderedView === 'patient' && view !== 'patient') {
+      // Leaving patient screen — clear any transient patient-screen state
+      if (window.HAHBoard.patientScreen && typeof window.HAHBoard.patientScreen.clearTransientState === 'function') {
+        window.HAHBoard.patientScreen.clearTransientState();
+      }
+    }
+    __lastRenderedView = view;
     updateHeader(state);
     updateNav(state);
     updatePanes(state);
@@ -11744,9 +11720,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_051_release.html',
-  source: 'hospital_at_home_board_v0_8_051_source.zip',
-  builtAt: '2026-04-21T23:00:58.956905',
+  filename: 'hospital_at_home_board_v0_8_052_release.html',
+  source: 'hospital_at_home_board_v0_8_052_source.zip',
+  builtAt: '2026-04-21T23:15:42.350882',
   entry: 'desktop.html'
 };
 </script>
