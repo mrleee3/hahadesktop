@@ -7708,7 +7708,23 @@ window.HAHBoard = window.HAHBoard || {};
   function getWsLayout() {
     try {
       const saved = JSON.parse(localStorage.getItem(WS_LAYOUT_KEY) || 'null');
-      if (saved && Array.isArray(saved.left) && Array.isArray(saved.right)) return saved;
+      if (saved && Array.isArray(saved.left) && Array.isArray(saved.right)) {
+        // Forward-migration: add any new default sections not present in saved layout
+        const allSaved = new Set([...saved.left, ...saved.right]);
+        const allDefault = [...WS_DEFAULT_LAYOUT.left, ...WS_DEFAULT_LAYOUT.right];
+        let changed = false;
+        allDefault.forEach((key) => {
+          if (!allSaved.has(key)) {
+            // Add to the column it belongs to in the default
+            const inDefaultRight = WS_DEFAULT_LAYOUT.right.includes(key);
+            if (inDefaultRight) saved.right.unshift(key);
+            else saved.left.push(key);
+            changed = true;
+          }
+        });
+        if (changed) saveWsLayout(saved);
+        return saved;
+      }
     } catch (_) {}
     return { left: [...WS_DEFAULT_LAYOUT.left], right: [...WS_DEFAULT_LAYOUT.right] };
   }
@@ -11090,7 +11106,7 @@ window.HAHBoard = window.HAHBoard || {};
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_050_release.html',
   source: 'hospital_at_home_board_v0_8_050_source.zip',
-  builtAt: '2026-04-21T22:17:22.150697',
+  builtAt: '2026-04-21T22:20:06.161858',
   entry: 'desktop.html'
 };
 </script>
