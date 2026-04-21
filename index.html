@@ -4515,6 +4515,176 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 </script>
   <script>
+/* inlined: js/21b-desktop-update.js */
+/* ─── H@H Board — GitHub Pages update checker ───────────────────────────
+   Ported from the mobile app's 06-runtime.js.
+   Polls the GitHub Contents API every 2 minutes.
+   When the deployed file's SHA changes, shows a banner offering to reload
+   with full cache clearing — bypassing browser/CDN cache entirely.
+────────────────────────────────────────────────────────────────────────── */
+
+window.HAHBoard = window.HAHBoard || {};
+
+(function () {
+  const BUILD_FILENAME   = 'hospital_at_home_board_v0_8_021_release.html';
+  const SOURCE_FILENAME  = 'hospital_at_home_board_v0_8_021_source.zip';
+  const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
+
+  const SHA_KEY          = 'hah_board_github_sha';
+  const PENDING_SHA_KEY  = 'hah_board_github_pending_sha';
+  const LAST_CHECK_KEY   = 'hah_board_github_last_check';
+  const CHECK_INTERVAL   = 2 * 60 * 1000;
+
+  // ── helpers ──────────────────────────────────────────────────────────
+
+  function getRepo() {
+    try {
+      const { hostname, pathname } = window.location;
+      if (!/github\.io$/i.test(hostname)) return null;
+      const owner = hostname.split('.')[0];
+      const parts = (pathname || '/').split('/').filter(Boolean);
+      if (!parts.length) return null;
+      const repo = parts[0];
+      // The desktop HTML is the second path segment (e.g. /devlee/desktop-board.html)
+      const file = parts.slice(1).join('/') || 'index.html';
+      return { owner, repo, file };
+    } catch (_) { return null; }
+  }
+
+  async function clearCachesAndSW() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) { try { await reg.unregister(); } catch (_) {} }
+      }
+    } catch (_) {}
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
+      }
+    } catch (_) {}
+  }
+
+  // ── banner ───────────────────────────────────────────────────────────
+
+  function ensureBanner() {
+    let el = document.getElementById('hahBoardUpdateBanner');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'hahBoardUpdateBanner';
+    el.style.cssText = [
+      'position:fixed', 'top:16px', 'left:50%', 'transform:translateX(-50%)',
+      'z-index:10100', 'display:none', 'align-items:center',
+      'justify-content:space-between', 'gap:12px', 'padding:12px 16px',
+      'border-radius:16px', 'background:rgba(17,24,39,.95)', 'color:#fff',
+      'box-shadow:0 12px 40px rgba(15,23,42,.3)',
+      'backdrop-filter:blur(14px)', '-webkit-backdrop-filter:blur(14px)',
+      'min-width:320px', 'max-width:calc(100vw - 32px)', 'font-family:inherit'
+    ].join(';');
+    el.innerHTML = [
+      '<div style="min-width:0">',
+      '  <div style="font-size:14px;font-weight:800;line-height:1.2">New version available</div>',
+      '  <div id="hahBoardUpdateMeta" style="margin-top:3px;font-size:12px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ready to update</div>',
+      '</div>',
+      '<div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">',
+      '  <button id="hahBoardUpdateLater" type="button" style="height:36px;padding:0 12px;border:none;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Later</button>',
+      '  <button id="hahBoardUpdateNow"   type="button" style="height:36px;padding:0 14px;border:none;border-radius:10px;background:#0a84ff;color:#fff;font-weight:800;cursor:pointer;font-family:inherit">Update</button>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(el);
+    el.querySelector('#hahBoardUpdateLater').addEventListener('click', hideBanner);
+    el.querySelector('#hahBoardUpdateNow').addEventListener('click', () => applyUpdate().catch(() => {}));
+    return el;
+  }
+
+  function hideBanner() {
+    const el = document.getElementById('hahBoardUpdateBanner');
+    if (el) el.style.display = 'none';
+  }
+
+  function showBanner(sha) {
+    const el = ensureBanner();
+    const meta = el.querySelector('#hahBoardUpdateMeta');
+    if (meta) meta.textContent = `SHA ${String(sha || '').slice(0, 7)} · ${BUILD_ID}`;
+    el.style.display = 'flex';
+  }
+
+  // ── apply update ─────────────────────────────────────────────────────
+
+  async function applyUpdate() {
+    const pending = String(
+      sessionStorage.getItem(PENDING_SHA_KEY) || localStorage.getItem(PENDING_SHA_KEY) || ''
+    ).trim();
+    if (!pending) return;
+    const btn = document.getElementById('hahBoardUpdateNow');
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+    localStorage.setItem(SHA_KEY, pending);
+    localStorage.removeItem(PENDING_SHA_KEY);
+    sessionStorage.removeItem(PENDING_SHA_KEY);
+    await clearCachesAndSW();
+    const next = new URL(window.location.href);
+    next.searchParams.set('_ghsha', pending.slice(0, 7));
+    next.searchParams.set('_r', String(Date.now()));
+    window.location.replace(next.toString());
+  }
+
+  // ── check ─────────────────────────────────────────────────────────────
+
+  async function checkForUpdate(force) {
+    try {
+      const cfg = getRepo();
+      if (!cfg) return;
+      const now = Date.now();
+      const last = Number(sessionStorage.getItem(LAST_CHECK_KEY) || '0');
+      if (!force && last && (now - last) < CHECK_INTERVAL) return;
+      sessionStorage.setItem(LAST_CHECK_KEY, String(now));
+      const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(cfg.file)}`;
+      const res = await fetch(`${apiUrl}?t=${now}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/vnd.github+json' }
+      });
+      if (!res.ok) return;
+      const info = await res.json();
+      const remote = String((info && info.sha) || '').trim();
+      const known  = String(localStorage.getItem(SHA_KEY) || '').trim();
+      if (!remote) return;
+      if (!known) {
+        localStorage.setItem(SHA_KEY, remote);
+        hideBanner();
+        return;
+      }
+      if (remote === known) {
+        localStorage.removeItem(PENDING_SHA_KEY);
+        sessionStorage.removeItem(PENDING_SHA_KEY);
+        hideBanner();
+        return;
+      }
+      localStorage.setItem(PENDING_SHA_KEY, remote);
+      sessionStorage.setItem(PENDING_SHA_KEY, remote);
+      showBanner(remote);
+    } catch (_) {}
+  }
+
+  // ── public API ───────────────────────────────────────────────────────
+
+  function getBuildInfo() {
+    return { buildFilename: BUILD_FILENAME, sourceFilename: SOURCE_FILENAME, buildId: BUILD_ID };
+  }
+
+  function init() {
+    checkForUpdate(false);
+    window.addEventListener('pageshow', () => checkForUpdate(false));
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkForUpdate(false);
+    });
+  }
+
+  window.HAHBoard.update = { init, checkForUpdate, getBuildInfo, hideBanner };
+})();
+
+</script>
+  <script>
 /* inlined: js/23-desktop-components.js */
 (function () {
   window.HAHBoard = window.HAHBoard || {};
@@ -10287,6 +10457,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     unsub = store.subscribe(renderFromState);
     router.initRouter();
     renderFromState(store.getState());
+    // Start update checker after first render
+    if (window.HAHBoard.update && typeof window.HAHBoard.update.init === 'function') {
+      window.HAHBoard.update.init();
+    }
   }
 
   function renderShell() {
@@ -10405,6 +10579,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       if (action === 'settings-import' && window.HAHBoard.ops) {
         window.HAHBoard.ops.promptImportOpsBundle();
         return;
+      }
+      if (action === 'settings-check-update') {
+        if (window.HAHBoard.update && typeof window.HAHBoard.update.checkForUpdate === 'function') {
+          window.HAHBoard.update.checkForUpdate(true);
+        }
       }
       if (action === 'settings-clear' && window.HAHBoard.ops) {
         window.HAHBoard.ops.clearAllOpsState();
@@ -10718,11 +10897,27 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const info = ops && typeof ops.getSyncInfo === 'function' ? ops.getSyncInfo() : null;
     const auditRows = ops && typeof ops.getRecentAudit === 'function' ? ops.getRecentAudit(8) : [];
     const summaries = ops && typeof ops.getRecentSummaries === 'function' ? ops.getRecentSummaries(5) : [];
+    const buildInfo = window.HAHBoard.update && typeof window.HAHBoard.update.getBuildInfo === 'function'
+      ? window.HAHBoard.update.getBuildInfo()
+      : { buildId: '—', buildFilename: '—', sourceFilename: '—' };
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
         <section class="hah-card hah-surface-hero">
           <h1 class="hah-surface-title">Shared operational sync</h1>
           <p class="hah-surface-subtitle">Operational state, tasks, board notes, and round summaries shared across same-origin tabs/windows, with import/export snapshots for manual handoff.</p>
+        </section>
+
+        <section class="hah-card">
+          <div class="hah-card-inner">
+            <div class="hah-card-title">Build</div>
+            <div class="hah-settings-grid" style="margin-top:12px;">
+              <div class="hah-settings-stat"><div class="hah-kv-label">Version</div><div class="hah-kv-value">${escapeHtml(buildInfo.buildId)}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Release file</div><div class="hah-kv-value" style="word-break:break-all;font-size:11px">${escapeHtml(buildInfo.buildFilename)}</div></div>
+            </div>
+            <div class="hah-settings-actions" style="margin-top:12px;">
+              <button type="button" class="hah-inline-pill" data-action="settings-check-update">Check for update</button>
+            </div>
+          </div>
         </section>
 
         <section class="hah-card">
@@ -10889,7 +11084,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T21:55:07.309335',
+  builtAt: '2026-04-21T22:01:35.698211',
   entry: 'desktop.html'
 };
 </script>
