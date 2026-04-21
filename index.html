@@ -4526,8 +4526,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_049_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_049_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_050_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_050_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8998,6 +8998,10 @@ window.HAHBoard = window.HAHBoard || {};
         saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
       });
     });
+
+    // Initial render of the preview
+    bindCopyBtn(pane);
+    refreshPreview(vm, type);
   }
 
   function setupResponsivePatientLayout() {
@@ -11084,9 +11088,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_049_release.html',
-  source: 'hospital_at_home_board_v0_8_049_source.zip',
-  builtAt: '2026-04-21T22:14:05.709810',
+  filename: 'hospital_at_home_board_v0_8_050_release.html',
+  source: 'hospital_at_home_board_v0_8_050_source.zip',
+  builtAt: '2026-04-21T22:17:22.150697',
   entry: 'desktop.html'
 };
 </script>
