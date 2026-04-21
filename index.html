@@ -3644,6 +3644,288 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   background: rgba(0,0,0,0.02);
 }
 
+/* ─── Board round — Start / End / Summary controls ──────────────────── */
+
+.hah-round-start-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 42px;
+  padding: 0 16px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(22,163,74,0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+.hah-round-start-btn:hover {
+  box-shadow: 0 4px 14px rgba(22,163,74,0.35);
+  filter: brightness(1.05);
+}
+
+.hah-round-start-btn:active {
+  transform: scale(0.98);
+}
+
+.hah-round-start-btn.is-secondary {
+  background: transparent;
+  color: rgba(47,111,237,0.95);
+  box-shadow: none;
+  border: 1px solid rgba(47,111,237,0.25);
+  margin-top: 10px;
+  height: 36px;
+  font-size: 12px;
+}
+
+.hah-round-start-btn.is-secondary:hover {
+  background: rgba(47,111,237,0.07);
+  filter: none;
+}
+
+/* Active round — zone styling */
+.hah-caseload-card.is-round-active {
+  border: 1px solid rgba(22,163,74,0.25);
+  box-shadow: 0 0 0 1px rgba(22,163,74,0.1) inset;
+}
+
+.hah-round-zone.is-active .hah-round-zone-title {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.hah-round-elapsed {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--desk-text);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+
+.hah-round-end-btn {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin-top: 12px;
+  padding: 0;
+  border: 1px solid rgba(220,38,38,0.3);
+  border-radius: 10px;
+  background: rgba(220,38,38,0.05);
+  color: #b91c1c;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.hah-round-end-btn:hover {
+  background: rgba(220,38,38,0.1);
+}
+
+.hah-round-autoend-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-top: 12px;
+  border-radius: 10px;
+  background: rgba(22,163,74,0.1);
+  color: #15803d;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(22,163,74,0.25);
+  transition: background 140ms ease;
+}
+
+.hah-round-autoend-banner:hover {
+  background: rgba(22,163,74,0.15);
+}
+
+.hah-round-autoend-cta {
+  color: #15803d;
+  font-weight: 700;
+}
+
+/* ─── Post-round summary ─────────────────────────────────────────────── */
+
+.hah-round-summary {
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 2px;
+}
+
+.hah-round-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hah-round-summary-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #15803d;
+}
+
+.hah-round-summary-dismiss {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--desk-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.hah-round-summary-dismiss:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--desk-text);
+}
+
+.hah-round-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.hah-round-summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 8px;
+}
+
+.hah-round-summary-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--desk-text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-round-summary-unit {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  margin-left: 2px;
+}
+
+.hah-round-summary-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+/* ─── Patient row status dot & menu ──────────────────────────────────── */
+
+.hah-patient-row-wrap {
+  position: relative;
+}
+
+.hah-patient-status-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hah-status-dot {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid rgba(255,255,255,0.95);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+  padding: 0;
+  width: 14px;
+  height: 14px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.hah-status-dot:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px rgba(47,111,237,0.25);
+}
+
+.hah-patient-status-wrap.is-open .hah-status-dot {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px rgba(47,111,237,0.35);
+}
+
+.hah-status-menu {
+  position: absolute;
+  top: 24px;
+  right: -4px;
+  z-index: 50;
+  min-width: 160px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid var(--desk-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.14);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hah-status-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 120ms ease;
+}
+
+.hah-status-menu-item:hover {
+  background: rgba(47,111,237,0.08);
+}
+
+.hah-status-menu-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -4359,7 +4641,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active'
     },
-    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false, acpModalOpen: false },
+    patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false, acpModalOpen: false, statusMenuFor: null },
     tasks: {
       filters: {},
       sort: 'due',
@@ -4526,8 +4808,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_050_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_050_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_051_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_051_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -4841,6 +5123,8 @@ window.HAHBoard = window.HAHBoard || {};
     dischargedPatients: [],
     auditTrail: [],
     roundSummaries: [],
+    activeRound: null,
+    roundHistory: [],
     updatedAt: '',
     lastMutationId: '',
     lastWriter: ''
@@ -4895,6 +5179,8 @@ window.HAHBoard = window.HAHBoard || {};
       dischargedPatients: Array.isArray(parsed && parsed.dischargedPatients) ? parsed.dischargedPatients.slice(0, 200) : [],
       auditTrail: Array.isArray(parsed && parsed.auditTrail) ? parsed.auditTrail.slice(0, MAX_AUDIT_ROWS) : [],
       roundSummaries: Array.isArray(parsed && parsed.roundSummaries) ? parsed.roundSummaries.slice(0, MAX_SUMMARY_ROWS) : [],
+      activeRound: parsed && parsed.activeRound && typeof parsed.activeRound === 'object' ? parsed.activeRound : null,
+      roundHistory: Array.isArray(parsed && parsed.roundHistory) ? parsed.roundHistory.slice(0, MAX_SUMMARY_ROWS) : [],
       updatedAt: parsed && parsed.updatedAt ? parsed.updatedAt : '',
       lastMutationId: parsed && parsed.lastMutationId ? parsed.lastMutationId : '',
       lastWriter: parsed && parsed.lastWriter ? parsed.lastWriter : ''
@@ -5096,6 +5382,139 @@ window.HAHBoard = window.HAHBoard || {};
 
   function setBoardNote(patientId, note) {
     return patchPatientState(patientId, { boardNote: String(note || '').trim() });
+  }
+
+  // ── Board round lifecycle ────────────────────────────────────────────
+
+  function getActiveRound() {
+    return state.activeRound ? clone(state.activeRound) : null;
+  }
+
+  function startRound() {
+    // Clear any stale "In discussion" status from a previous round
+    Object.keys(state.patientStates).forEach((pid) => {
+      const ps = state.patientStates[pid];
+      if (ps && ps.boardStatus === 'In discussion') {
+        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+      }
+    });
+    state.activeRound = {
+      startedAt: nowIso(),
+      startedBy: getActorName(),
+      currentPatientId: null,
+      patientTimings: {}
+    };
+    appendAudit({ type: 'round-started', summary: 'Board round started' });
+    saveState('round-started', {});
+    return getActiveRound();
+  }
+
+  function enterPatient(patientId) {
+    if (!state.activeRound) return;
+    const pid = String(patientId);
+    const round = state.activeRound;
+    // Revert any existing "In discussion" patient to Not discussed (unless that patient is now Discussed/Deferred)
+    const prevId = round.currentPatientId;
+    if (prevId && prevId !== pid) {
+      const prevPs = state.patientStates[prevId];
+      if (prevPs && prevPs.boardStatus === 'In discussion') {
+        state.patientStates[prevId] = { ...prevPs, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+      }
+      // Record leftAt for previous
+      if (round.patientTimings[prevId] && !round.patientTimings[prevId].leftAt) {
+        round.patientTimings[prevId].leftAt = nowIso();
+      }
+    }
+    // Only set In discussion if current status is Not discussed (don't re-flag completed/deferred patients)
+    const curPs = state.patientStates[pid] || {};
+    if (curPs.boardStatus !== 'Discussed' && curPs.boardStatus !== 'Actioned' && curPs.boardStatus !== 'Deferred') {
+      state.patientStates[pid] = { ...curPs, boardStatus: 'In discussion', updatedAt: nowIso(), updatedBy: getActorName() };
+    }
+    // Record enteredAt if first entry
+    if (!round.patientTimings[pid]) {
+      round.patientTimings[pid] = { enteredAt: nowIso(), leftAt: null, doneAt: null };
+    } else if (round.patientTimings[pid].leftAt) {
+      // Returning to patient — clear leftAt
+      round.patientTimings[pid].leftAt = null;
+    }
+    round.currentPatientId = pid;
+    saveState('round-patient-entered', { patientId: pid });
+  }
+
+  function markPatientDiscussed(patientId) {
+    const pid = String(patientId);
+    if (state.activeRound) {
+      const round = state.activeRound;
+      if (round.patientTimings[pid]) {
+        round.patientTimings[pid].doneAt = nowIso();
+        round.patientTimings[pid].leftAt = round.patientTimings[pid].leftAt || nowIso();
+      } else {
+        round.patientTimings[pid] = { enteredAt: nowIso(), leftAt: nowIso(), doneAt: nowIso() };
+      }
+      if (round.currentPatientId === pid) round.currentPatientId = null;
+    }
+    setBoardStatus(pid, 'Discussed');
+  }
+
+  function endRound(options) {
+    if (!state.activeRound) return null;
+    const round = state.activeRound;
+    const endedAt = nowIso();
+    const startTs = new Date(round.startedAt).getTime();
+    const endTs   = new Date(endedAt).getTime();
+    const durationMs = Math.max(0, endTs - startTs);
+    // Collect per-patient durations
+    const timings = Object.keys(round.patientTimings).map((pid) => {
+      const t = round.patientTimings[pid];
+      const enter = t.enteredAt ? new Date(t.enteredAt).getTime() : null;
+      const leave = t.leftAt ? new Date(t.leftAt).getTime() : (t.doneAt ? new Date(t.doneAt).getTime() : endTs);
+      const ms = enter && leave ? Math.max(0, leave - enter) : 0;
+      return { patientId: pid, durationMs: ms, done: !!t.doneAt };
+    });
+    const discussedCount = timings.filter((t) => t.done).length;
+    const totalPatientMs = timings.reduce((acc, t) => acc + t.durationMs, 0);
+    const avgMs = timings.length ? Math.round(totalPatientMs / timings.length) : 0;
+    // Count Deferred patients (ignoring active round tracking - they may not have timings)
+    const deferredCount = Object.keys(state.patientStates).filter((pid) => {
+      const ps = state.patientStates[pid];
+      return ps && ps.boardStatus === 'Deferred';
+    }).length;
+    // Clear any remaining In discussion states
+    Object.keys(state.patientStates).forEach((pid) => {
+      const ps = state.patientStates[pid];
+      if (ps && ps.boardStatus === 'In discussion') {
+        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+      }
+    });
+    const summary = {
+      id: buildEncounterId('round'),
+      startedAt: round.startedAt,
+      startedBy: round.startedBy,
+      endedAt,
+      durationMs,
+      patientCount: timings.length,
+      discussedCount,
+      deferredCount,
+      avgMsPerPatient: avgMs,
+      timings
+    };
+    state.roundHistory = [summary].concat(state.roundHistory || []).slice(0, MAX_SUMMARY_ROWS);
+    state.activeRound = null;
+    appendAudit({ type: 'round-ended', summary: 'Board round ended · ' + discussedCount + ' discussed · ' + Math.round(durationMs / 60000) + ' min' });
+    saveState('round-ended', { summaryId: summary.id });
+    return summary;
+  }
+
+  function getLastRoundSummary() {
+    return (state.roundHistory && state.roundHistory[0]) ? clone(state.roundHistory[0]) : null;
+  }
+
+  function clearLastRoundSummaryFlag() {
+    // For dismissing the post-round summary card
+    if (state.roundHistory && state.roundHistory[0]) {
+      state.roundHistory[0].dismissed = true;
+      saveState('round-summary-dismissed', {});
+    }
   }
 
   function getTaskPatch(taskId) {
@@ -5672,6 +6091,13 @@ window.HAHBoard = window.HAHBoard || {};
     cycleDischargeReadiness,
     setDischargeReadiness,
     setBoardNote,
+    getActiveRound,
+    startRound,
+    enterPatient,
+    markPatientDiscussed,
+    endRound,
+    getLastRoundSummary,
+    clearLastRoundSummaryFlag,
     getTaskPatch,
     updateTask,
     createTask,
@@ -7513,6 +7939,9 @@ window.HAHBoard = window.HAHBoard || {};
     const metrics = computeCaseloadMetrics(allRows);
     const filteredRows = applyListFilter(allRows, filterSet);
 
+    const activeRound = ops ? ops.getActiveRound() : null;
+    const statusMenuFor = (state.patient && state.patient.statusMenuFor) || null;
+
     const jumpRows = filteredRows.map((row) => {
       const active = String(row.id) === String(vm.patient.id) ? ' is-active' : '';
       const status = row.boardStatus || 'Not discussed';
@@ -7520,14 +7949,19 @@ window.HAHBoard = window.HAHBoard || {};
                       : status === 'Deferred' ? 'is-deferred'
                       : status === 'In discussion' ? 'is-now'
                       : '';
-      return `<button type="button" class="hah-patient-row${active} ${statusTone}"
-        data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
-        <div class="hah-patient-row-main">
-          <span class="hah-patient-row-name">${c.escapeHtml(row.name)}</span>
-          <span class="hah-patient-row-sub">${c.escapeHtml(status)}</span>
-        </div>
-        ${priorityDot(row.priority)}
-      </button>`;
+      const dotHtml = activeRound
+        ? renderStatusDot(row, status, statusMenuFor === row.id)
+        : priorityDot(row.priority);
+      return `<div class="hah-patient-row-wrap">
+        <button type="button" class="hah-patient-row${active} ${statusTone}"
+          data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
+          <div class="hah-patient-row-main">
+            <span class="hah-patient-row-name">${c.escapeHtml(row.name)}</span>
+            <span class="hah-patient-row-sub">${c.escapeHtml(status)}</span>
+          </div>
+          ${dotHtml}
+        </button>
+      </div>`;
     }).join('');
 
     const sortLabel = sortMode === 'admission' ? 'Admission date' : 'Name (A–Z)';
@@ -7607,12 +8041,10 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function renderCaseloadCard(m, filterSet) {
-    const avgLabel = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
-    const ringFrac = m.total ? m.discussed / m.total : 0;
-    const ringCirc = 2 * Math.PI * 26; // radius 26
-    const ringFill = (ringFrac * ringCirc).toFixed(1);
-    const ringEmpty = ringCirc.toFixed(1);
-    const ringDisplay = m.total ? `${m.discussed}<tspan class="hah-ring-slash">/</tspan><tspan class="hah-ring-total">${m.total}</tspan>` : '—';
+    const activeRound = ops ? ops.getActiveRound() : null;
+    const lastSummary = ops ? ops.getLastRoundSummary() : null;
+    const showSummary = lastSummary && !lastSummary.dismissed && !activeRound;
+    const avgLabel   = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
 
     function tile(label, value, filterKey, alert) {
       const isActive  = filterKey && filterSet.has(filterKey);
@@ -7633,36 +8065,112 @@ window.HAHBoard = window.HAHBoard || {};
     const avgAlert  = m.total > 0 && m.avgLOS > 7;
     const over7Alert = m.over7 > 0;
 
-    return `<section class="hah-card hah-caseload-card">
+    const tilesBlock = `<div class="hah-metric-tiles">
+      ${tile('Total', m.total || '—')}
+      ${tile('Avg LOS', avgLabel, null, avgAlert)}
+      ${tile('Over 7 days', m.over7, 'over-7', over7Alert)}
+      ${tile('Discharge today', m.dischargeToday, 'discharge-today')}
+    </div>`;
+
+    // Zone below the tiles — three states
+    let zoneHtml = '';
+
+    if (activeRound) {
+      // ── Active round: ring + elapsed + End button ──
+      const ringFrac = m.total ? m.discussed / m.total : 0;
+      const ringCirc = 2 * Math.PI * 26;
+      const ringFill = (ringFrac * ringCirc).toFixed(1);
+      const ringEmpty = ringCirc.toFixed(1);
+      const ringDisplay = m.total ? `${m.discussed}<tspan class="hah-ring-slash">/</tspan><tspan class="hah-ring-total">${m.total}</tspan>` : '—';
+      const startTs = new Date(activeRound.startedAt).getTime();
+      const elapsedMs = Math.max(0, Date.now() - startTs);
+      const elapsedText = formatElapsed(elapsedMs);
+      const allDone = m.total > 0 && m.toGo === 0;
+
+      zoneHtml = `
+        <div class="hah-caseload-divider"></div>
+        <div class="hah-round-zone is-active">
+          <svg class="hah-ring" width="64" height="64" viewBox="0 0 64 64">
+            <circle class="hah-ring-track" cx="32" cy="32" r="26" />
+            <circle class="hah-ring-fill" cx="32" cy="32" r="26"
+              stroke-dasharray="${ringFill} ${ringEmpty}"
+              stroke-dashoffset="0"
+              transform="rotate(-90 32 32)" />
+            <text class="hah-ring-text" x="32" y="32" text-anchor="middle" dominant-baseline="central">${ringDisplay}</text>
+          </svg>
+          <div class="hah-round-zone-text">
+            <div class="hah-round-zone-title">Board round</div>
+            <div class="hah-round-elapsed" data-round-elapsed data-started-at="${c.escapeHtml(activeRound.startedAt)}">${elapsedText}</div>
+            ${m.total
+              ? (m.toGo === 0 ? '<div class="hah-round-zone-sub">All patients reviewed</div>'
+                  : `<div class="hah-round-zone-sub"><a class="hah-round-togo${filterSet.has('to-go') ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} remaining</a></div>`)
+              : '<div class="hah-round-zone-sub">No patients</div>'}
+          </div>
+        </div>
+        ${allDone ? `
+        <div class="hah-round-autoend-banner" data-patient-action="end-round">
+          <span>All patients reviewed</span>
+          <span class="hah-round-autoend-cta">End round →</span>
+        </div>` : ''}
+        <button type="button" class="hah-round-end-btn" data-patient-action="end-round">End round</button>`;
+    } else if (showSummary) {
+      // ── Post-round summary ──
+      const totalMin = Math.round(lastSummary.durationMs / 60000);
+      const avgMin = lastSummary.avgMsPerPatient
+        ? (lastSummary.avgMsPerPatient / 60000).toFixed(1)
+        : '0';
+      zoneHtml = `
+        <div class="hah-caseload-divider"></div>
+        <div class="hah-round-summary">
+          <div class="hah-round-summary-head">
+            <span class="hah-round-summary-title">Round complete</span>
+            <button type="button" class="hah-round-summary-dismiss" data-patient-action="dismiss-round-summary" aria-label="Dismiss">×</button>
+          </div>
+          <div class="hah-round-summary-grid">
+            <div class="hah-round-summary-stat">
+              <div class="hah-round-summary-val">${totalMin}<span class="hah-round-summary-unit">min</span></div>
+              <div class="hah-round-summary-label">Total</div>
+            </div>
+            <div class="hah-round-summary-stat">
+              <div class="hah-round-summary-val">${lastSummary.discussedCount}</div>
+              <div class="hah-round-summary-label">Discussed</div>
+            </div>
+            <div class="hah-round-summary-stat">
+              <div class="hah-round-summary-val">${avgMin}<span class="hah-round-summary-unit">min</span></div>
+              <div class="hah-round-summary-label">Avg / pt</div>
+            </div>
+          </div>
+          <button type="button" class="hah-round-start-btn is-secondary" data-patient-action="start-round">Start new round</button>
+        </div>`;
+    } else {
+      // ── Idle: Start round button ──
+      zoneHtml = `
+        <div class="hah-caseload-divider"></div>
+        <button type="button" class="hah-round-start-btn" data-patient-action="start-round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px">
+            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+          </svg>
+          Start board round
+        </button>`;
+    }
+
+    return `<section class="hah-card hah-caseload-card${activeRound ? ' is-round-active' : ''}">
       <div class="hah-caseload-head">
         <span class="hah-caseload-title">Caseload</span>
       </div>
-      <div class="hah-metric-tiles">
-        ${tile('Total', m.total || '—')}
-        ${tile('Avg LOS', avgLabel, null, avgAlert)}
-        ${tile('Over 7 days', m.over7, 'over-7', over7Alert)}
-        ${tile('Discharge today', m.dischargeToday, 'discharge-today')}
-      </div>
-      <div class="hah-caseload-divider"></div>
-      <div class="hah-round-zone">
-        <svg class="hah-ring" width="64" height="64" viewBox="0 0 64 64">
-          <circle class="hah-ring-track" cx="32" cy="32" r="26" />
-          <circle class="hah-ring-fill" cx="32" cy="32" r="26"
-            stroke-dasharray="${ringFill} ${ringEmpty}"
-            stroke-dashoffset="0"
-            transform="rotate(-90 32 32)" />
-          <text class="hah-ring-text" x="32" y="32" text-anchor="middle" dominant-baseline="central">${ringDisplay}</text>
-        </svg>
-        <div class="hah-round-zone-text">
-          <div class="hah-round-zone-title">Round progress</div>
-          <div class="hah-round-zone-sub">
-            ${m.total
-              ? (m.toGo === 0 ? 'All discussed' : `<a class="hah-round-togo${filterSet.has('to-go') ? ' is-active-filter' : ''}" data-patient-action="toggle-list-filter" data-filter="to-go">${m.toGo} to go</a>`)
-              : 'No patients'}
-          </div>
-        </div>
-      </div>
+      ${tilesBlock}
+      ${zoneHtml}
     </section>`;
+  }
+
+  function formatElapsed(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    if (min < 60) return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+    const hr = Math.floor(min / 60);
+    const rm = min % 60;
+    return hr + 'h ' + String(rm).padStart(2, '0') + 'm';
   }
 
   function sortPatientRows(rows, mode) {
@@ -7700,6 +8208,31 @@ window.HAHBoard = window.HAHBoard || {};
               : priority === 'Low' ? '#16a34a'
               : '#94a3b8';
     return `<span class="hah-patient-row-dot" style="background:${tone}" title="Priority: ${c.escapeHtml(priority || 'Normal')}"></span>`;
+  }
+
+  function renderStatusDot(row, status, menuOpen) {
+    const colour = status === 'Discussed' || status === 'Actioned' ? '#16a34a'
+                : status === 'In discussion' ? '#2f6fed'
+                : status === 'Deferred' ? '#f59e0b'
+                : '#cbd5e1';
+    const menuHtml = menuOpen ? `
+      <div class="hah-status-menu" data-patient-action="status-menu-swallow">
+        ${status !== 'Discussed' ? `<button type="button" class="hah-status-menu-item" data-patient-action="status-set" data-patient-id="${c.escapeHtml(row.id)}" data-status="Discussed">
+          <span class="hah-status-menu-dot" style="background:#16a34a"></span>Mark discussed
+        </button>` : ''}
+        ${status !== 'Deferred' ? `<button type="button" class="hah-status-menu-item" data-patient-action="status-set" data-patient-id="${c.escapeHtml(row.id)}" data-status="Deferred">
+          <span class="hah-status-menu-dot" style="background:#f59e0b"></span>Defer
+        </button>` : ''}
+        ${status !== 'Not discussed' ? `<button type="button" class="hah-status-menu-item" data-patient-action="status-set" data-patient-id="${c.escapeHtml(row.id)}" data-status="Not discussed">
+          <span class="hah-status-menu-dot" style="background:#cbd5e1"></span>Reset
+        </button>` : ''}
+      </div>` : '';
+    return `<span class="hah-patient-status-wrap${menuOpen ? ' is-open' : ''}">
+      <button type="button" class="hah-patient-row-dot hah-status-dot" style="background:${colour}"
+        data-patient-action="toggle-status-menu" data-patient-id="${c.escapeHtml(row.id)}"
+        title="${c.escapeHtml(status)}" aria-label="Change status"></button>
+      ${menuHtml}
+    </span>`;
   }
 
   const WS_LAYOUT_KEY = 'hah_ws_layout';
@@ -8890,6 +9423,7 @@ window.HAHBoard = window.HAHBoard || {};
   function afterRender(state, pane) {
     initBloodTooltip();
     initWsDragDrop();
+    initRoundElapsedTicker();
     setupResponsivePatientLayout();
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
@@ -9339,7 +9873,57 @@ window.HAHBoard = window.HAHBoard || {};
     const action = target.getAttribute('data-patient-action');
     const vm = d.buildPatientWorkspaceModel(state);
 
-    if (action === 'jump')       { const pid = target.getAttribute('data-patient-id'); if (!pid) return false; store.setState({ selectedPatientId: pid, patient: { sortMenuOpen: false } }); router.goToPatient(pid); return true; }
+    if (action === 'jump') {
+      const pid = target.getAttribute('data-patient-id');
+      if (!pid) return false;
+      // If a round is active, mark this patient as "In discussion"
+      if (ops && typeof ops.getActiveRound === 'function' && ops.getActiveRound()) {
+        ops.enterPatient(pid);
+      }
+      store.setState({ selectedPatientId: pid, patient: { sortMenuOpen: false } });
+      router.goToPatient(pid);
+      return true;
+    }
+    if (action === 'start-round' && ops) {
+      ops.startRound();
+      // If there's a selected patient, mark them in discussion
+      if (vm && vm.patient && vm.patient.id) ops.enterPatient(vm.patient.id);
+      return true;
+    }
+    if (action === 'toggle-status-menu') {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      const current = (state.patient && state.patient.statusMenuFor) || null;
+      store.setState({ patient: { statusMenuFor: current === pid ? null : pid } });
+      return true;
+    }
+    if (action === 'status-menu-swallow') {
+      event.stopPropagation();
+      return true;
+    }
+    if (action === 'status-set' && ops) {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      const newStatus = target.getAttribute('data-status');
+      if (!pid || !newStatus) return false;
+      if (newStatus === 'Discussed') {
+        ops.markPatientDiscussed(pid);
+      } else {
+        ops.setBoardStatus(pid, newStatus);
+      }
+      store.setState({ patient: { statusMenuFor: null } });
+      return true;
+    }
+    if (action === 'end-round' && ops) {
+      const summary = ops.endRound({});
+      // Trigger rerender by bumping state
+      store.setState({ patient: { _roundEnded: Date.now() } });
+      return true;
+    }
+    if (action === 'dismiss-round-summary' && ops) {
+      ops.clearLastRoundSummaryFlag();
+      return true;
+    }
     if (action === 'open-acp-modal') {
       store.setState({ patient: { acpModalOpen: true } }); return true;
     }
@@ -9477,6 +10061,28 @@ window.HAHBoard = window.HAHBoard || {};
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
           if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
+          // If round active, mark this patient as Discussed and try to auto-advance
+          if (typeof ops.getActiveRound === 'function' && ops.getActiveRound()) {
+            ops.markPatientDiscussed(vm.patient.id);
+            // Auto-advance: find the next "Not discussed" patient in the current sort order
+            try {
+              const nextVm = d.buildPatientWorkspaceModel(store.getState());
+              const sortMode = (store.getState().patient && store.getState().patient.listSort) || 'name';
+              const sortedRows = sortPatientRows((nextVm && nextVm.contextRows) || [], sortMode);
+              const nextPatient = sortedRows.find((row) => {
+                if (String(row.id) === String(vm.patient.id)) return false;
+                const s = row.boardStatus || 'Not discussed';
+                return s !== 'Discussed' && s !== 'Actioned' && s !== 'Deferred';
+              });
+              if (nextPatient) {
+                setTimeout(() => {
+                  ops.enterPatient(nextPatient.id);
+                  store.setState({ selectedPatientId: nextPatient.id });
+                  router.goToPatient(nextPatient.id);
+                }, 600);
+              }
+            } catch (_) {}
+          }
         }
         saveDraft(vm.patient.id, composerType, fields);
         const typeLabel = ENCOUNTER_TYPES.find((t) => t.key === composerType);
@@ -9602,6 +10208,40 @@ window.HAHBoard = window.HAHBoard || {};
       if (event.target.closest('.hah-sort-menu')) return;
       store.setState({ patient: { sortMenuOpen: false } });
     }, true);
+    // Close status menu on any click outside it
+    document.addEventListener('click', (event) => {
+      const s = store.getState();
+      if (!(s.patient && s.patient.statusMenuFor)) return;
+      if (event.target.closest('[data-patient-action="toggle-status-menu"]')) return;
+      if (event.target.closest('.hah-status-menu')) return;
+      store.setState({ patient: { statusMenuFor: null } });
+    }, true);
+  }
+
+  function initRoundElapsedTicker() {
+    if (window.HAHBoard.__roundTicker) {
+      clearInterval(window.HAHBoard.__roundTicker);
+      window.HAHBoard.__roundTicker = null;
+    }
+    const el = document.querySelector('[data-round-elapsed]');
+    if (!el) return;
+    const startedAt = el.getAttribute('data-started-at');
+    if (!startedAt) return;
+    const startTs = new Date(startedAt).getTime();
+    function tick() {
+      const node = document.querySelector('[data-round-elapsed]');
+      if (!node) {
+        if (window.HAHBoard.__roundTicker) {
+          clearInterval(window.HAHBoard.__roundTicker);
+          window.HAHBoard.__roundTicker = null;
+        }
+        return;
+      }
+      const ms = Math.max(0, Date.now() - startTs);
+      node.textContent = formatElapsed(ms);
+    }
+    tick();
+    window.HAHBoard.__roundTicker = setInterval(tick, 1000);
   }
 
   function initBloodTooltip() {
@@ -11104,9 +11744,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_050_release.html',
-  source: 'hospital_at_home_board_v0_8_050_source.zip',
-  builtAt: '2026-04-21T22:20:06.161858',
+  filename: 'hospital_at_home_board_v0_8_051_release.html',
+  source: 'hospital_at_home_board_v0_8_051_source.zip',
+  builtAt: '2026-04-21T23:00:58.956905',
   entry: 'desktop.html'
 };
 </script>
