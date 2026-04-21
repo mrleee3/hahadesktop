@@ -3301,6 +3301,93 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   cursor: help;
 }
 
+/* ─── Board log issues text (preserve formatting) ────────────────────── */
+
+.hah-log-issues-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--desk-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.hah-log-issues-text div {
+  min-height: 1.4em;
+}
+
+/* ─── Discharge chips — selected state ──────────────────────────────── */
+
+.hah-dchip.is-active {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.4);
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-dchip-ready.is-active {
+  background: rgba(22,163,74,0.12);
+  border-color: rgba(22,163,74,0.4);
+  color: #15803d;
+}
+
+/* ─── DNAR / ACP alert chips in composer ────────────────────────────── */
+
+.hah-dnar-acp-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hah-alert-chip {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.9);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: all 140ms ease;
+}
+
+.hah-alert-chip:hover {
+  border-color: rgba(0,0,0,0.22);
+  color: var(--desk-text);
+}
+
+.hah-alert-chip.is-active {
+  background: rgba(220,38,38,0.1);
+  border-color: rgba(220,38,38,0.4);
+  color: #b91c1c;
+}
+
+.hah-alert-chip--acp.is-active {
+  background: rgba(217,119,6,0.1);
+  border-color: rgba(217,119,6,0.4);
+  color: #92400e;
+}
+
+/* ─── Patient header DNAR / ACP flags (mobile-app style) ─────────────── */
+
+.hah-pt-flag.is-dnar {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.hah-pt-flag.is-acp {
+  background: rgba(217,119,6,0.12);
+  color: #92400e;
+  border: 1.5px solid rgba(217,119,6,0.35);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -7265,9 +7352,16 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         : null
     ].filter(Boolean);
 
+    // DNAR/ACP: check ops encounters first (composer-saved), fall back to patient data
+    const latestBoardRound = ops ? ops.getLastBoardRound(patient.id) : null;
+    const encDnar = latestBoardRound && latestBoardRound.fields && latestBoardRound.fields.dnar;
+    const encAcp  = latestBoardRound && latestBoardRound.fields && latestBoardRound.fields.acp;
+    const showDnar = patient.dnar || encDnar;
+    const showAcp  = patient.acp  || encAcp;
+
     const rightFlags = [
-      patient.acp  ? c.badge('ACP',  'neutral') : '',
-      patient.dnar ? c.badge('DNAR', 'danger')  : ''
+      showAcp  ? `<span class="hah-pt-flag is-acp">ACP</span>`  : '',
+      showDnar ? `<span class="hah-pt-flag is-dnar">DNAR</span>` : ''
     ].filter(Boolean).join('');
 
     return `<div class="hah-pt-header-bar">
@@ -7355,9 +7449,11 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function renderBoardRoundEntry(enc, isLatest) {
     const f = enc.fields || {};
-    const issueLines = Array.isArray(f.issueLines) && f.issueLines.length ? f.issueLines : splitLines(f.issues);
-    const issuesHtml = issueLines.length
-      ? `<ul class="hah-issue-lines">${issueLines.map((l) => `<li>${c.escapeHtml(l)}</li>`).join('')}</ul>`
+    // Preserve the original issue text format exactly as entered, including
+    // sub-bullets (lines starting with "-"), numbering, and blank lines.
+    const rawIssues = String(f.issues || '').trim();
+    const issuesHtml = rawIssues
+      ? `<div class="hah-log-issues-text">${rawIssues.split('\n').map((l) => `<div>${c.escapeHtml(l) || '&nbsp;'}</div>`).join('')}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
     const edd = f.dischargeDate ? formatEDD(f.dischargeDate, f.dischargeReady) : '';
     const cols = [
@@ -8085,12 +8181,19 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         <div class="hah-cform-field">
           <label class="hah-cform-label">Estimated discharge</label>
           <div class="hah-discharge-row">
-            <button type="button" class="hah-dchip" data-discharge-quick="today">Today</button>
-            <button type="button" class="hah-dchip" data-discharge-quick="tomorrow">Tomorrow</button>
+            <button type="button" class="hah-dchip" data-discharge-quick="today" id="cform-chip-today">Possible today</button>
+            <button type="button" class="hah-dchip" data-discharge-quick="tomorrow" id="cform-chip-tomorrow">Tomorrow</button>
             <button type="button" class="hah-dchip hah-dchip-ready" id="cform-ready-chip" data-discharge-quick="ready">Ready</button>
             <input type="date" id="cform-discharge-date" class="hah-date-input"
               placeholder="Select date"
               min="${todayIso()}" value="${c.escapeHtml(prevDate)}">
+          </div>
+        </div>
+        <div class="hah-cform-field">
+          <label class="hah-cform-label">DNAR / ACP</label>
+          <div class="hah-dnar-acp-row">
+            <button type="button" class="hah-alert-chip" id="cform-dnar" data-alert-type="dnar">DNAR</button>
+            <button type="button" class="hah-alert-chip hah-alert-chip--acp" id="cform-acp" data-alert-type="acp">ACP in place</button>
           </div>
         </div>`;
     }
@@ -8120,12 +8223,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function collectComposerFields(type) {
     function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
-    function bool(id) { const el = document.getElementById(id); return el ? el.dataset.active === 'true' : false; }
+    function active(id) { const el = document.getElementById(id); return el ? el.dataset.active === 'true' : false; }
     if (type === 'board_round') return {
       issues: val('cform-issues'), progress: val('cform-progress'),
       bloods: val('cform-bloods'), plan: val('cform-plan'),
       dischargeDate: val('cform-discharge-date'),
-      dischargeReady: bool('cform-ready-chip'),
+      dischargeReady: active('cform-ready-chip'),
+      dnar: active('cform-dnar'),
+      acp:  active('cform-acp'),
       boardMembers: loadBoardSelectionToday().members,
       boardOtherText: loadBoardSelectionToday().otherText
     };
@@ -8302,6 +8407,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         disableMobile: true,
         onChange: function () {
           if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+          const tc = pane.querySelector('#cform-chip-today'), tm = pane.querySelector('#cform-chip-tomorrow');
+          [tc, tm].forEach((c) => { if (c) { c.dataset.active = 'false'; c.classList.remove('is-active'); } });
           refreshPreview(vm, type);
           clearTimeout(saveTimer);
           saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
@@ -8324,8 +8431,23 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
           if (fp) fp.setDate(iso, false);
           else if (dischargeDateInput) dischargeDateInput.value = iso;
         };
-        if (quick === 'today')    { setDate(todayIso());    if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
-        if (quick === 'tomorrow') { setDate(tomorrowIso()); if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); } }
+        const todayChip    = pane.querySelector('#cform-chip-today');
+        const tomorrowChip = pane.querySelector('#cform-chip-tomorrow');
+        function clearDateChips() {
+          [todayChip, tomorrowChip].forEach((c) => { if (c) { c.dataset.active = 'false'; c.classList.remove('is-active'); } });
+        }
+        if (quick === 'today') {
+          clearDateChips();
+          setDate(todayIso());
+          if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
+          if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+        }
+        if (quick === 'tomorrow') {
+          clearDateChips();
+          setDate(tomorrowIso());
+          if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
+          if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+        }
         if (quick === 'ready') {
           const nowActive = chip.dataset.active === 'true';
           chip.dataset.active = nowActive ? 'false' : 'true';
@@ -8338,8 +8460,17 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       });
     });
 
-    bindCopyBtn(pane);
-    refreshPreview(vm, type);
+    // Wire alert chips (DNAR / ACP)
+    pane.querySelectorAll('.hah-alert-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const wasActive = chip.dataset.active === 'true';
+        chip.dataset.active = wasActive ? 'false' : 'true';
+        chip.classList.toggle('is-active', !wasActive);
+        refreshPreview(vm, type);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+      });
+    });
   }
 
   function setupResponsivePatientLayout() {
@@ -8524,15 +8655,20 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
         el.classList.remove('is-pulled');
       }
     }
+    function setChip(id, v) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const active = v === true || v === 'true';
+      el.dataset.active = active ? 'true' : 'false';
+      el.classList.toggle('is-active', active);
+    }
     if (type === 'board_round') {
       set('cform-issues', fields.issues); set('cform-progress', fields.progress);
       set('cform-bloods', fields.bloods); set('cform-plan', fields.plan);
       set('cform-discharge-date', fields.dischargeDate);
-      const readyChip = document.getElementById('cform-ready-chip');
-      if (readyChip && fields.dischargeReady) {
-        readyChip.dataset.active = 'true';
-        readyChip.classList.add('is-active');
-      }
+      setChip('cform-ready-chip', fields.dischargeReady);
+      setChip('cform-dnar', fields.dnar);
+      setChip('cform-acp', fields.acp);
     }
     if (type === 'micro_mdm') { set('cform-question', fields.question); set('cform-recommendation', fields.recommendation); set('cform-followup', fields.followUp); }
     if (type === 'resp_mdm')  { set('cform-summary', fields.summary);   set('cform-recommendation', fields.recommendation); set('cform-action', fields.action); }
@@ -10361,7 +10497,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T20:39:30.573149',
+  builtAt: '2026-04-21T20:56:44.540266',
   entry: 'desktop.html'
 };
 </script>
