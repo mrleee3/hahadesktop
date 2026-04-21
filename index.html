@@ -4950,8 +4950,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_056_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_056_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_057_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_057_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -9298,9 +9298,11 @@ window.HAHBoard = window.HAHBoard || {};
     const composerType = (state.patient && state.patient.composerType) || 'board_round';
     const scopedComposer = getScopedComposerState(state, vm.patient.id);
     const isLocked     = !!scopedComposer.locked;
+    const editingId    = scopedComposer.editId || null;
+    const editingEnc   = editingId && ops ? (ops.getEncountersForPatient(vm.patient.id) || []).find((e) => e.id === editingId) : null;
     const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
     const boardSel     = loadBoardSelectionToday();
-    const heading      = getComposerHeading(composerType, isLocked);
+    const heading      = getComposerHeading(composerType, isLocked, editingEnc);
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
       const active = t.key === composerType ? ' is-active type-' + t.key.replace(/_/g, '-') : '';
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
@@ -9346,11 +9348,23 @@ window.HAHBoard = window.HAHBoard || {};
     ]);
   }
 
-  function getComposerHeading(type, isLocked) {
-    if (type === 'board_round') return isLocked ? "Today's board round" : "Today's board round";
-    if (type === 'micro_mdm')   return isLocked ? "Today's Micro MDM"   : "Today's Micro MDM";
-    if (type === 'resp_mdm')    return isLocked ? "Today's Resp MDM"    : "Today's Resp MDM";
-    return isLocked ? "Today's other note" : "Today's other note";
+  function getComposerHeading(type, isLocked, editingEnc) {
+    // If editing a past encounter, show its date instead of "Today's"
+    if (editingEnc) {
+      const dt = new Date(editingEnc.timestamp);
+      const isToday = !isNaN(dt.getTime()) && dt.toDateString() === new Date().toDateString();
+      const dateLabel = isNaN(dt.getTime())
+        ? 'entry'
+        : (isToday ? 'Today' : dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
+      if (type === 'board_round') return `Editing board round · ${dateLabel}`;
+      if (type === 'micro_mdm')   return `Editing Micro MDM · ${dateLabel}`;
+      if (type === 'resp_mdm')    return `Editing Resp MDM · ${dateLabel}`;
+      return `Editing note · ${dateLabel}`;
+    }
+    if (type === 'board_round') return "Today's board round";
+    if (type === 'micro_mdm')   return "Today's Micro MDM";
+    if (type === 'resp_mdm')    return "Today's Resp MDM";
+    return "Today's other note";
   }
 
   function getComposerSubheading(type, isLocked, lastRound) {
@@ -10340,7 +10354,8 @@ window.HAHBoard = window.HAHBoard || {};
       if (!enc) return false;
       // Switch composer to this encounter's type and load it into the composer
       saveDraft(vm.patient.id, enc.type, enc.fields || {});
-      patchScopedComposerState(vm.patient.id, { locked: true, editId: encId });
+      // locked: false means the composer is immediately editable
+      patchScopedComposerState(vm.patient.id, { locked: false, editId: encId });
       store.setState({ patient: { composerType: enc.type } });
       // Scroll right pane to composer
       const rightPane = document.getElementById('hahRightPane');
@@ -11997,9 +12012,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_056_release.html',
-  source: 'hospital_at_home_board_v0_8_056_source.zip',
-  builtAt: '2026-04-21T23:47:21.385591',
+  filename: 'hospital_at_home_board_v0_8_057_release.html',
+  source: 'hospital_at_home_board_v0_8_057_source.zip',
+  builtAt: '2026-04-21T23:54:03.592364',
   entry: 'desktop.html'
 };
 </script>
