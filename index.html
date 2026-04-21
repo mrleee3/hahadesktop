@@ -1187,35 +1187,54 @@ html, body {
 
 /* ─── Centre split ───────────────────────────────────────────────────── */
 
-.hah-pt-centre-split {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* ─── Workspace two-column layout ───────────────────────────────────── */
 
-.hah-pt-log-col {
-  width: 100%;
-}
-
-.hah-pt-mdm-row {
+.hah-pt-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 
-.hah-pt-ref-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 12px;
-  align-items: start;
-}
-
-.hah-pt-log-col,
-.hah-pt-ref-col {
+.hah-ws-col {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 40px; /* drop target even when empty */
+}
+
+/* MDM pair: side-by-side within left column */
+.hah-mdm-pair-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+/* Drag-and-drop */
+.hah-ws-section {
+  cursor: default;
+}
+
+.hah-ws-section[draggable="true"] .hah-log-head,
+.hah-ws-section[draggable="true"] .hah-mdm-head,
+.hah-ws-section[draggable="true"] .hah-ref-head,
+.hah-ws-section[draggable="true"] .hah-mdm-pair-grid .hah-mdm-head:first-of-type {
+  cursor: grab;
+}
+
+.hah-ws-section.is-dragging {
+  opacity: 0.45;
+}
+
+.hah-ws-section.hah-ws-drop-above {
+  box-shadow: 0 -3px 0 rgba(47,111,237,0.8);
+  border-radius: 2px;
+}
+
+.hah-ws-section.hah-ws-drop-below {
+  box-shadow: 0 3px 0 rgba(47,111,237,0.8);
+  border-radius: 2px;
 }
 
 /* ─── Board round log ────────────────────────────────────────────────── */
@@ -2399,12 +2418,11 @@ html, body {
   border-color: rgba(42, 128, 84, 0.84);
 }
 
-.hah-pt-centre-split.is-narrow {
-  gap: 10px;
+.hah-pt-cols.is-narrow {
+  grid-template-columns: 1fr;
 }
 
-.hah-pt-centre-split.is-narrow .hah-pt-mdm-row,
-.hah-pt-centre-split.is-narrow .hah-pt-ref-row {
+.hah-pt-cols.is-narrow .hah-mdm-pair-grid {
   grid-template-columns: 1fr;
 }
 
@@ -7167,6 +7185,21 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     return `<span class="hah-patient-row-dot" style="background:${tone}" title="Priority: ${c.escapeHtml(priority || 'Normal')}"></span>`;
   }
 
+  const WS_LAYOUT_KEY = 'hah_ws_layout';
+  const WS_DEFAULT_LAYOUT = { left: ['board_round', 'mdm_pair'], right: ['bloods', 'medications'] };
+
+  function getWsLayout() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(WS_LAYOUT_KEY) || 'null');
+      if (saved && Array.isArray(saved.left) && Array.isArray(saved.right)) return saved;
+    } catch (_) {}
+    return { left: [...WS_DEFAULT_LAYOUT.left], right: [...WS_DEFAULT_LAYOUT.right] };
+  }
+
+  function saveWsLayout(layout) {
+    try { localStorage.setItem(WS_LAYOUT_KEY, JSON.stringify(layout)); } catch (_) {}
+  }
+
   function renderMainPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return renderEmpty();
@@ -7177,20 +7210,43 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
     const respMdms    = encounters.filter((e) => e.type === 'resp_mdm');
     const otherEncs   = encounters.filter((e) => e.type === 'other');
 
+    const layout = getWsLayout();
+
+    function renderSection(key) {
+      switch (key) {
+        case 'board_round':
+          return `<div class="hah-ws-section" data-section="board_round" draggable="true">
+            ${renderBoardRoundLog(boardRounds, state)}
+          </div>`;
+        case 'mdm_pair':
+          return `<div class="hah-ws-section hah-ws-section--mdm-pair" data-section="mdm_pair" draggable="true">
+            <div class="hah-mdm-pair-grid">
+              ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms, state)}
+              ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms,  state)}
+            </div>
+          </div>`;
+        case 'bloods':
+          return `<div class="hah-ws-section" data-section="bloods" draggable="true">
+            ${renderBloodsWidget(vm, state)}
+          </div>`;
+        case 'medications':
+          return `<div class="hah-ws-section" data-section="medications" draggable="true">
+            ${renderMedsWidget(vm)}
+            ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
+          </div>`;
+        default: return '';
+      }
+    }
+
+    const leftHtml  = layout.left.map(renderSection).join('');
+    const rightHtml = layout.right.map(renderSection).join('');
+
     return `<div class="hah-pt-workspace">
       ${renderPatientHeader(vm, state)}
       ${renderObsStrip(vm)}
-      <div class="hah-pt-centre-split">
-        <div class="hah-pt-log-col">${renderBoardRoundLog(boardRounds, state)}</div>
-        <div class="hah-pt-mdm-row">
-          ${renderMdmWidget('micro_mdm', 'Micro MDM', '#1D9E75', microMdms, state)}
-          ${renderMdmWidget('resp_mdm',  'Resp MDM',  '#7F77DD', respMdms, state)}
-        </div>
-        <div class="hah-pt-ref-row">
-          ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
-          ${renderMedsWidget(vm)}
-          ${renderBloodsWidget(vm, state)}
-        </div>
+      <div class="hah-pt-cols">
+        <div class="hah-ws-col" data-col="left">${leftHtml}</div>
+        <div class="hah-ws-col" data-col="right">${rightHtml}</div>
       </div>
     </div>`;
   }
@@ -8185,6 +8241,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function afterRender(state, pane) {
     initBloodTooltip();
+    initWsDragDrop();
     setupResponsivePatientLayout();
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
@@ -8288,8 +8345,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   function setupResponsivePatientLayout() {
     const app = document.querySelector('.hah-desktop-app');
     const mainPane = document.querySelector('#hahMainPane');
-    const centre = document.querySelector('.hah-pt-centre-split');
-    const logCol = document.querySelector('.hah-pt-log-col');
+    const centre = document.querySelector('.hah-pt-cols');
+    const logCol = document.querySelector('.hah-ws-col');
     const refCol = document.querySelector('.hah-pt-mdm-row');
     if (!app || !mainPane || !centre || !logCol) return;
 
@@ -8867,6 +8924,103 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       if (!e.relatedTarget || !e.relatedTarget.closest('.dbl-analyte[data-key]')) {
         tip.style.display = 'none';
       }
+    });
+  }
+
+  function initWsDragDrop() {
+    const mainPane = document.getElementById('hahMainPane');
+    if (!mainPane) return;
+
+    let draggingKey = null;
+
+    mainPane.querySelectorAll('.hah-ws-section').forEach((section) => {
+      section.addEventListener('dragstart', (e) => {
+        draggingKey = section.getAttribute('data-section');
+        e.dataTransfer.effectAllowed = 'move';
+        // Only allow drag from header bar (first child)
+        requestAnimationFrame(() => section.classList.add('is-dragging'));
+      });
+
+      section.addEventListener('dragend', () => {
+        section.classList.remove('is-dragging');
+        mainPane.querySelectorAll('.hah-ws-drop-above, .hah-ws-drop-below')
+          .forEach((el) => el.classList.remove('hah-ws-drop-above', 'hah-ws-drop-below'));
+        draggingKey = null;
+      });
+
+      section.addEventListener('dragover', (e) => {
+        if (!draggingKey || draggingKey === section.getAttribute('data-section')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = section.getBoundingClientRect();
+        const mid  = rect.top + rect.height / 2;
+        mainPane.querySelectorAll('.hah-ws-drop-above, .hah-ws-drop-below')
+          .forEach((el) => el.classList.remove('hah-ws-drop-above', 'hah-ws-drop-below'));
+        section.classList.add(e.clientY < mid ? 'hah-ws-drop-above' : 'hah-ws-drop-below');
+      });
+
+      section.addEventListener('dragleave', (e) => {
+        if (!section.contains(e.relatedTarget)) {
+          section.classList.remove('hah-ws-drop-above', 'hah-ws-drop-below');
+        }
+      });
+
+      section.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggingKey) return;
+        const targetKey  = section.getAttribute('data-section');
+        if (draggingKey === targetKey) return;
+        const rect = section.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+
+        const layout = getWsLayout();
+        const flatLeft  = layout.left.slice();
+        const flatRight = layout.right.slice();
+
+        // Remove dragged key from wherever it is
+        const fromLeft  = flatLeft.indexOf(draggingKey);
+        const fromRight = flatRight.indexOf(draggingKey);
+        if (fromLeft >= 0)  flatLeft.splice(fromLeft, 1);
+        if (fromRight >= 0) flatRight.splice(fromRight, 1);
+
+        // Find target position
+        const inLeft  = flatLeft.indexOf(targetKey);
+        const inRight = flatRight.indexOf(targetKey);
+
+        if (inLeft >= 0) {
+          flatLeft.splice(before ? inLeft : inLeft + 1, 0, draggingKey);
+        } else {
+          flatRight.splice(before ? inRight : inRight + 1, 0, draggingKey);
+        }
+
+        const newLayout = { left: flatLeft, right: flatRight };
+        saveWsLayout(newLayout);
+        section.classList.remove('hah-ws-drop-above', 'hah-ws-drop-below');
+        // Trigger re-render by nudging state
+        store.setState({ patient: { _wsLayoutBump: Date.now() } });
+      });
+    });
+
+    // Allow dropping into empty column
+    mainPane.querySelectorAll('.hah-ws-col').forEach((col) => {
+      col.addEventListener('dragover', (e) => { e.preventDefault(); });
+      col.addEventListener('drop', (e) => {
+        if (e.target === col && draggingKey) {
+          e.preventDefault();
+          const colName = col.getAttribute('data-col');
+          const layout  = getWsLayout();
+          const flatLeft  = layout.left.slice();
+          const flatRight = layout.right.slice();
+          const fi = flatLeft.indexOf(draggingKey);
+          const fr = flatRight.indexOf(draggingKey);
+          if (fi >= 0) flatLeft.splice(fi, 1);
+          if (fr >= 0) flatRight.splice(fr, 1);
+          if (colName === 'left')  flatLeft.push(draggingKey);
+          else                     flatRight.push(draggingKey);
+          saveWsLayout({ left: flatLeft, right: flatRight });
+          store.setState({ patient: { _wsLayoutBump: Date.now() } });
+        }
+      });
     });
   }
 
@@ -10207,7 +10361,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_021_release.html',
   source: 'hospital_at_home_board_v0_8_021_source.zip',
-  builtAt: '2026-04-21T20:29:56.221725',
+  builtAt: '2026-04-21T20:39:30.573149',
   entry: 'desktop.html'
 };
 </script>
