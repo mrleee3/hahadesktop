@@ -449,6 +449,15 @@ html, body {
   }
 }
 
+/* iPad landscape (and smaller laptops) — fit without horizontal scroll */
+@media (max-width: 1440px) {
+  .hah-desktop-body { min-width: 0; }
+  :root {
+    --desk-left-w: 224px;
+    --desk-right-w: 440px;
+  }
+}
+
 
 .hah-header {
   box-shadow: 0 10px 24px rgba(17, 37, 63, 0.03);
@@ -4950,8 +4959,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_061_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_061_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_062_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_062_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -12054,9 +12063,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_061_release.html',
-  source: 'hospital_at_home_board_v0_8_061_source.zip',
-  builtAt: '2026-04-22T17:54:05.657836',
+  filename: 'hospital_at_home_board_v0_8_062_release.html',
+  source: 'hospital_at_home_board_v0_8_062_source.zip',
+  builtAt: '2026-04-22T19:17:41.663592',
   entry: 'desktop.html'
 };
 </script>
