@@ -682,8 +682,9 @@ html, body {
 }
 
 .hah-board-listcard-head {
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 10px 14px 10px;
+  background: rgba(0,0,0,0.02);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hah-board-listcard-title-row {
@@ -694,10 +695,10 @@ html, body {
 }
 
 .hah-board-listcard-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--desk-text);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 
 .hah-board-listcard-count {
@@ -716,30 +717,92 @@ html, body {
   gap: 6px;
 }
 
-.hah-board-sort-btn {
+/* Icon sort button — match patient page pattern */
+.hah-board-sort-wrap { position: relative; }
+
+.hah-board-sort-iconbtn {
+  width: 28px;
   height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--desk-border);
-  border-radius: 999px;
+  border: none;
   background: transparent;
   color: var(--desk-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
-  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 120ms ease, color 120ms ease;
 }
 
-.hah-board-sort-btn:hover {
-  background: rgba(0,0,0,0.03);
+.hah-board-sort-iconbtn:hover {
+  background: rgba(0,0,0,0.06);
   color: var(--desk-text);
 }
 
-.hah-board-sort-btn.is-active {
-  background: rgba(47,111,237,0.1);
+.hah-board-sort-iconbtn.is-open {
+  background: rgba(47,111,237,0.12);
   color: rgba(47,111,237,0.95);
-  border-color: rgba(47,111,237,0.3);
 }
+
+.hah-board-sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  padding: 5px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 60;
+}
+
+.hah-board-sort-menu button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--desk-text);
+  cursor: pointer;
+  transition: background 120ms ease;
+  font-family: inherit;
+}
+
+.hah-board-sort-menu button + button {
+  margin-top: 1px;
+}
+
+.hah-board-sort-menu button:hover {
+  background: rgba(47,111,237,0.06);
+}
+
+.hah-board-sort-menu button.is-selected {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-board-sort-check {
+  font-size: 12px;
+  color: rgba(47,111,237,0.95);
+  opacity: 0;
+}
+
+.hah-board-sort-menu button.is-selected .hah-board-sort-check {
+  opacity: 1;
+}
+
+/* Legacy sort buttons — remove */
+.hah-board-sort-btn { display: none; }
 
 .hah-board-add-btn {
   display: inline-flex;
@@ -769,8 +832,6 @@ html, body {
   gap: 6px;
   flex-wrap: wrap;
 }
-
-.hah-board-filter-spacer { flex: 1; }
 
 .hah-board-filter-pill {
   display: inline-flex;
@@ -839,7 +900,7 @@ html, body {
     minmax(52px,  0.45fr)  /* visits */
     minmax(120px, 1.05fr)  /* abx */
     minmax(92px,  0.78fr)  /* flags */
-    minmax(68px,  0.55fr)  /* alloc */
+    minmax(80px,  0.65fr)  /* bloods */
     minmax(110px, 0.85fr); /* discharge */
   gap: 12px;
   padding: 0 14px;
@@ -905,10 +966,11 @@ html, body {
 }
 
 .hah-board-row-name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--desk-text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -916,12 +978,16 @@ html, body {
 
 .hah-board-row-agesub {
   font-size: 11px;
-  font-weight: 500;
   color: var(--desk-text-muted);
-  margin-top: 2px;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hah-board-row.is-active .hah-board-row-name {
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
 }
 
 .hah-board-col-source {
@@ -1118,6 +1184,64 @@ html, body {
   background: rgba(47,111,237,0.08);
   color: rgba(47,111,237,0.85);
   border-color: rgba(47,111,237,0.18);
+}
+
+/* ─── Bloods column ──────────────────────────────────────────────── */
+
+.hah-board-col-bloods {
+  display: flex;
+  align-items: center;
+}
+
+.hah-board-col-bloods.has-bloods {
+  background: rgba(124,58,237,0.08);
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+}
+
+.hah-board-bloods-btn {
+  height: 22px;
+  padding: 0 10px;
+  border: 1px dashed rgba(124,58,237,0.3);
+  background: transparent;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.hah-board-bloods-btn:hover {
+  background: rgba(124,58,237,0.1);
+  border-color: rgba(124,58,237,0.5);
+  color: #6b21a8;
+}
+
+.hah-board-bloods-btn.is-taken {
+  background: rgba(124,58,237,0.15);
+  border-style: solid;
+  border-color: rgba(124,58,237,0.35);
+  color: #6b21a8;
+  font-weight: 700;
+}
+
+.hah-board-bloods-btn.is-taken:hover {
+  background: rgba(124,58,237,0.22);
+}
+
+/* Flagged filter pill — amber tint when active */
+.hah-board-filter-pill--flagged.is-active {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.35);
+  color: #b45309;
+}
+
+.hah-board-filter-pill--flagged.is-active .hah-board-filter-count {
+  color: #b45309;
 }
 
 /* ─── Inline editable cells ─────────────────────────────────────── */
@@ -5379,7 +5503,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       density: 'standard',
       savedView: 'all-active',
       pathwayFilter: 'all',
-      addPatientModal: false
+      addPatientModal: false,
+      flaggedOnly: false,
+      sortMenuOpen: false
     },
     patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false, acpModalOpen: false, statusMenuFor: null },
     tasks: {
@@ -5548,8 +5674,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_066_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_066_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_067_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_067_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -6322,6 +6448,15 @@ window.HAHBoard = window.HAHBoard || {};
         const stampDay = ps.nextAllocationAt ? new Date(ps.nextAllocationAt).toDateString() : null;
         if (!stampDay || stampDay !== todayForAlloc) {
           state.patientStates[pid] = { ...ps, nextAllocation: '', nextAllocationAt: null };
+          allocReset = true;
+        }
+      }
+      // Also clear bloodsStatus on new day
+      const ps2 = state.patientStates[pid];
+      if (ps2 && ps2.bloodsStatus) {
+        const stampDay2 = ps2.bloodsStatusAt ? new Date(ps2.bloodsStatusAt).toDateString() : null;
+        if (!stampDay2 || stampDay2 !== todayForAlloc) {
+          state.patientStates[pid] = { ...ps2, bloodsStatus: '', bloodsStatusAt: null };
           allocReset = true;
         }
       }
@@ -8469,25 +8604,44 @@ window.HAHBoard = window.HAHBoard || {};
       </button>`;
     }
 
+    const flaggedPill = `<button type="button"
+      class="hah-board-filter-pill hah-board-filter-pill--flagged${flaggedOnly ? ' is-active' : ''}"
+      data-board-action="toggle-flagged-filter" title="Show only flagged for catch-up">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="${flaggedOnly ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+      <span>Flagged</span>
+    </button>`;
+
     const filterBar = `<div class="hah-board-filter-bar">
       ${filterPill('all', 'All', pathwayCounts.all || 0)}
       ${PATHWAYS.map((p) => filterPill(p.key, p.label, pathwayCounts[p.key] || 0, p.colour)).join('')}
-      <div class="hah-board-filter-spacer"></div>
-      <button type="button" class="hah-board-filter-pill${flaggedOnly ? ' is-active' : ''}"
-        data-board-action="toggle-flagged-filter" title="Show only flagged for catch-up">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
-        <span>Flagged</span>
-      </button>
+      ${flaggedPill}
     </div>`;
+
+    const sortLabels = { los: 'LOS', name: 'Name', discharge: 'Discharge' };
+    const sortMenuOpen = !!(state.board && state.board.sortMenuOpen);
+    const sortMenu = sortMenuOpen ? `
+      <div class="hah-board-sort-menu">
+        ${['los', 'name', 'discharge'].map((key) => `
+        <button type="button" class="${sortMode === key ? 'is-selected' : ''}"
+          data-board-action="set-sort" data-sort="${key}">
+          <span>${sortLabels[key]}</span><span class="hah-board-sort-check">✓</span>
+        </button>`).join('')}
+      </div>` : '';
 
     const head = `<div class="hah-board-listcard-head">
       <div class="hah-board-listcard-title-row">
         <span class="hah-board-listcard-title">Patient list</span>
         <span class="hah-board-listcard-count">${rows.length}${filter !== 'all' || flaggedOnly ? ` of ${allRows.length}` : ''}</span>
         <div class="hah-board-listcard-actions">
-          <button type="button" class="hah-board-sort-btn${sortMode === 'los' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="los">LOS</button>
-          <button type="button" class="hah-board-sort-btn${sortMode === 'name' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="name">Name</button>
-          <button type="button" class="hah-board-sort-btn${sortMode === 'discharge' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="discharge">Discharge</button>
+          <div class="hah-board-sort-wrap">
+            <button type="button" class="hah-board-sort-iconbtn${sortMenuOpen ? ' is-open' : ''}"
+              data-board-action="toggle-sort-menu" title="Sort: ${c.escapeHtml(sortLabels[sortMode] || 'LOS')}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/><path d="M7 12h10"/><path d="M11 18h2"/>
+              </svg>
+            </button>
+            ${sortMenu}
+          </div>
           <button type="button" class="hah-board-add-btn" data-board-action="open-add-patient">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add patient
@@ -8506,7 +8660,7 @@ window.HAHBoard = window.HAHBoard || {};
       <div class="hah-board-col-visits">Visits</div>
       <div class="hah-board-col-abx">Antibiotics</div>
       <div class="hah-board-col-flags">Flags</div>
-      <div class="hah-board-col-alloc">Allocation</div>
+      <div class="hah-board-col-bloods">Bloods</div>
       <div class="hah-board-col-discharge">Discharge</div>
     </div>`;
 
@@ -8532,7 +8686,7 @@ window.HAHBoard = window.HAHBoard || {};
 
     const pathway = classifyPathway(row);
     const pathwayDef = PATHWAYS.find((p) => p.key === pathway);
-    const age = row.age ? String(row.age) : '';
+    const ageSex = [row.age || '', row.sex || ''].filter(Boolean).join('');
 
     const losDaysN = losDays(row.admissionDate);
     const admShort = formatAdmShort(row.admissionDate);
@@ -8587,7 +8741,7 @@ window.HAHBoard = window.HAHBoard || {};
       ondblclick="window.HAHBoard && window.HAHBoard.router && window.HAHBoard.router.goToPatient('${c.escapeHtml(row.id)}')">
       <div class="hah-board-col-patient">
         <div class="hah-board-row-name">${c.escapeHtml(row.name)}</div>
-        <div class="hah-board-row-agesub">${age ? c.escapeHtml(age) : ''}${age && admShort ? ' · ' : ''}${admShort ? 'Adm ' + c.escapeHtml(admShort) : ''}</div>
+        <div class="hah-board-row-agesub">${ageSex ? c.escapeHtml(ageSex) : ''}${ageSex && admShort ? ' · ' : ''}${admShort ? 'Adm ' + c.escapeHtml(admShort) : ''}</div>
       </div>
       <div class="hah-board-col-source">${c.escapeHtml(row.referralSource || '—')}</div>
       <div class="hah-board-col-los">
@@ -8608,13 +8762,25 @@ window.HAHBoard = window.HAHBoard || {};
         ${flagsHtml.join('')}
         ${catchUpBtn}
       </div>
-      <div class="hah-board-col-alloc">
-        ${inlineSelect(ext.nextAllocation, ALLOC_OPTIONS, 'edit-alloc', row.id)}
+      <div class="hah-board-col-bloods${ext.bloodsStatus ? ' has-bloods' : ''}">
+        ${renderBloodsCell(ext, row.id)}
       </div>
       <div class="hah-board-col-discharge">
         ${dischargeChip}
       </div>
     </div>`;
+  }
+
+  function renderBloodsCell(ext, patientId) {
+    const status = ext.bloodsStatus || '';
+    if (!status) {
+      return `<button type="button" class="hah-board-bloods-btn"
+        data-board-action="toggle-bloods" data-patient-id="${c.escapeHtml(patientId)}"
+        title="Mark bloods taken">—</button>`;
+    }
+    return `<button type="button" class="hah-board-bloods-btn is-taken"
+      data-board-action="toggle-bloods" data-patient-id="${c.escapeHtml(patientId)}"
+      title="Bloods taken — click to clear">Taken</button>`;
   }
 
   // ── Right pane (briefing — kept simple for now) ──────────────────────
@@ -8879,7 +9045,12 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
     if (action === 'set-sort') {
-      store.setState({ board: { sort: target.getAttribute('data-sort') || 'los' } });
+      store.setState({ board: { sort: target.getAttribute('data-sort') || 'los', sortMenuOpen: false } });
+      return true;
+    }
+    if (action === 'toggle-sort-menu') {
+      const now = !!(state.board && state.board.sortMenuOpen);
+      store.setState({ board: { sortMenuOpen: !now } });
       return true;
     }
     if (action === 'select-patient') {
@@ -8901,6 +9072,15 @@ window.HAHBoard = window.HAHBoard || {};
       if (!pid || !ops) return false;
       const ext = ops.getPatientState(pid);
       ops.patchPatientState(pid, { catchUpFlag: !ext.catchUpFlag });
+      return true;
+    }
+    if (action === 'toggle-bloods') {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      if (!pid || !ops) return false;
+      const ext = ops.getPatientState(pid);
+      const newStatus = ext.bloodsStatus ? '' : 'taken';
+      ops.patchPatientState(pid, { bloodsStatus: newStatus, bloodsStatusAt: newStatus ? new Date().toISOString() : null });
       return true;
     }
     if (action === 'edit-visits') {
@@ -9079,6 +9259,16 @@ window.HAHBoard = window.HAHBoard || {};
       window.alert('Could not save the new patient.');
       return false;
     }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (event) => {
+      const s = store.getState();
+      if (!(s.board && s.board.sortMenuOpen)) return;
+      if (event.target.closest('[data-board-action="toggle-sort-menu"]')) return;
+      if (event.target.closest('.hah-board-sort-menu')) return;
+      store.setState({ board: { sortMenuOpen: false } });
+    }, true);
   }
 
   window.HAHBoard.boardScreen = {
@@ -13117,9 +13307,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_066_release.html',
-  source: 'hospital_at_home_board_v0_8_066_source.zip',
-  builtAt: '2026-04-22T21:14:27.144450',
+  filename: 'hospital_at_home_board_v0_8_067_release.html',
+  source: 'hospital_at_home_board_v0_8_067_source.zip',
+  builtAt: '2026-04-22T21:30:23.152547',
   entry: 'desktop.html'
 };
 </script>
