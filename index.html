@@ -1195,7 +1195,7 @@ html, body {
 .hah-pt-cols {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -4950,8 +4950,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_059_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_059_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_060_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_060_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8546,7 +8546,7 @@ window.HAHBoard = window.HAHBoard || {};
     const ps      = ops ? ops.getPatientState(patient.id) : {};
     const acpData = ps.acp || {};
     const showDnar = patient.dnar || acpData.dnacprStatus === 'yes';
-    const showAcp  = patient.acp  || !!(acpData.dnacprStatus || acpData.tepStatus || acpData.jicMeds || acpData.tep);
+    const showAcp  = patient.acp  || !!(acpData.dnacprStatus || acpData.tepStatus || acpData.jicMeds || acpData.tep || (acpData.notes && String(acpData.notes).trim()));
 
     const rightFlags = [
       showAcp  ? `<span class="hah-pt-flag is-acp">ACP</span>`  : '',
@@ -8748,7 +8748,7 @@ window.HAHBoard = window.HAHBoard || {};
     const jicText    = jic === 'in_property'  ? 'In property'
                      : jic === 'in_process'   ? 'In process'
                      : jic === 'not_prescribed' ? 'Not prescribed' : '';
-    const hasData    = dnacpr || ucp || tep || jic;
+    const hasData    = dnacpr || ucp || tep || jic || (acp.notes && String(acp.notes).trim());
 
     function row(label, value, extraClass) {
       if (!value) return '';
@@ -8831,6 +8831,11 @@ window.HAHBoard = window.HAHBoard || {};
               ${choiceRow('jicMeds','in_process','In process')}
               ${choiceRow('jicMeds','not_prescribed','Not prescribed')}
             </div>
+          </div>
+
+          <div class="hah-acp-section">
+            <div class="hah-acp-section-title">ACP notes</div>
+            <textarea id="hahAcpNotes" class="hah-acp-textarea" placeholder="Optional advanced care plan note">${c.escapeHtml(acp.notes || '')}</textarea>
           </div>
         </div>
         <div class="hah-acp-modal-footer">
@@ -10187,8 +10192,9 @@ window.HAHBoard = window.HAHBoard || {};
     }
     if (action === 'acp-done' && vm && ops) {
       const tep   = (document.getElementById('hahAcpTep')   || {}).value || '';
+      const notes = (document.getElementById('hahAcpNotes') || {}).value || '';
       const ps    = ops.getPatientState(vm.patient.id);
-      const acp   = Object.assign({}, ps.acp || {}, { tep: tep.trim() });
+      const acp   = Object.assign({}, ps.acp || {}, { tep: tep.trim(), notes: notes.trim() });
       ops.patchPatientState(vm.patient.id, { acp });
       store.setState({ patient: { acpModalOpen: false } }); return true;
     }
@@ -12048,9 +12054,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_059_release.html',
-  source: 'hospital_at_home_board_v0_8_059_source.zip',
-  builtAt: '2026-04-22T17:41:15.420607',
+  filename: 'hospital_at_home_board_v0_8_060_release.html',
+  source: 'hospital_at_home_board_v0_8_060_source.zip',
+  builtAt: '2026-04-22T17:49:03.127065',
   entry: 'desktop.html'
 };
 </script>
