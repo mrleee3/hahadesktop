@@ -900,21 +900,19 @@ html, body {
     minmax(52px,  0.45fr)  /* visits */
     minmax(120px, 1.05fr)  /* abx */
     minmax(92px,  0.78fr)  /* flags */
-    minmax(80px,  0.65fr)  /* bloods */
+    minmax(68px,  0.58fr)  /* bloods */
     minmax(110px, 0.85fr); /* discharge */
-  gap: 12px;
-  padding: 0 14px;
+  gap: 14px;
   align-items: center;
 }
 
 .hah-board-table-head {
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding: 10px 14px 12px;
   background: rgba(0,0,0,0.015);
   border-bottom: 1px solid rgba(0,0,0,0.06);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
 }
@@ -925,24 +923,38 @@ html, body {
 }
 
 .hah-board-row {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0,0,0,0.035);
+  min-height: 72px;
+  padding: 12px 14px;
   cursor: pointer;
-  transition: background 120ms ease;
-  font-size: 12.5px;
+  transition: background 160ms ease, box-shadow 160ms ease;
+  font-size: 14px;
   color: var(--desk-text);
+  border-bottom: none;
+  position: relative;
 }
 
-.hah-board-row:last-child { border-bottom: none; }
+/* Per-cell top border — skips the outer row edges, matching reference */
+.hah-board-row > div {
+  position: relative;
+}
+
+.hah-board-row:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 1px;
+  background: rgba(25,45,72,0.055);
+}
 
 .hah-board-row:hover {
-  background: rgba(47,111,237,0.035);
+  background: rgba(47,111,237,0.04);
 }
 
 .hah-board-row.is-active {
   background: rgba(47,111,237,0.08);
-  box-shadow: inset 3px 0 0 rgba(47,111,237,0.85);
+  box-shadow: inset 3px 0 0 rgba(47,111,237,0.55);
 }
 
 .hah-board-row.is-flagged {
@@ -966,10 +978,9 @@ html, body {
 }
 
 .hah-board-row-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--desk-text);
-  letter-spacing: -0.005em;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
@@ -977,9 +988,10 @@ html, body {
 }
 
 .hah-board-row-agesub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--desk-text-muted);
-  line-height: 1.3;
+  line-height: 1.35;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1020,10 +1032,9 @@ html, body {
 }
 
 .hah-board-issue-primary {
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--desk-text);
-  letter-spacing: -0.005em;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1031,11 +1042,10 @@ html, body {
 }
 
 .hah-board-issue-sub {
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 12px;
   color: var(--desk-text-muted);
   line-height: 1.35;
-  margin-top: 2px;
+  margin-top: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -1060,27 +1070,27 @@ html, body {
 }
 
 .hah-board-pathway-chip.is-frailty {
-  background: rgba(124,58,237,0.1);
+  background: #f3eeff;
   color: #6b21a8;
-  border-color: rgba(124,58,237,0.22);
+  border-color: rgba(124,58,237,0.3);
 }
 
 .hah-board-pathway-chip.is-resp {
-  background: rgba(47,111,237,0.1);
+  background: #e8eeff;
   color: #1d3d91;
-  border-color: rgba(47,111,237,0.22);
+  border-color: rgba(47,111,237,0.3);
 }
 
 .hah-board-pathway-chip.is-iv {
-  background: rgba(5,150,105,0.1);
+  background: #e6f5ee;
   color: #065f46;
-  border-color: rgba(5,150,105,0.22);
+  border-color: rgba(5,150,105,0.3);
 }
 
 .hah-board-pathway-chip.is-other {
-  background: rgba(100,116,139,0.1);
+  background: #eef1f5;
   color: #334155;
-  border-color: rgba(100,116,139,0.22);
+  border-color: rgba(100,116,139,0.3);
 }
 
 .hah-board-col-visits,
@@ -1131,9 +1141,9 @@ html, body {
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid var(--desk-border);
+  border: 1px solid rgba(0,0,0,0.1);
   border-radius: 999px;
-  background: transparent;
+  background: #fff;
   color: var(--desk-text-muted);
   cursor: pointer;
   display: flex;
@@ -1143,14 +1153,14 @@ html, body {
 }
 
 .hah-board-catchup:hover {
-  background: rgba(245,158,11,0.1);
-  border-color: rgba(245,158,11,0.3);
+  background: #fff5e6;
+  border-color: rgba(245,158,11,0.4);
   color: #b45309;
 }
 
 .hah-board-catchup.is-flagged {
-  background: rgba(245,158,11,0.12);
-  border-color: rgba(245,158,11,0.4);
+  background: #fff1d6;
+  border-color: rgba(245,158,11,0.5);
   color: #b45309;
 }
 
@@ -1162,28 +1172,28 @@ html, body {
   border-radius: 999px;
   font-size: 10.5px;
   font-weight: 700;
-  background: rgba(0,0,0,0.04);
+  background: #f1f2f5;
   color: var(--desk-text-muted);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.08);
   white-space: nowrap;
 }
 
 .hah-board-discharge-chip.is-ready {
-  background: rgba(22,163,74,0.1);
+  background: #e6f5ee;
   color: #15803d;
-  border-color: rgba(22,163,74,0.25);
+  border-color: rgba(22,163,74,0.3);
 }
 
 .hah-board-discharge-chip.is-possible-today {
-  background: rgba(47,111,237,0.1);
+  background: #e8eeff;
   color: rgba(47,111,237,0.95);
-  border-color: rgba(47,111,237,0.25);
+  border-color: rgba(47,111,237,0.3);
 }
 
 .hah-board-discharge-chip.is-likely-tomorrow {
-  background: rgba(47,111,237,0.08);
+  background: #eef2ff;
   color: rgba(47,111,237,0.85);
-  border-color: rgba(47,111,237,0.18);
+  border-color: rgba(47,111,237,0.2);
 }
 
 /* ─── Bloods column ──────────────────────────────────────────────── */
@@ -1191,46 +1201,36 @@ html, body {
 .hah-board-col-bloods {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
 }
 
-.hah-board-col-bloods.has-bloods {
-  background: rgba(124,58,237,0.08);
-  border-radius: 6px;
-  padding: 4px 6px;
-  margin: -4px -6px;
-}
-
-.hah-board-bloods-btn {
-  height: 22px;
-  padding: 0 10px;
-  border: 1px dashed rgba(124,58,237,0.3);
+.hah-board-bloods-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
   background: transparent;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--desk-text-muted);
+  color: rgba(0,0,0,0.25);
   cursor: pointer;
-  font-family: inherit;
-  letter-spacing: 0.02em;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
-.hah-board-bloods-btn:hover {
+.hah-board-bloods-icon:hover {
+  color: #7c3aed;
+  background: rgba(124,58,237,0.08);
+}
+
+.hah-board-bloods-icon.is-taken {
+  color: #7c3aed;
+}
+
+.hah-board-bloods-icon.is-taken:hover {
+  transform: scale(1.08);
   background: rgba(124,58,237,0.1);
-  border-color: rgba(124,58,237,0.5);
-  color: #6b21a8;
-}
-
-.hah-board-bloods-btn.is-taken {
-  background: rgba(124,58,237,0.15);
-  border-style: solid;
-  border-color: rgba(124,58,237,0.35);
-  color: #6b21a8;
-  font-weight: 700;
-}
-
-.hah-board-bloods-btn.is-taken:hover {
-  background: rgba(124,58,237,0.22);
 }
 
 /* Flagged filter pill — amber tint when active */
@@ -1249,8 +1249,8 @@ html, body {
 .hah-board-inline-select {
   height: 22px;
   padding: 0 9px;
-  border: 1px solid var(--desk-border);
-  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.1);
+  background: #fff;
   border-radius: 999px;
   font-size: 10.5px;
   font-weight: 600;
@@ -1262,20 +1262,20 @@ html, body {
 }
 
 .hah-board-inline-select:hover {
-  background: #fff;
+  background: #f8f9fc;
   border-color: rgba(0,0,0,0.2);
   color: var(--desk-text);
 }
 
 .hah-board-inline-select.has-value {
-  background: rgba(0,0,0,0.04);
+  background: #f1f2f5;
   color: var(--desk-text);
   border-color: rgba(0,0,0,0.14);
   font-weight: 700;
 }
 
 .hah-board-inline-select.has-value:hover {
-  background: rgba(0,0,0,0.08);
+  background: #e9ebf0;
   border-color: rgba(0,0,0,0.2);
 }
 
@@ -5674,8 +5674,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_067_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_067_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_068_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_068_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8631,7 +8631,6 @@ window.HAHBoard = window.HAHBoard || {};
     const head = `<div class="hah-board-listcard-head">
       <div class="hah-board-listcard-title-row">
         <span class="hah-board-listcard-title">Patient list</span>
-        <span class="hah-board-listcard-count">${rows.length}${filter !== 'all' || flaggedOnly ? ` of ${allRows.length}` : ''}</span>
         <div class="hah-board-listcard-actions">
           <div class="hah-board-sort-wrap">
             <button type="button" class="hah-board-sort-iconbtn${sortMenuOpen ? ' is-open' : ''}"
@@ -8774,13 +8773,22 @@ window.HAHBoard = window.HAHBoard || {};
   function renderBloodsCell(ext, patientId) {
     const status = ext.bloodsStatus || '';
     if (!status) {
-      return `<button type="button" class="hah-board-bloods-btn"
+      return `<button type="button" class="hah-board-bloods-icon"
         data-board-action="toggle-bloods" data-patient-id="${c.escapeHtml(patientId)}"
-        title="Mark bloods taken">—</button>`;
+        title="Mark bloods taken">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+        </svg>
+      </button>`;
     }
-    return `<button type="button" class="hah-board-bloods-btn is-taken"
+    return `<button type="button" class="hah-board-bloods-icon is-taken"
       data-board-action="toggle-bloods" data-patient-id="${c.escapeHtml(patientId)}"
-      title="Bloods taken — click to clear">Taken</button>`;
+      title="Bloods taken — click to clear">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M8 12.5l2.5 2.5L16 9.5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </button>`;
   }
 
   // ── Right pane (briefing — kept simple for now) ──────────────────────
@@ -13307,9 +13315,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_067_release.html',
-  source: 'hospital_at_home_board_v0_8_067_source.zip',
-  builtAt: '2026-04-22T21:30:23.152547',
+  filename: 'hospital_at_home_board_v0_8_068_release.html',
+  source: 'hospital_at_home_board_v0_8_068_source.zip',
+  builtAt: '2026-04-22T21:46:17.229284',
   entry: 'desktop.html'
 };
 </script>
