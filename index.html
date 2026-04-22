@@ -4950,8 +4950,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_057_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_057_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_058_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_058_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -5671,21 +5671,51 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function autoResetIfNewDay() {
-    // If the last round summary is from a previous calendar day, reset board statuses
-    if (!state.roundHistory || !state.roundHistory.length) return;
-    const last = state.roundHistory[0];
-    if (!last.endedAt) return;
-    const endedDay = new Date(last.endedAt).toDateString();
     const todayDay = new Date().toDateString();
-    if (endedDay !== todayDay) {
-      // Different day — reset board statuses and dismiss the summary
-      last.dismissed = true;
+
+    // Case 1: active round from a previous day — force-end it and reset
+    if (state.activeRound && state.activeRound.startedAt) {
+      const startDay = new Date(state.activeRound.startedAt).toDateString();
+      if (startDay !== todayDay) {
+        endRound({});
+        // endRound already clears In-discussion statuses, but doesn't clear Discussed/Deferred
+        // — fall through to the general reset below
+      }
+    }
+
+    // Case 2: any patient boardStatus was set on a previous day — reset
+    let needsReset = false;
+    Object.keys(state.patientStates).forEach((pid) => {
+      const ps = state.patientStates[pid];
+      if (!ps || !ps.boardStatus || ps.boardStatus === 'Not discussed') return;
+      // If there's an updatedAt, use it; otherwise treat as stale (safer)
+      const stampDay = ps.updatedAt ? new Date(ps.updatedAt).toDateString() : null;
+      if (!stampDay || stampDay !== todayDay) needsReset = true;
+    });
+
+    if (needsReset) {
       Object.keys(state.patientStates).forEach((pid) => {
         const ps = state.patientStates[pid];
         if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
           state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
         }
       });
+    }
+
+    // Also dismiss any lingering round summary from a prior day
+    if (state.roundHistory && state.roundHistory.length) {
+      const last = state.roundHistory[0];
+      if (last.endedAt) {
+        const endedDay = new Date(last.endedAt).toDateString();
+        if (endedDay !== todayDay && !last.dismissed) {
+          last.dismissed = true;
+          needsReset = true;
+        }
+      }
+    }
+
+    if (needsReset) {
+      appendAudit({ type: 'round-auto-reset', summary: 'Board statuses auto-reset for new day' });
       saveState('round-auto-reset-new-day', {});
     }
   }
@@ -12012,9 +12042,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_057_release.html',
-  source: 'hospital_at_home_board_v0_8_057_source.zip',
-  builtAt: '2026-04-21T23:54:03.592364',
+  filename: 'hospital_at_home_board_v0_8_058_release.html',
+  source: 'hospital_at_home_board_v0_8_058_source.zip',
+  builtAt: '2026-04-22T14:13:38.629630',
   entry: 'desktop.html'
 };
 </script>
