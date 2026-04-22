@@ -826,22 +826,22 @@ html, body {
   flex-direction: column;
 }
 
-/* Column widths — tuned to fit ~1180px+ mid-pane */
+/* Column widths */
 .hah-board-table-head,
 .hah-board-row {
   display: grid;
   grid-template-columns:
-    28px                /* status dot */
-    minmax(130px, 1.1fr) /* patient */
-    minmax(80px, 0.75fr) /* pathway */
-    minmax(150px, 1.7fr) /* referral */
-    minmax(70px, 0.65fr) /* los */
-    minmax(52px, 0.5fr)  /* visits */
-    minmax(130px, 1.2fr) /* abx */
-    minmax(90px, 0.8fr)  /* flags */
-    minmax(70px, 0.6fr)  /* alloc */
-    minmax(110px, 0.9fr); /* discharge */
-  gap: 10px;
+    minmax(135px, 1.15fr)  /* patient */
+    minmax(50px,  0.4fr)   /* source */
+    minmax(42px,  0.35fr)  /* los */
+    minmax(160px, 1.75fr)  /* issue */
+    minmax(70px,  0.6fr)   /* pathway */
+    minmax(52px,  0.45fr)  /* visits */
+    minmax(120px, 1.05fr)  /* abx */
+    minmax(92px,  0.78fr)  /* flags */
+    minmax(68px,  0.55fr)  /* alloc */
+    minmax(110px, 0.85fr); /* discharge */
+  gap: 12px;
   padding: 0 14px;
   align-items: center;
 }
@@ -864,8 +864,8 @@ html, body {
 }
 
 .hah-board-row {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(0,0,0,0.035);
   cursor: pointer;
   transition: background 120ms ease;
@@ -885,31 +885,28 @@ html, body {
 }
 
 .hah-board-row.is-flagged {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  background: rgba(245,158,11,0.08);
+  box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+.hah-board-row.is-flagged:hover {
+  background: rgba(245,158,11,0.14);
 }
 
 .hah-board-row.is-flagged.is-active {
-  box-shadow: inset 3px 0 0 #f59e0b, inset 6px 0 0 rgba(47,111,237,0.55);
+  background: rgba(245,158,11,0.14);
+  box-shadow: inset 4px 0 0 #f59e0b, inset 7px 0 0 rgba(47,111,237,0.55);
 }
 
 /* ─── Column content ─────────────────────────────────────────────── */
-
-.hah-board-row-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: 2px solid rgba(255,255,255,0.95);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
-  display: block;
-}
 
 .hah-board-col-patient {
   min-width: 0;
 }
 
 .hah-board-row-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   color: var(--desk-text);
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -917,67 +914,107 @@ html, body {
   text-overflow: ellipsis;
 }
 
-.hah-board-row-agesex {
+.hah-board-row-agesub {
   font-size: 11px;
   font-weight: 500;
   color: var(--desk-text-muted);
-  margin-top: 1px;
-}
-
-.hah-board-col-pathway {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.hah-board-pathway-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.hah-board-pathway-label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--desk-text);
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.hah-board-col-referral {
-  min-width: 0;
-}
-
-.hah-board-referral-text {
-  font-size: 12px;
-  color: var(--desk-text);
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.hah-board-col-source {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hah-board-col-los {
-  font-size: 11.5px;
-  color: var(--desk-text-muted);
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
 
-.hah-board-col-los > div:first-child {
-  color: var(--desk-text);
-}
-
 .hah-board-los-days {
-  font-weight: 600;
-  margin-top: 1px;
+  font-weight: 700;
+  color: var(--desk-text);
 }
 
 .hah-board-los-days.is-long {
   color: #c23a3a;
+}
+
+.hah-board-col-issue {
+  min-width: 0;
+}
+
+.hah-board-issue-primary {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--desk-text);
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hah-board-issue-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--desk-text-muted);
+  line-height: 1.35;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hah-board-col-pathway {
+  min-width: 0;
+}
+
+.hah-board-pathway-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.hah-board-pathway-chip.is-frailty {
+  background: rgba(124,58,237,0.1);
+  color: #6b21a8;
+  border-color: rgba(124,58,237,0.22);
+}
+
+.hah-board-pathway-chip.is-resp {
+  background: rgba(47,111,237,0.1);
+  color: #1d3d91;
+  border-color: rgba(47,111,237,0.22);
+}
+
+.hah-board-pathway-chip.is-iv {
+  background: rgba(5,150,105,0.1);
+  color: #065f46;
+  border-color: rgba(5,150,105,0.22);
+}
+
+.hah-board-pathway-chip.is-other {
+  background: rgba(100,116,139,0.1);
+  color: #334155;
+  border-color: rgba(100,116,139,0.22);
 }
 
 .hah-board-col-visits,
@@ -1086,30 +1123,36 @@ html, body {
 /* ─── Inline editable cells ─────────────────────────────────────── */
 
 .hah-board-inline-select {
-  height: 24px;
-  padding: 0 10px;
-  border: 1px dashed rgba(0,0,0,0.15);
-  background: transparent;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.6);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--desk-text-muted);
   cursor: pointer;
   font-family: inherit;
+  letter-spacing: 0.02em;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .hah-board-inline-select:hover {
-  background: rgba(47,111,237,0.08);
-  border-color: rgba(47,111,237,0.3);
-  color: rgba(47,111,237,0.95);
+  background: #fff;
+  border-color: rgba(0,0,0,0.2);
+  color: var(--desk-text);
 }
 
 .hah-board-inline-select.has-value {
-  border-style: solid;
-  background: rgba(47,111,237,0.08);
-  color: rgba(47,111,237,0.95);
-  border-color: rgba(47,111,237,0.2);
+  background: rgba(0,0,0,0.04);
+  color: var(--desk-text);
+  border-color: rgba(0,0,0,0.14);
+  font-weight: 700;
+}
+
+.hah-board-inline-select.has-value:hover {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.2);
 }
 
 .hah-board-inline-popover {
@@ -5505,8 +5548,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_065_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_065_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_066_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_066_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -7337,6 +7380,7 @@ window.HAHBoard = window.HAHBoard || {};
       acp: escalationFlags.acp,
       sourcePatient: raw,
       summaryLine: deriveSummaryLine(raw),
+      referralSource: String(raw.referralSource || '').trim(),
       boardNote: '',
       admissionDate: String(raw.doa || '').trim()
     };
@@ -8454,11 +8498,11 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
 
     const tableHead = `<div class="hah-board-table-head">
-      <div class="hah-board-col-status"></div>
       <div class="hah-board-col-patient">Patient</div>
+      <div class="hah-board-col-source">Source</div>
+      <div class="hah-board-col-los">LOS</div>
+      <div class="hah-board-col-issue">Issue</div>
       <div class="hah-board-col-pathway">Pathway</div>
-      <div class="hah-board-col-referral">Referral</div>
-      <div class="hah-board-col-los">Adm / LOS</div>
       <div class="hah-board-col-visits">Visits</div>
       <div class="hah-board-col-abx">Antibiotics</div>
       <div class="hah-board-col-flags">Flags</div>
@@ -8485,22 +8529,26 @@ window.HAHBoard = window.HAHBoard || {};
     const ext = getPatientExt(row.id);
     const selectedId = state.selectedPatientId ? String(state.selectedPatientId) : null;
     const active = selectedId === String(row.id) ? ' is-active' : '';
-    const status = row.boardStatus || 'Not discussed';
-    const statusColour = status === 'Discussed' || status === 'Actioned' ? '#16a34a'
-                      : status === 'In discussion' ? '#2f6fed'
-                      : status === 'Deferred' ? '#f59e0b'
-                      : '#cbd5e1';
 
     const pathway = classifyPathway(row);
     const pathwayDef = PATHWAYS.find((p) => p.key === pathway);
-    const ageSex = [row.age || '', row.sex || ''].filter(Boolean).join('');
+    const age = row.age ? String(row.age) : '';
 
     const losDaysN = losDays(row.admissionDate);
     const admShort = formatAdmShort(row.admissionDate);
     const losText = losDaysN === null ? '—' : (losDaysN === 0 ? 'Today' : losDaysN + 'd');
     const losLong = losDaysN !== null && losDaysN > 7;
 
-    const referralOneLine = row.summaryLine || row.summary || row.pathway || '—';
+    // Split issue into primary / sub on first separator
+    const rawIssue = row.summaryLine || row.pathway || '';
+    const issueSplit = (function () {
+      const s = String(rawIssue).trim();
+      if (!s) return { primary: '', sub: '' };
+      // Try explicit separators first: "·", "/", "—", " - ", newline
+      const m = s.match(/^([^·\/\n—]+?)(?:\s*[·\/\n—]\s*| - )(.+)$/);
+      if (m) return { primary: m[1].trim(), sub: m[2].trim() };
+      return { primary: s, sub: '' };
+    })();
 
     const abx = ext.abxName || '';
     const abxEnd = ext.abxEndDate ? fmtDateShort(ext.abxEndDate) : '';
@@ -8522,7 +8570,8 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<span class="hah-board-discharge-chip is-${row.dischargeReadiness.toLowerCase().replace(/\s+/g, '-')}">${c.escapeHtml(row.dischargeReadiness)}</span>`
       : '<span class="hah-board-cell-empty">—</span>';
 
-    // Inline select affordances for visits/alloc
+    const pathwayChip = `<span class="hah-board-pathway-chip is-${pathway}">${c.escapeHtml(pathwayDef ? pathwayDef.label : 'Other')}</span>`;
+
     function inlineSelect(value, options, action, patientId) {
       const label = value || '—';
       const cls = value ? 'hah-board-inline-select has-value' : 'hah-board-inline-select';
@@ -8536,24 +8585,19 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-board-row${active}${ext.catchUpFlag ? ' is-flagged' : ''}"
       data-board-action="select-patient" data-patient-id="${c.escapeHtml(row.id)}"
       ondblclick="window.HAHBoard && window.HAHBoard.router && window.HAHBoard.router.goToPatient('${c.escapeHtml(row.id)}')">
-      <div class="hah-board-col-status">
-        <span class="hah-board-row-dot" style="background:${statusColour}" title="${c.escapeHtml(status)}"></span>
-      </div>
       <div class="hah-board-col-patient">
         <div class="hah-board-row-name">${c.escapeHtml(row.name)}</div>
-        ${ageSex ? `<div class="hah-board-row-agesex">${c.escapeHtml(ageSex)}</div>` : ''}
+        <div class="hah-board-row-agesub">${age ? c.escapeHtml(age) : ''}${age && admShort ? ' · ' : ''}${admShort ? 'Adm ' + c.escapeHtml(admShort) : ''}</div>
       </div>
-      <div class="hah-board-col-pathway">
-        <span class="hah-board-pathway-dot" style="background:${pathwayDef ? pathwayDef.colour : '#64748b'}"></span>
-        <span class="hah-board-pathway-label">${c.escapeHtml(pathwayDef ? pathwayDef.label : 'Other')}</span>
-      </div>
-      <div class="hah-board-col-referral">
-        <div class="hah-board-referral-text">${c.escapeHtml(referralOneLine)}</div>
-      </div>
+      <div class="hah-board-col-source">${c.escapeHtml(row.referralSource || '—')}</div>
       <div class="hah-board-col-los">
-        <div>${admShort ? c.escapeHtml(admShort) : '—'}</div>
-        <div class="hah-board-los-days${losLong ? ' is-long' : ''}">${losText}</div>
+        <span class="hah-board-los-days${losLong ? ' is-long' : ''}">${losText}</span>
       </div>
+      <div class="hah-board-col-issue">
+        <div class="hah-board-issue-primary">${c.escapeHtml(issueSplit.primary || '—')}</div>
+        ${issueSplit.sub ? `<div class="hah-board-issue-sub">${c.escapeHtml(issueSplit.sub)}</div>` : ''}
+      </div>
+      <div class="hah-board-col-pathway">${pathwayChip}</div>
       <div class="hah-board-col-visits">
         ${inlineSelect(ext.visits, VISIT_OPTIONS, 'edit-visits', row.id)}
       </div>
@@ -13073,9 +13117,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_065_release.html',
-  source: 'hospital_at_home_board_v0_8_065_source.zip',
-  builtAt: '2026-04-22T20:51:42.867128',
+  filename: 'hospital_at_home_board_v0_8_066_release.html',
+  source: 'hospital_at_home_board_v0_8_066_source.zip',
+  builtAt: '2026-04-22T21:14:27.144450',
   entry: 'desktop.html'
 };
 </script>
