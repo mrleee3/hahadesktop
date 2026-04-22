@@ -4959,8 +4959,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_062_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_062_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_063_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_063_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8654,11 +8654,18 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<div class="hah-log-issues-text">${rawIssues.split('\n').map((l) => `<div>${c.escapeHtml(l) || '&nbsp;'}</div>`).join('')}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
     const edd = f.dischargeDate ? formatEDD(f.dischargeDate, f.dischargeReady) : '';
+    const progressBody = f.progress
+      ? `<div class="hah-log-field-body">${c.escapeHtml(f.progress)}</div>`
+      : '<span class="hah-log-empty-inline">—</span>';
+    const planText = [f.plan || '', edd ? 'EDD: ' + edd : ''].filter(Boolean).join('\n');
+    const planBody = planText
+      ? `<div class="hah-log-field-body">${c.escapeHtml(planText)}</div>`
+      : '<span class="hah-log-empty-inline">—</span>';
     const cols = [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
-      f.progress ? `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div><div class="hah-log-field-body">${c.escapeHtml(f.progress)}</div></div>` : '',
-      f.plan     ? `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div><div class="hah-log-field-body">${c.escapeHtml(f.plan)}${edd ? `\nEDD: ${edd}` : ''}</div></div>` : ''
-    ].filter(Boolean);
+      `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div>${progressBody}</div>`,
+      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
+    ];
     return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}">
       <div class="hah-log-entry-bar">
         <span class="hah-log-entry-date${isLatest ? ' is-today' : ''}">${formatEntryDate(enc.timestamp)}</span>
@@ -8668,7 +8675,7 @@ window.HAHBoard = window.HAHBoard || {};
         <button type="button" class="hah-log-delete" data-patient-action="delete-encounter"
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
-      <div class="hah-log-entry-grid" style="grid-template-columns:repeat(${Math.min(cols.length,4)},1fr)">${cols.join('')}</div>
+      <div class="hah-log-entry-grid">${cols.join('')}</div>
     </div>`;
   }
 
@@ -9972,11 +9979,27 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function restoreFields(fields, type) {
-    function set(id, v) {
+    // Pulled values from the last round (same computation as renderComposerForm)
+    const vm = d.buildPatientWorkspaceModel(store.getState());
+    const lastRound = (vm && ops) ? ops.getLastBoardRound(vm.patient.id) : null;
+    const lastF     = lastRound && lastRound.fields;
+    const pulledIssues = lastF
+      ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
+          ? lastF.issueLines.map((l, i) => (i + 1) + '. ' + l).join('\n')
+          : String(lastF.issues || '').trim())
+      : '';
+    const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
+
+    function set(id, v, pulledValue) {
       const el = document.getElementById(id);
       if (el && v !== undefined && v !== null && String(v).length > 0) {
         el.value = String(v);
-        el.classList.remove('is-pulled');
+        // Preserve "pulled" highlight if the saved value still matches the pulled-forward text
+        if (pulledValue && String(v).trim() === String(pulledValue).trim()) {
+          el.classList.add('is-pulled');
+        } else {
+          el.classList.remove('is-pulled');
+        }
       }
     }
     function setChip(id, v) {
@@ -9987,8 +10010,8 @@ window.HAHBoard = window.HAHBoard || {};
       el.classList.toggle('is-active', active);
     }
     if (type === 'board_round') {
-      set('cform-issues', fields.issues); set('cform-progress', fields.progress);
-      set('cform-bloods', fields.bloods); set('cform-plan', fields.plan);
+      set('cform-issues', fields.issues, pulledIssues); set('cform-progress', fields.progress);
+      set('cform-bloods', fields.bloods); set('cform-plan', fields.plan, pulledPlan);
       set('cform-discharge-date', fields.dischargeDate);
       setChip('cform-ready-chip', fields.dischargeReady);
       setChip('cform-dnar', fields.dnar);
@@ -12063,9 +12086,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_062_release.html',
-  source: 'hospital_at_home_board_v0_8_062_source.zip',
-  builtAt: '2026-04-22T19:17:41.663592',
+  filename: 'hospital_at_home_board_v0_8_063_release.html',
+  source: 'hospital_at_home_board_v0_8_063_source.zip',
+  builtAt: '2026-04-22T19:34:40.932006',
   entry: 'desktop.html'
 };
 </script>
