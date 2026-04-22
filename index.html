@@ -585,9 +585,10 @@ html, body {
   <style>
 /* inlined: css/desktop-board.css */
 /* ─── H@H Board — Board screen ─────────────────────────────────────────
-   Nurse-in-charge caseload view. Pathway-grouped list in the main pane,
-   patient briefing in the right pane, identical caseload card to
-   the patient page in the left pane.
+   Nurse-in-charge service overview.
+   - Service metrics strip at top
+   - Dense patient table grouped by pathway (filter) with catch-up flag
+   - Inline-editable cells for visits / antibiotics / allocation
 ──────────────────────────────────────────────────────────────────────── */
 
 /* ─── Main pane shell ─────────────────────────────────────────────── */
@@ -595,49 +596,165 @@ html, body {
 .hah-board-surface {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding: 2px 2px 24px;
-  position: relative;
 }
 
-.hah-board-head {
+/* ─── Service metrics strip ───────────────────────────────────────── */
+
+.hah-sm-strip {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.hah-sm-tile {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--desk-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.hah-sm-tile.is-clickable { cursor: pointer; }
+
+.hah-sm-tile.is-clickable:hover {
+  background: rgba(47,111,237,0.06);
+  border-color: rgba(47,111,237,0.2);
+}
+
+.hah-sm-tile-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--desk-text);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-sm-tile.is-alert .hah-sm-tile-value {
+  color: #dc2626;
+}
+
+.hah-sm-tile-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  margin-left: 2px;
+}
+
+.hah-sm-tile-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-sm-capacity-set {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px dashed rgba(47,111,237,0.35);
+  background: transparent;
+  border-radius: 999px;
+  color: rgba(47,111,237,0.95);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hah-sm-capacity-set:hover {
+  background: rgba(47,111,237,0.08);
+  border-style: solid;
+}
+
+/* ─── Patient list card ───────────────────────────────────────────── */
+
+.hah-board-listcard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.hah-board-listcard-head {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.hah-board-listcard-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 4px 2px 6px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-.hah-board-title {
-  font-size: 22px;
+.hah-board-listcard-title {
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  margin: 0;
+  color: var(--desk-text);
+  letter-spacing: -0.01em;
+}
+
+.hah-board-listcard-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+  background: rgba(0,0,0,0.05);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.hah-board-listcard-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hah-board-sort-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--desk-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--desk-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.hah-board-sort-btn:hover {
+  background: rgba(0,0,0,0.03);
   color: var(--desk-text);
 }
 
-.hah-board-sub {
-  font-size: 12.5px;
-  color: var(--desk-text-muted);
-  margin-top: 2px;
+.hah-board-sort-btn.is-active {
+  background: rgba(47,111,237,0.1);
+  color: rgba(47,111,237,0.95);
+  border-color: rgba(47,111,237,0.3);
 }
 
 .hah-board-add-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 34px;
-  padding: 0 14px;
+  height: 28px;
+  padding: 0 12px;
   border: 1px solid rgba(47,111,237,0.25);
-  border-radius: 10px;
+  border-radius: 999px;
   background: rgba(47,111,237,0.06);
   color: rgba(47,111,237,0.95);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  font-family: inherit;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
-  flex-shrink: 0;
+  font-family: inherit;
+  margin-left: 4px;
 }
 
 .hah-board-add-btn:hover {
@@ -645,69 +762,115 @@ html, body {
   border-color: rgba(47,111,237,0.4);
 }
 
-.hah-board-empty-surface {
-  padding: 40px 20px;
-  text-align: center;
-}
-
-/* ─── Pathway group card ─────────────────────────────────────────────── */
-
-.hah-board-group {
-  padding: 0;
-  overflow: hidden;
-}
-
-.hah-board-group-head {
+/* Filter bar inside list card head */
+.hah-board-filter-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  background: rgba(0,0,0,0.012);
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-.hah-board-group-dot {
+.hah-board-filter-spacer { flex: 1; }
+
+.hah-board-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--desk-border);
+  background: transparent;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--desk-text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.hah-board-filter-pill:hover {
+  background: rgba(47,111,237,0.06);
+  border-color: rgba(47,111,237,0.2);
+}
+
+.hah-board-filter-pill.is-active {
+  background: rgba(47,111,237,0.1);
+  border-color: rgba(47,111,237,0.35);
+  color: rgba(47,111,237,0.95);
+  font-weight: 600;
+}
+
+.hah-board-filter-dot {
   width: 8px;
   height: 8px;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
-.hah-board-group-title {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--desk-text);
-  letter-spacing: 0.01em;
-}
-
-.hah-board-group-count {
-  margin-left: auto;
-  font-size: 11px;
+.hah-board-filter-count {
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--desk-text-muted);
-  background: rgba(0,0,0,0.05);
-  padding: 2px 8px;
-  border-radius: 999px;
-  min-width: 22px;
-  text-align: center;
+  margin-left: 3px;
 }
 
-.hah-board-group-rows {
+.hah-board-filter-pill.is-active .hah-board-filter-count {
+  color: rgba(47,111,237,0.95);
+}
+
+/* ─── Table ──────────────────────────────────────────────────────── */
+
+.hah-board-table {
   display: flex;
   flex-direction: column;
 }
 
-/* ─── Patient row ───────────────────────────────────────────────────── */
+/* Column widths — tuned to fit ~1180px+ mid-pane */
+.hah-board-table-head,
+.hah-board-row {
+  display: grid;
+  grid-template-columns:
+    28px                /* status dot */
+    minmax(130px, 1.1fr) /* patient */
+    minmax(80px, 0.75fr) /* pathway */
+    minmax(150px, 1.7fr) /* referral */
+    minmax(70px, 0.65fr) /* los */
+    minmax(52px, 0.5fr)  /* visits */
+    minmax(130px, 1.2fr) /* abx */
+    minmax(90px, 0.8fr)  /* flags */
+    minmax(70px, 0.6fr)  /* alloc */
+    minmax(110px, 0.9fr); /* discharge */
+  gap: 10px;
+  padding: 0 14px;
+  align-items: center;
+}
+
+.hah-board-table-head {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background: rgba(0,0,0,0.015);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+}
+
+.hah-board-table-body {
+  display: flex;
+  flex-direction: column;
+}
 
 .hah-board-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.03);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.035);
   cursor: pointer;
   transition: background 120ms ease;
-  position: relative;
+  font-size: 12.5px;
+  color: var(--desk-text);
 }
 
 .hah-board-row:last-child { border-bottom: none; }
@@ -721,33 +884,31 @@ html, body {
   box-shadow: inset 3px 0 0 rgba(47,111,237,0.85);
 }
 
+.hah-board-row.is-flagged {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.hah-board-row.is-flagged.is-active {
+  box-shadow: inset 3px 0 0 #f59e0b, inset 6px 0 0 rgba(47,111,237,0.55);
+}
+
+/* ─── Column content ─────────────────────────────────────────────── */
+
 .hah-board-row-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  flex-shrink: 0;
   border: 2px solid rgba(255,255,255,0.95);
   box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+  display: block;
 }
 
-.hah-board-row-main {
+.hah-board-col-patient {
   min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hah-board-row-name-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  flex-wrap: wrap;
 }
 
 .hah-board-row-name {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--desk-text);
   letter-spacing: -0.01em;
@@ -757,39 +918,140 @@ html, body {
 }
 
 .hah-board-row-agesex {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--desk-text-muted);
+  margin-top: 1px;
+}
+
+.hah-board-col-pathway {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hah-board-pathway-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
   flex-shrink: 0;
 }
 
-.hah-board-row-flags {
-  display: inline-flex;
-  gap: 4px;
-  flex-shrink: 0;
-  margin-left: auto;
+.hah-board-pathway-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--desk-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.hah-board-row-sub {
+.hah-board-col-referral {
+  min-width: 0;
+}
+
+.hah-board-referral-text {
+  font-size: 12px;
+  color: var(--desk-text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hah-board-col-los {
   font-size: 11.5px;
   color: var(--desk-text-muted);
-  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.hah-board-col-los > div:first-child {
+  color: var(--desk-text);
+}
+
+.hah-board-los-days {
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.hah-board-los-days.is-long {
+  color: #c23a3a;
+}
+
+.hah-board-col-visits,
+.hah-board-col-alloc {
+  font-size: 11.5px;
+}
+
+.hah-board-col-abx {
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 6px;
+  transition: background 120ms ease;
+  min-width: 0;
+}
+
+.hah-board-col-abx:hover {
+  background: rgba(47,111,237,0.06);
+}
+
+.hah-board-abx-name {
+  font-weight: 600;
+  color: var(--desk-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hah-board-abx-end {
+  font-size: 10.5px;
+  color: var(--desk-text-muted);
+  margin-top: 1px;
+}
+
+.hah-board-cell-empty {
+  color: rgba(0,0,0,0.2);
+}
+
+.hah-board-col-flags {
   display: flex;
   align-items: center;
   gap: 5px;
   flex-wrap: wrap;
 }
 
-.hah-board-row-sub .is-long {
-  color: #c23a3a;
-  font-weight: 600;
+.hah-board-catchup {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--desk-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-.hah-board-row-sep {
-  color: var(--desk-border);
-  user-select: none;
+.hah-board-catchup:hover {
+  background: rgba(245,158,11,0.1);
+  border-color: rgba(245,158,11,0.3);
+  color: #b45309;
 }
 
+.hah-board-catchup.is-flagged {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.4);
+  color: #b45309;
+}
+
+/* Discharge chip */
 .hah-board-discharge-chip {
   display: inline-flex;
   align-items: center;
@@ -797,11 +1059,10 @@ html, body {
   border-radius: 999px;
   font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
   background: rgba(0,0,0,0.04);
   color: var(--desk-text-muted);
   border: 1px solid rgba(0,0,0,0.05);
+  white-space: nowrap;
 }
 
 .hah-board-discharge-chip.is-ready {
@@ -822,112 +1083,151 @@ html, body {
   border-color: rgba(47,111,237,0.18);
 }
 
-.hah-board-row-open {
-  width: 24px;
+/* ─── Inline editable cells ─────────────────────────────────────── */
+
+.hah-board-inline-select {
   height: 24px;
-  padding: 0;
-  border: none;
+  padding: 0 10px;
+  border: 1px dashed rgba(0,0,0,0.15);
   background: transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--desk-text-muted);
-  font-size: 18px;
-  line-height: 1;
   cursor: pointer;
-  border-radius: 6px;
-  opacity: 0;
-  transition: opacity 140ms ease, background 120ms ease;
-  flex-shrink: 0;
+  font-family: inherit;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.hah-board-row:hover .hah-board-row-open,
-.hah-board-row.is-active .hah-board-row-open {
-  opacity: 1;
-}
-
-.hah-board-row-open:hover {
-  background: rgba(47,111,237,0.1);
+.hah-board-inline-select:hover {
+  background: rgba(47,111,237,0.08);
+  border-color: rgba(47,111,237,0.3);
   color: rgba(47,111,237,0.95);
 }
 
-/* ─── Left pane — pathway filter card ───────────────────────────────── */
-
-.hah-board-filter-card {
-  padding: 10px 12px 12px;
+.hah-board-inline-select.has-value {
+  border-style: solid;
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  border-color: rgba(47,111,237,0.2);
 }
 
-.hah-board-filter-head {
-  padding-bottom: 8px;
+.hah-board-inline-popover {
+  min-width: 140px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid var(--desk-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.14);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-.hah-board-filter-heading {
+.hah-board-inline-option {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 120ms ease;
+}
+
+.hah-board-inline-option:hover {
+  background: rgba(47,111,237,0.08);
+}
+
+.hah-board-inline-option.is-active {
+  background: rgba(47,111,237,0.12);
+  color: rgba(47,111,237,0.95);
+}
+
+/* Abx popover */
+.hah-board-abx-popover {
+  min-width: 240px;
+  padding: 12px;
+  gap: 10px;
+}
+
+.hah-board-abx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hah-board-abx-field label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--desk-text-muted);
 }
 
-.hah-board-filter-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.hah-board-filter-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.hah-board-abx-input {
   height: 32px;
   padding: 0 10px;
-  border: none;
-  background: transparent;
+  border: 1px solid var(--desk-border);
   border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-family: inherit;
   color: var(--desk-text);
+  background: #fff;
+}
+
+.hah-board-abx-input:focus {
+  outline: none;
+  border-color: rgba(47,111,237,0.4);
+  box-shadow: 0 0 0 3px rgba(47,111,237,0.1);
+}
+
+.hah-board-abx-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.hah-board-abx-clear,
+.hah-board-abx-save {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  text-align: left;
-  transition: background 120ms ease, color 120ms ease;
 }
 
-.hah-board-filter-pill:hover {
-  background: rgba(47,111,237,0.06);
-}
-
-.hah-board-filter-pill.is-active {
-  background: rgba(47,111,237,0.12);
-  color: rgba(47,111,237,0.95);
-  font-weight: 600;
-}
-
-.hah-board-filter-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.hah-board-filter-label {
-  flex: 1;
-}
-
-.hah-board-filter-count {
-  font-size: 11px;
-  font-weight: 700;
+.hah-board-abx-clear {
+  background: transparent;
   color: var(--desk-text-muted);
-  background: rgba(0,0,0,0.05);
-  padding: 1px 7px;
-  border-radius: 999px;
-  min-width: 20px;
-  text-align: center;
+  border: 1px solid var(--desk-border);
 }
 
-.hah-board-filter-pill.is-active .hah-board-filter-count {
-  background: rgba(47,111,237,0.15);
-  color: rgba(47,111,237,0.95);
+.hah-board-abx-clear:hover {
+  background: rgba(220,38,38,0.06);
+  color: #b91c1c;
+  border-color: rgba(220,38,38,0.25);
 }
 
-/* ─── Right pane — patient briefing ──────────────────────────────────── */
+.hah-board-abx-save {
+  background: rgba(47,111,237,0.95);
+  color: #fff;
+  border: 1px solid rgba(47,111,237,0.95);
+}
+
+.hah-board-abx-save:hover {
+  background: rgba(47,111,237,1);
+}
+
+/* ─── Right pane — briefing (unchanged from previous pass) ─────── */
 
 .hah-board-briefing {
   display: flex;
@@ -947,9 +1247,7 @@ html, body {
 .hah-board-briefing-header::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
+  left: 0; top: 10px; bottom: 10px;
   width: 3px;
   border-radius: 999px;
   background: rgba(47,111,237,0.55);
@@ -992,7 +1290,6 @@ html, body {
 .hah-board-briefing-sep {
   color: rgba(0,0,0,0.2);
   margin: 0 8px;
-  font-weight: 400;
 }
 
 .hah-board-briefing-flags {
@@ -1002,7 +1299,6 @@ html, body {
   padding-left: 4px;
 }
 
-/* Obs strip */
 .hah-board-briefing-obs {
   display: flex;
   gap: 0;
@@ -1038,7 +1334,6 @@ html, body {
   margin-top: 1px;
 }
 
-/* Round / ACP sections */
 .hah-board-briefing-round {
   background: rgba(255,255,255,0.9);
   border: 1px solid var(--desk-border);
@@ -1103,7 +1398,6 @@ html, body {
   padding: 4px 0;
 }
 
-/* Open button */
 .hah-board-briefing-open {
   display: flex;
   align-items: center;
@@ -1127,7 +1421,6 @@ html, body {
   border-color: rgba(47,111,237,0.4);
 }
 
-/* Empty state */
 .hah-board-briefing-empty {
   display: flex;
   flex-direction: column;
@@ -1153,7 +1446,7 @@ html, body {
   line-height: 1.4;
 }
 
-/* ─── Add patient modal ──────────────────────────────────────────────── */
+/* ─── Add patient modal (unchanged) ─────────────────────────────── */
 
 .hah-board-modal-overlay {
   position: fixed;
@@ -1190,7 +1483,6 @@ html, body {
   font-size: 16px;
   font-weight: 700;
   color: var(--desk-text);
-  letter-spacing: -0.01em;
 }
 
 .hah-board-modal-close {
@@ -1204,12 +1496,6 @@ html, body {
   color: var(--desk-text-muted);
   cursor: pointer;
   line-height: 1;
-  transition: background 120ms ease;
-}
-
-.hah-board-modal-close:hover {
-  background: rgba(220,38,38,0.08);
-  color: #b91c1c;
 }
 
 .hah-board-modal-body {
@@ -1264,6 +1550,19 @@ html, body {
   justify-content: flex-end;
   gap: 8px;
   background: rgba(0,0,0,0.02);
+}
+
+.hah-board-empty-surface {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* ─── Narrower screens (iPad landscape ~1180-1366px) ──────────── */
+
+@media (max-width: 1440px) {
+  .hah-sm-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 </style>
@@ -5206,8 +5505,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_064_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_064_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_065_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_065_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -5523,6 +5822,7 @@ window.HAHBoard = window.HAHBoard || {};
     roundSummaries: [],
     activeRound: null,
     roundHistory: [],
+    capacityCeiling: null,
     updatedAt: '',
     lastMutationId: '',
     lastWriter: ''
@@ -5579,6 +5879,7 @@ window.HAHBoard = window.HAHBoard || {};
       roundSummaries: Array.isArray(parsed && parsed.roundSummaries) ? parsed.roundSummaries.slice(0, MAX_SUMMARY_ROWS) : [],
       activeRound: parsed && parsed.activeRound && typeof parsed.activeRound === 'object' ? parsed.activeRound : null,
       roundHistory: Array.isArray(parsed && parsed.roundHistory) ? parsed.roundHistory.slice(0, 500) : [],
+      capacityCeiling: Number.isFinite(parsed && parsed.capacityCeiling) ? parsed.capacityCeiling : null,
       updatedAt: parsed && parsed.updatedAt ? parsed.updatedAt : '',
       lastMutationId: parsed && parsed.lastMutationId ? parsed.lastMutationId : '',
       lastWriter: parsed && parsed.lastWriter ? parsed.lastWriter : ''
@@ -5782,6 +6083,17 @@ window.HAHBoard = window.HAHBoard || {};
     return patchPatientState(patientId, { boardNote: String(note || '').trim() });
   }
 
+  function getCapacityCeiling() {
+    return state.capacityCeiling || null;
+  }
+
+  function setCapacityCeiling(n) {
+    const parsed = parseInt(n, 10);
+    state.capacityCeiling = (Number.isFinite(parsed) && parsed > 0) ? parsed : null;
+    saveState('capacity-ceiling-updated', {});
+    return state.capacityCeiling;
+  }
+
   // ── Board round lifecycle ────────────────────────────────────────────
 
   function getActiveRound() {
@@ -5957,6 +6269,21 @@ window.HAHBoard = window.HAHBoard || {};
         }
       });
     }
+
+    // Always clear nextAllocation on new day (regardless of board status state)
+    const todayForAlloc = new Date().toDateString();
+    let allocReset = false;
+    Object.keys(state.patientStates).forEach((pid) => {
+      const ps = state.patientStates[pid];
+      if (ps && ps.nextAllocation) {
+        const stampDay = ps.nextAllocationAt ? new Date(ps.nextAllocationAt).toDateString() : null;
+        if (!stampDay || stampDay !== todayForAlloc) {
+          state.patientStates[pid] = { ...ps, nextAllocation: '', nextAllocationAt: null };
+          allocReset = true;
+        }
+      }
+    });
+    if (allocReset) needsReset = true;
 
     // Also dismiss any lingering round summary from a prior day
     if (state.roundHistory && state.roundHistory.length) {
@@ -6550,6 +6877,8 @@ window.HAHBoard = window.HAHBoard || {};
     cycleDischargeReadiness,
     setDischargeReadiness,
     setBoardNote,
+    getCapacityCeiling,
+    setCapacityCeiling,
     getActiveRound,
     startRound,
     enterPatient,
@@ -7904,57 +8233,68 @@ window.HAHBoard = window.HAHBoard || {};
   const router = window.HAHBoard.router;
   const ops = window.HAHBoard.ops;
 
-  const PATHWAY_GROUPS = [
+  const PATHWAYS = [
     { key: 'frailty', label: 'Frailty',  colour: '#7c3aed', match: /\bfrail|geriatr|falls?|elderly/i },
     { key: 'resp',    label: 'Resp',     colour: '#2f6fed', match: /\bresp|lrti|pneumonia|cap|copd|asthma|bronch|covid|pleural/i },
     { key: 'iv',      label: 'IV',       colour: '#059669', match: /\bcellulitis|iv\b|intraven|infect|bacter|osteomy|sepsis|pyelo/i },
     { key: 'other',   label: 'Other',    colour: '#64748b', match: null }
   ];
+  const VISIT_OPTIONS = ['', 'OD', 'BD', 'TDS', 'QDS', 'PRN'];
+  const ALLOC_OPTIONS = ['', 'Dr', 'Nurse', 'HCA', 'Virtual'];
 
   function classifyPathway(row) {
     const pathway = String(row.pathway || '').trim();
     const summary = String(row.summaryLine || row.summary || '').trim();
     const joined  = pathway + ' ' + summary;
     if (row.iv || row.ivActive) return 'iv';
-    for (const g of PATHWAY_GROUPS) {
+    for (const g of PATHWAYS) {
       if (!g.match) continue;
       if (g.match.test(joined)) return g.key;
     }
     return 'other';
   }
 
-  function parseAdmissionDate(str) {
+  function parseAdmDate(str) {
     if (!str) return null;
     const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (m) {
-      const d = new Date(+m[1], +m[2] - 1, +m[3]);
-      return isNaN(d.getTime()) ? null : d.getTime();
+      const dt = new Date(+m[1], +m[2] - 1, +m[3]);
+      return isNaN(dt.getTime()) ? null : dt.getTime();
     }
     const t = new Date(str).getTime();
     return isNaN(t) ? null : t;
   }
 
   function losDays(admissionDate) {
-    const t = parseAdmissionDate(admissionDate);
+    const t = parseAdmDate(admissionDate);
     if (!t) return null;
     return Math.max(0, Math.floor((Date.now() - t) / 86400000));
   }
 
-  function losText(admissionDate) {
-    const days = losDays(admissionDate);
-    if (days === null) return null;
-    if (days === 0) return 'Today';
-    if (days === 1) return '1d';
-    return days + 'd';
-  }
-
-  function formatAdmDate(admissionDate) {
-    const t = parseAdmissionDate(admissionDate);
+  function formatAdmShort(admissionDate) {
+    const t = parseAdmDate(admissionDate);
     if (!t) return null;
     return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
+  function fmtDateShort(iso) {
+    const t = new Date(iso || '').getTime();
+    if (!t || isNaN(t)) return '';
+    return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  function todayIso() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getPatientExt(patientId) {
+    return ops ? ops.getPatientState(patientId) || {} : {};
+  }
+
   // ── Left pane ─────────────────────────────────────────────────────────
+  // Deferred — reuse caseload card from patient screen without round controls.
+  // For now, still render the caseload card (it keeps continuity across screens).
 
   function renderLeftPane(state) {
     const vm = d.buildBoardViewModel(state);
@@ -7967,31 +8307,7 @@ window.HAHBoard = window.HAHBoard || {};
     const rows = vm.rows || [];
     const metrics = patientScreen.computeCaseloadMetrics(rows);
     const caseloadHtml = patientScreen.renderCaseloadCard(metrics, new Set());
-
-    const currentFilter = (state.board && state.board.pathwayFilter) || 'all';
-    const pathwayCounts = { all: rows.length };
-    PATHWAY_GROUPS.forEach((g) => { pathwayCounts[g.key] = 0; });
-    rows.forEach((row) => { pathwayCounts[classifyPathway(row)] = (pathwayCounts[classifyPathway(row)] || 0) + 1; });
-
-    function filterPill(key, label, count, colour) {
-      const active = currentFilter === key ? ' is-active' : '';
-      const dot = colour ? `<span class="hah-board-filter-dot" style="background:${colour}"></span>` : '';
-      return `<button type="button" class="hah-board-filter-pill${active}"
-        data-board-action="set-pathway-filter" data-pathway="${c.escapeHtml(key)}">
-        ${dot}<span class="hah-board-filter-label">${c.escapeHtml(label)}</span>
-        <span class="hah-board-filter-count">${count}</span>
-      </button>`;
-    }
-
-    const filterList = `<section class="hah-card hah-board-filter-card">
-      <div class="hah-board-filter-head"><span class="hah-board-filter-heading">Pathway</span></div>
-      <div class="hah-board-filter-list">
-        ${filterPill('all', 'All', pathwayCounts.all || 0)}
-        ${PATHWAY_GROUPS.map((g) => filterPill(g.key, g.label, pathwayCounts[g.key] || 0, g.colour)).join('')}
-      </div>
-    </section>`;
-
-    return caseloadHtml + filterList;
+    return caseloadHtml;
   }
 
   // ── Main pane ────────────────────────────────────────────────────────
@@ -8000,121 +8316,264 @@ window.HAHBoard = window.HAHBoard || {};
     const vm = d.buildBoardViewModel(state);
     const rows = vm.rows || [];
     const filter = (state.board && state.board.pathwayFilter) || 'all';
-    const filteredRows = filter === 'all' ? rows : rows.filter((r) => classifyPathway(r) === filter);
+    const flaggedOnly = !!(state.board && state.board.flaggedOnly);
 
-    const byGroup = {};
-    PATHWAY_GROUPS.forEach((g) => { byGroup[g.key] = []; });
-    filteredRows.forEach((row) => { byGroup[classifyPathway(row)].push(row); });
+    // Apply filters
+    let filteredRows = rows.slice();
+    if (filter !== 'all') filteredRows = filteredRows.filter((r) => classifyPathway(r) === filter);
+    if (flaggedOnly) filteredRows = filteredRows.filter((r) => getPatientExt(r.id).catchUpFlag);
 
-    Object.keys(byGroup).forEach((k) => {
-      byGroup[k].sort((a, b) => {
-        const ta = parseAdmissionDate(a.admissionDate) || 0;
-        const tb = parseAdmissionDate(b.admissionDate) || 0;
-        return ta - tb;
-      });
-    });
-
-    const selectedId = state.selectedPatientId ? String(state.selectedPatientId) : null;
-
-    const groupsHtml = PATHWAY_GROUPS
-      .filter((g) => byGroup[g.key].length > 0)
-      .map((g) => renderPathwayGroup(g, byGroup[g.key], selectedId))
-      .join('');
-
-    const filterLabel = filter !== 'all' ? ' · ' + ((PATHWAY_GROUPS.find((g) => g.key === filter) || {}).label || '') : '';
-
-    const header = `<div class="hah-board-head">
-      <div>
-        <h1 class="hah-board-title">Caseload</h1>
-        <div class="hah-board-sub">${filteredRows.length} patient${filteredRows.length === 1 ? '' : 's'}${filterLabel}</div>
-      </div>
-      <button type="button" class="hah-board-add-btn" data-board-action="open-add-patient">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Add patient
-      </button>
-    </div>`;
-
-    const empty = !filteredRows.length
-      ? `<div class="hah-board-empty-surface">${c.emptyState('No patients in this pathway', 'Try a different pathway or add a patient.')}</div>`
-      : '';
+    // Sort
+    const sortMode = (state.board && state.board.sort) || 'los';
+    filteredRows = sortRows(filteredRows, sortMode);
 
     const modal = state.board && state.board.addPatientModal ? renderAddPatientModal() : '';
 
     return `<div class="hah-board-surface">
-      ${header}
-      ${empty || groupsHtml}
+      ${renderServiceMetrics(rows)}
+      ${renderPatientListCard(filteredRows, filter, flaggedOnly, sortMode, state)}
       ${modal}
     </div>`;
   }
 
-  function renderPathwayGroup(group, rows, selectedId) {
-    const rowsHtml = rows.map((row) => renderPatientRow(row, selectedId)).join('');
-    return `<section class="hah-card hah-board-group">
-      <div class="hah-board-group-head">
-        <span class="hah-board-group-dot" style="background:${group.colour}"></span>
-        <span class="hah-board-group-title">${c.escapeHtml(group.label)}</span>
-        <span class="hah-board-group-count">${rows.length}</span>
-      </div>
-      <div class="hah-board-group-rows">${rowsHtml}</div>
+  function sortRows(rows, mode) {
+    const sorted = rows.slice();
+    if (mode === 'name') {
+      sorted.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    } else if (mode === 'pathway') {
+      sorted.sort((a, b) => String(classifyPathway(a)).localeCompare(String(classifyPathway(b))) || String(a.name).localeCompare(String(b.name)));
+    } else if (mode === 'discharge') {
+      // Ready / Possible today / Likely tomorrow / Not ready — priority by readiness
+      const order = { 'Ready': 0, 'Possible today': 1, 'Likely tomorrow': 2 };
+      sorted.sort((a, b) => {
+        const oa = order[a.dischargeReadiness] !== undefined ? order[a.dischargeReadiness] : 9;
+        const ob = order[b.dischargeReadiness] !== undefined ? order[b.dischargeReadiness] : 9;
+        return oa - ob || String(a.name).localeCompare(String(b.name));
+      });
+    } else {
+      // los — oldest first
+      sorted.sort((a, b) => (parseAdmDate(a.admissionDate) || Infinity) - (parseAdmDate(b.admissionDate) || Infinity));
+    }
+    return sorted;
+  }
+
+  // ── Service metrics strip ────────────────────────────────────────────
+
+  function renderServiceMetrics(allRows) {
+    const totalCount = allRows.length;
+    const capacityCeiling = ops && ops.getCapacityCeiling ? ops.getCapacityCeiling() : null;
+
+    const losList = allRows.map((r) => losDays(r.admissionDate)).filter((v) => v !== null);
+    const avgLOS = losList.length ? (losList.reduce((a, b) => a + b, 0) / losList.length) : 0;
+    const over7 = losList.filter((v) => v > 7).length;
+    const dischargeToday = allRows.filter((r) => r.dischargeReadiness === 'Ready' || r.dischargeReadiness === 'Possible today').length;
+    const onIvAbx = allRows.filter((r) => {
+      const ext = getPatientExt(r.id);
+      return !!ext.abxName;
+    }).length;
+    const flagged = allRows.filter((r) => getPatientExt(r.id).catchUpFlag).length;
+    const todayDay = new Date().toDateString();
+    const newToday = allRows.filter((r) => {
+      const t = parseAdmDate(r.admissionDate);
+      return t && new Date(t).toDateString() === todayDay;
+    }).length;
+
+    const capacityValue = capacityCeiling
+      ? `${totalCount}<span class="hah-sm-tile-unit">/${capacityCeiling}</span>`
+      : '<button type="button" class="hah-sm-capacity-set" data-board-action="set-capacity">Set</button>';
+    const capacityAlert = capacityCeiling && totalCount >= capacityCeiling;
+
+    function tile(label, value, opts) {
+      opts = opts || {};
+      const alert = opts.alert ? ' is-alert' : '';
+      const clickable = opts.action ? ' is-clickable' : '';
+      const attr = opts.action ? `data-board-action="${opts.action}"` : '';
+      return `<div class="hah-sm-tile${alert}${clickable}" ${attr}>
+        <div class="hah-sm-tile-value">${value}</div>
+        <div class="hah-sm-tile-label">${c.escapeHtml(label)}</div>
+      </div>`;
+    }
+
+    const avgAlert = totalCount > 0 && avgLOS > 7;
+
+    return `<section class="hah-sm-strip">
+      ${tile('Total', totalCount)}
+      ${tile('Avg LOS', totalCount ? avgLOS.toFixed(1) + 'd' : '—', { alert: avgAlert })}
+      ${tile('Over 7d', over7, { alert: over7 > 0 })}
+      ${tile('Discharge today', dischargeToday)}
+      ${tile('New today', newToday)}
+      ${tile('On abx', onIvAbx)}
+      ${tile('Flagged', flagged, { action: flagged > 0 ? 'toggle-flagged-filter' : null })}
+      ${tile('Capacity', capacityValue, { alert: capacityAlert, action: 'set-capacity' })}
     </section>`;
   }
 
-  function renderPatientRow(row, selectedId) {
-    const active = selectedId && String(row.id) === selectedId ? ' is-active' : '';
+  // ── Patient list card with integrated pathway filter ─────────────────
+
+  function renderPatientListCard(rows, filter, flaggedOnly, sortMode, state) {
+    const allRows = d.buildBoardViewModel(state).rows || [];
+    const pathwayCounts = { all: allRows.length };
+    PATHWAYS.forEach((p) => { pathwayCounts[p.key] = 0; });
+    allRows.forEach((row) => { pathwayCounts[classifyPathway(row)] = (pathwayCounts[classifyPathway(row)] || 0) + 1; });
+
+    function filterPill(key, label, count, colour) {
+      const active = filter === key ? ' is-active' : '';
+      const dot = colour ? `<span class="hah-board-filter-dot" style="background:${colour}"></span>` : '';
+      return `<button type="button" class="hah-board-filter-pill${active}"
+        data-board-action="set-pathway-filter" data-pathway="${c.escapeHtml(key)}">
+        ${dot}<span>${c.escapeHtml(label)}</span><span class="hah-board-filter-count">${count}</span>
+      </button>`;
+    }
+
+    const filterBar = `<div class="hah-board-filter-bar">
+      ${filterPill('all', 'All', pathwayCounts.all || 0)}
+      ${PATHWAYS.map((p) => filterPill(p.key, p.label, pathwayCounts[p.key] || 0, p.colour)).join('')}
+      <div class="hah-board-filter-spacer"></div>
+      <button type="button" class="hah-board-filter-pill${flaggedOnly ? ' is-active' : ''}"
+        data-board-action="toggle-flagged-filter" title="Show only flagged for catch-up">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+        <span>Flagged</span>
+      </button>
+    </div>`;
+
+    const head = `<div class="hah-board-listcard-head">
+      <div class="hah-board-listcard-title-row">
+        <span class="hah-board-listcard-title">Patient list</span>
+        <span class="hah-board-listcard-count">${rows.length}${filter !== 'all' || flaggedOnly ? ` of ${allRows.length}` : ''}</span>
+        <div class="hah-board-listcard-actions">
+          <button type="button" class="hah-board-sort-btn${sortMode === 'los' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="los">LOS</button>
+          <button type="button" class="hah-board-sort-btn${sortMode === 'name' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="name">Name</button>
+          <button type="button" class="hah-board-sort-btn${sortMode === 'discharge' ? ' is-active' : ''}" data-board-action="set-sort" data-sort="discharge">Discharge</button>
+          <button type="button" class="hah-board-add-btn" data-board-action="open-add-patient">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add patient
+          </button>
+        </div>
+      </div>
+      ${filterBar}
+    </div>`;
+
+    const tableHead = `<div class="hah-board-table-head">
+      <div class="hah-board-col-status"></div>
+      <div class="hah-board-col-patient">Patient</div>
+      <div class="hah-board-col-pathway">Pathway</div>
+      <div class="hah-board-col-referral">Referral</div>
+      <div class="hah-board-col-los">Adm / LOS</div>
+      <div class="hah-board-col-visits">Visits</div>
+      <div class="hah-board-col-abx">Antibiotics</div>
+      <div class="hah-board-col-flags">Flags</div>
+      <div class="hah-board-col-alloc">Allocation</div>
+      <div class="hah-board-col-discharge">Discharge</div>
+    </div>`;
+
+    const body = rows.length
+      ? rows.map((row) => renderPatientRow(row, state)).join('')
+      : `<div class="hah-board-empty-surface">${c.emptyState('No patients match these filters', 'Adjust the pathway or flagged filter to see more patients.')}</div>`;
+
+    return `<section class="hah-card hah-board-listcard">
+      ${head}
+      <div class="hah-board-table">
+        ${tableHead}
+        <div class="hah-board-table-body">${body}</div>
+      </div>
+    </section>`;
+  }
+
+  // ── Patient row ──────────────────────────────────────────────────────
+
+  function renderPatientRow(row, state) {
+    const ext = getPatientExt(row.id);
+    const selectedId = state.selectedPatientId ? String(state.selectedPatientId) : null;
+    const active = selectedId === String(row.id) ? ' is-active' : '';
     const status = row.boardStatus || 'Not discussed';
     const statusColour = status === 'Discussed' || status === 'Actioned' ? '#16a34a'
                       : status === 'In discussion' ? '#2f6fed'
                       : status === 'Deferred' ? '#f59e0b'
                       : '#cbd5e1';
 
-    const age = row.age ? String(row.age) : '';
-    const sex = row.sex ? String(row.sex) : '';
-    const ageSex = [age, sex].filter(Boolean).join('');
+    const pathway = classifyPathway(row);
+    const pathwayDef = PATHWAYS.find((p) => p.key === pathway);
+    const ageSex = [row.age || '', row.sex || ''].filter(Boolean).join('');
 
-    const admDate = formatAdmDate(row.admissionDate);
-    const los    = losText(row.admissionDate);
     const losDaysN = losDays(row.admissionDate);
+    const admShort = formatAdmShort(row.admissionDate);
+    const losText = losDaysN === null ? '—' : (losDaysN === 0 ? 'Today' : losDaysN + 'd');
+    const losLong = losDaysN !== null && losDaysN > 7;
 
-    const subParts = [
-      admDate ? 'Adm ' + admDate : null,
-      los ? 'LOS ' + los : null,
-      row.pathway || null
-    ].filter(Boolean);
+    const referralOneLine = row.summaryLine || row.summary || row.pathway || '—';
 
-    const dischargeReady = row.dischargeReadiness || '';
-    const dischargeChip = dischargeReady && dischargeReady !== 'Not ready'
-      ? `<span class="hah-board-discharge-chip is-${dischargeReady.toLowerCase().replace(/\s+/g, '-')}">${c.escapeHtml(dischargeReady)}</span>`
-      : '';
+    const abx = ext.abxName || '';
+    const abxEnd = ext.abxEndDate ? fmtDateShort(ext.abxEndDate) : '';
+    const abxDisplay = abx
+      ? `<div class="hah-board-abx-name">${c.escapeHtml(abx)}</div>${abxEnd ? `<div class="hah-board-abx-end">→ ${c.escapeHtml(abxEnd)}</div>` : ''}`
+      : '<span class="hah-board-cell-empty">—</span>';
 
-    const flags = [];
-    if (row.dnar) flags.push('<span class="hah-pt-flag is-dnar">DNAR</span>');
-    if (row.acp)  flags.push('<span class="hah-pt-flag is-acp">ACP</span>');
+    const flagsHtml = [];
+    if (row.dnar) flagsHtml.push('<span class="hah-pt-flag is-dnar">DNAR</span>');
+    if (row.acp)  flagsHtml.push('<span class="hah-pt-flag is-acp">ACP</span>');
+    const catchUpBtn = `<button type="button"
+      class="hah-board-catchup${ext.catchUpFlag ? ' is-flagged' : ''}"
+      data-board-action="toggle-catchup" data-patient-id="${c.escapeHtml(row.id)}"
+      title="${ext.catchUpFlag ? 'Flagged for catch-up' : 'Flag for catch-up'}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="${ext.catchUpFlag ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+    </button>`;
 
-    const losOutlier = losDaysN !== null && losDaysN > 7;
+    const dischargeChip = row.dischargeReadiness && row.dischargeReadiness !== 'Not ready'
+      ? `<span class="hah-board-discharge-chip is-${row.dischargeReadiness.toLowerCase().replace(/\s+/g, '-')}">${c.escapeHtml(row.dischargeReadiness)}</span>`
+      : '<span class="hah-board-cell-empty">—</span>';
 
-    return `<div class="hah-board-row${active}"
+    // Inline select affordances for visits/alloc
+    function inlineSelect(value, options, action, patientId) {
+      const label = value || '—';
+      const cls = value ? 'hah-board-inline-select has-value' : 'hah-board-inline-select';
+      return `<button type="button" class="${cls}"
+        data-board-action="${action}" data-patient-id="${c.escapeHtml(patientId)}"
+        data-options="${c.escapeHtml(JSON.stringify(options))}"
+        data-current="${c.escapeHtml(value || '')}"
+        title="Set ${action}">${c.escapeHtml(label)}</button>`;
+    }
+
+    return `<div class="hah-board-row${active}${ext.catchUpFlag ? ' is-flagged' : ''}"
       data-board-action="select-patient" data-patient-id="${c.escapeHtml(row.id)}"
       ondblclick="window.HAHBoard && window.HAHBoard.router && window.HAHBoard.router.goToPatient('${c.escapeHtml(row.id)}')">
-      <span class="hah-board-row-dot" style="background:${statusColour}" title="${c.escapeHtml(status)}"></span>
-      <div class="hah-board-row-main">
-        <div class="hah-board-row-name-line">
-          <span class="hah-board-row-name">${c.escapeHtml(row.name)}</span>
-          ${ageSex ? `<span class="hah-board-row-agesex">${c.escapeHtml(ageSex)}</span>` : ''}
-          ${flags.length ? `<span class="hah-board-row-flags">${flags.join('')}</span>` : ''}
-        </div>
-        ${subParts.length ? `<div class="hah-board-row-sub">
-          ${subParts.map((p, i) => {
-            const isLosSpan = i === 1 && losOutlier;
-            return `<span${isLosSpan ? ' class="is-long"' : ''}>${c.escapeHtml(p)}</span>${i < subParts.length - 1 ? '<span class="hah-board-row-sep">·</span>' : ''}`;
-          }).join('')}
-        </div>` : ''}
+      <div class="hah-board-col-status">
+        <span class="hah-board-row-dot" style="background:${statusColour}" title="${c.escapeHtml(status)}"></span>
       </div>
-      ${dischargeChip}
-      <button type="button" class="hah-board-row-open" data-board-action="open-patient" data-patient-id="${c.escapeHtml(row.id)}" title="Open patient page">›</button>
+      <div class="hah-board-col-patient">
+        <div class="hah-board-row-name">${c.escapeHtml(row.name)}</div>
+        ${ageSex ? `<div class="hah-board-row-agesex">${c.escapeHtml(ageSex)}</div>` : ''}
+      </div>
+      <div class="hah-board-col-pathway">
+        <span class="hah-board-pathway-dot" style="background:${pathwayDef ? pathwayDef.colour : '#64748b'}"></span>
+        <span class="hah-board-pathway-label">${c.escapeHtml(pathwayDef ? pathwayDef.label : 'Other')}</span>
+      </div>
+      <div class="hah-board-col-referral">
+        <div class="hah-board-referral-text">${c.escapeHtml(referralOneLine)}</div>
+      </div>
+      <div class="hah-board-col-los">
+        <div>${admShort ? c.escapeHtml(admShort) : '—'}</div>
+        <div class="hah-board-los-days${losLong ? ' is-long' : ''}">${losText}</div>
+      </div>
+      <div class="hah-board-col-visits">
+        ${inlineSelect(ext.visits, VISIT_OPTIONS, 'edit-visits', row.id)}
+      </div>
+      <div class="hah-board-col-abx" data-board-action="edit-abx" data-patient-id="${c.escapeHtml(row.id)}">
+        ${abxDisplay}
+      </div>
+      <div class="hah-board-col-flags">
+        ${flagsHtml.join('')}
+        ${catchUpBtn}
+      </div>
+      <div class="hah-board-col-alloc">
+        ${inlineSelect(ext.nextAllocation, ALLOC_OPTIONS, 'edit-alloc', row.id)}
+      </div>
+      <div class="hah-board-col-discharge">
+        ${dischargeChip}
+      </div>
     </div>`;
   }
 
-  // ── Right pane — briefing ────────────────────────────────────────────
+  // ── Right pane (briefing — kept simple for now) ──────────────────────
 
   function renderRightPane(state) {
     const vm = d.buildBoardViewModel(state);
@@ -8141,26 +8600,21 @@ window.HAHBoard = window.HAHBoard || {};
   function renderBriefing(row, state) {
     const patientWsVm = (function () {
       const saved = { ...store.getState(), selectedPatientId: row.id, route: { ...store.getState().route, entityId: row.id } };
-      try {
-        return d.buildPatientWorkspaceModel(saved);
-      } catch (_) { return null; }
+      try { return d.buildPatientWorkspaceModel(saved); } catch (_) { return null; }
     })();
 
-    const age = row.age || '';
-    const sex = row.sex || '';
-    const ageSex = [age, sex].filter(Boolean).join('');
-    const los = losText(row.admissionDate);
-    const admDate = formatAdmDate(row.admissionDate);
+    const ageSex = [row.age || '', row.sex || ''].filter(Boolean).join('');
+    const los = losDays(row.admissionDate);
+    const losTone = los !== null && los > 7 ? 'is-danger' : los === 7 ? 'is-warn' : los !== null && los > 0 ? 'is-good' : '';
+    const admShort = formatAdmShort(row.admissionDate);
+    const losLabel = los === null ? null : (los === 0 ? 'Today' : los + 'd');
 
     const metaParts = [
       row.referralSource ? row.referralSource + ' referral' : null,
-      admDate ? 'Adm ' + admDate : null,
-      los ? 'LOS ' + los : null,
+      admShort ? 'Adm ' + admShort : null,
+      losLabel ? 'LOS ' + losLabel : null,
       row.pathway || null
     ].filter(Boolean);
-
-    const losDaysN = losDays(row.admissionDate);
-    const losTone = losDaysN !== null && losDaysN > 7 ? 'is-danger' : losDaysN === 7 ? 'is-warn' : losDaysN !== null && losDaysN > 0 ? 'is-good' : '';
 
     const ps = ops ? ops.getPatientState(row.id) : {};
     const acpData = (ps && ps.acp) || {};
@@ -8233,9 +8687,8 @@ window.HAHBoard = window.HAHBoard || {};
       : '<div class="hah-board-briefing-empty-inline">—</div>';
     const progress = String(f.progress || '').trim();
     const plan     = String(f.plan || '').trim();
-    const edd = f.dischargeDate ? formatEDD(f.dischargeDate, f.dischargeReady) : '';
-
-    const dateLabel = formatEntryDate(enc.timestamp);
+    const edd = f.dischargeDate ? fmtEDD(f.dischargeDate, f.dischargeReady) : '';
+    const dateLabel = fmtEntryDate(enc.timestamp);
 
     function section(label, bodyHtml) {
       return `<div class="hah-board-briefing-field">
@@ -8294,7 +8747,7 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
   }
 
-  function formatEDD(iso, ready) {
+  function fmtEDD(iso, ready) {
     if (ready) return 'Ready';
     if (!iso) return '';
     const t = new Date(iso).getTime();
@@ -8302,7 +8755,7 @@ window.HAHBoard = window.HAHBoard || {};
     return new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
-  function formatEntryDate(iso) {
+  function fmtEntryDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
@@ -8349,12 +8802,12 @@ window.HAHBoard = window.HAHBoard || {};
             <input type="text" id="hahAddPtReferral" class="hah-board-modal-input" placeholder="e.g. GP, A&amp;E, PRUH" autocomplete="off">
           </div>
           <div class="hah-board-modal-field">
-            <label for="hahAddPtPathway">Pathway</label>
-            <input type="text" id="hahAddPtPathway" class="hah-board-modal-input" placeholder="e.g. Frailty, Cellulitis, CHF" autocomplete="off">
+            <label for="hahAddPtPathway">Problem / referred for</label>
+            <input type="text" id="hahAddPtPathway" class="hah-board-modal-input" placeholder="e.g. L leg cellulitis, Frailty review" autocomplete="off">
           </div>
           <div class="hah-board-modal-field">
             <label for="hahAddPtDoa">Date of admission</label>
-            <input type="date" id="hahAddPtDoa" class="hah-board-modal-input" value="${new Date().toISOString().slice(0,10)}">
+            <input type="date" id="hahAddPtDoa" class="hah-board-modal-input" value="${todayIso()}">
           </div>
         </div>
         <div class="hah-board-modal-footer">
@@ -8373,41 +8826,63 @@ window.HAHBoard = window.HAHBoard || {};
     const action = target.getAttribute('data-board-action');
 
     if (action === 'set-pathway-filter') {
-      const key = target.getAttribute('data-pathway');
-      store.setState({ board: { pathwayFilter: key || 'all' } });
+      store.setState({ board: { pathwayFilter: target.getAttribute('data-pathway') || 'all' } });
       return true;
     }
-
+    if (action === 'toggle-flagged-filter') {
+      const cur = !!(state.board && state.board.flaggedOnly);
+      store.setState({ board: { flaggedOnly: !cur } });
+      return true;
+    }
+    if (action === 'set-sort') {
+      store.setState({ board: { sort: target.getAttribute('data-sort') || 'los' } });
+      return true;
+    }
     if (action === 'select-patient') {
+      // Only select if click wasn't on an interactive cell
+      if (event.target.closest('button, [data-board-action="edit-abx"]')) return false;
       const pid = target.getAttribute('data-patient-id');
       if (pid) store.setState({ selectedPatientId: pid });
       return true;
     }
-
     if (action === 'open-patient') {
       event.stopPropagation();
       const pid = target.getAttribute('data-patient-id');
       if (pid && router) router.goToPatient(pid);
       return true;
     }
-
-    if (action === 'open-add-patient') {
-      store.setState({ board: { addPatientModal: true } });
+    if (action === 'toggle-catchup') {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      if (!pid || !ops) return false;
+      const ext = ops.getPatientState(pid);
+      ops.patchPatientState(pid, { catchUpFlag: !ext.catchUpFlag });
       return true;
     }
-
-    if (action === 'close-add-patient') {
-      store.setState({ board: { addPatientModal: false } });
+    if (action === 'edit-visits') {
+      event.stopPropagation();
+      openInlineSelect(target, 'visits');
       return true;
     }
-
+    if (action === 'edit-alloc') {
+      event.stopPropagation();
+      openInlineSelect(target, 'nextAllocation');
+      return true;
+    }
+    if (action === 'edit-abx') {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      if (pid) openAbxEditor(target, pid);
+      return true;
+    }
+    if (action === 'open-add-patient') { store.setState({ board: { addPatientModal: true } }); return true; }
+    if (action === 'close-add-patient') { store.setState({ board: { addPatientModal: false } }); return true; }
     if (action === 'add-patient-backdrop') {
       if (event.target.classList && event.target.classList.contains('hah-board-modal-overlay')) {
         store.setState({ board: { addPatientModal: false } });
       }
       return true;
     }
-
     if (action === 'commit-add-patient') {
       const name = (document.getElementById('hahAddPtName') || {}).value || '';
       if (!name.trim()) { window.alert('Please enter a patient name.'); return true; }
@@ -8417,16 +8892,123 @@ window.HAHBoard = window.HAHBoard || {};
       const pathway = (document.getElementById('hahAddPtPathway') || {}).value || '';
       const doa = (document.getElementById('hahAddPtDoa') || {}).value || '';
       const ok = addPatientToStorage({ name: name.trim(), age: age ? parseInt(age, 10) : null, sex, referralSource: referralSource.trim(), pathway: pathway.trim(), doa });
-      if (ok) {
-        store.setState({ board: { addPatientModal: false } });
-      }
+      if (ok) store.setState({ board: { addPatientModal: false } });
       return true;
     }
-
+    if (action === 'set-capacity') {
+      const current = ops && ops.getCapacityCeiling ? ops.getCapacityCeiling() : null;
+      const input = window.prompt('Service capacity (maximum patients at once):', current || '');
+      if (input === null) return true;
+      if (input === '') { ops.setCapacityCeiling(null); return true; }
+      const parsed = parseInt(input, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) { window.alert('Enter a positive number.'); return true; }
+      ops.setCapacityCeiling(parsed);
+      return true;
+    }
     return false;
   }
 
   function handleChange() { return false; }
+
+  // ── Inline select popover ───────────────────────────────────────────
+
+  function openInlineSelect(trigger, field) {
+    if (!trigger || !ops) return;
+    const patientId = trigger.getAttribute('data-patient-id');
+    const options = JSON.parse(trigger.getAttribute('data-options') || '[]');
+    const current = trigger.getAttribute('data-current') || '';
+
+    closeAnyInlinePopovers();
+
+    const rect = trigger.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'hah-board-inline-popover';
+    pop.innerHTML = options.map((opt) => {
+      const label = opt || '— clear —';
+      return `<button type="button" class="hah-board-inline-option${opt === current ? ' is-active' : ''}" data-value="${opt.replace(/"/g, '&quot;')}">${label}</button>`;
+    }).join('');
+    document.body.appendChild(pop);
+    pop.style.position = 'fixed';
+    pop.style.top = (rect.bottom + 4) + 'px';
+    pop.style.left = Math.max(8, rect.left) + 'px';
+    pop.style.zIndex = 300;
+
+    pop.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-value]');
+      if (!btn) return;
+      const val = btn.getAttribute('data-value');
+      const patch = {};
+      patch[field] = val;
+      if (field === 'nextAllocation') patch.nextAllocationAt = val ? new Date().toISOString() : null;
+      ops.patchPatientState(patientId, patch);
+      closeAnyInlinePopovers();
+    });
+
+    setTimeout(() => {
+      document.addEventListener('click', outsideHandler, { capture: true });
+    }, 0);
+    function outsideHandler(e) {
+      if (!pop.contains(e.target)) {
+        closeAnyInlinePopovers();
+        document.removeEventListener('click', outsideHandler, { capture: true });
+      }
+    }
+  }
+
+  function openAbxEditor(trigger, patientId) {
+    if (!trigger || !ops) return;
+    closeAnyInlinePopovers();
+
+    const ext = ops.getPatientState(patientId);
+    const rect = trigger.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'hah-board-inline-popover hah-board-abx-popover';
+    pop.innerHTML = `
+      <div class="hah-board-abx-field">
+        <label>Antibiotic</label>
+        <input type="text" id="hah-abx-name" class="hah-board-abx-input" placeholder="e.g. Flucloxacillin" value="${c.escapeHtml(ext.abxName || '')}" autocomplete="off">
+      </div>
+      <div class="hah-board-abx-field">
+        <label>End date</label>
+        <input type="date" id="hah-abx-end" class="hah-board-abx-input" value="${c.escapeHtml(ext.abxEndDate || '')}">
+      </div>
+      <div class="hah-board-abx-actions">
+        <button type="button" class="hah-board-abx-clear">Clear</button>
+        <button type="button" class="hah-board-abx-save">Save</button>
+      </div>
+    `;
+    document.body.appendChild(pop);
+    pop.style.position = 'fixed';
+    pop.style.top = (rect.bottom + 4) + 'px';
+    pop.style.left = Math.max(8, rect.left) + 'px';
+    pop.style.zIndex = 300;
+
+    const nameInput = pop.querySelector('#hah-abx-name');
+    const endInput  = pop.querySelector('#hah-abx-end');
+    pop.querySelector('.hah-board-abx-save').addEventListener('click', () => {
+      ops.patchPatientState(patientId, { abxName: (nameInput.value || '').trim(), abxEndDate: (endInput.value || '').trim() });
+      closeAnyInlinePopovers();
+    });
+    pop.querySelector('.hah-board-abx-clear').addEventListener('click', () => {
+      ops.patchPatientState(patientId, { abxName: '', abxEndDate: '' });
+      closeAnyInlinePopovers();
+    });
+    if (nameInput && !nameInput.value) setTimeout(() => nameInput.focus(), 0);
+
+    setTimeout(() => document.addEventListener('click', outsideHandler, { capture: true }), 0);
+    function outsideHandler(e) {
+      if (!pop.contains(e.target)) {
+        closeAnyInlinePopovers();
+        document.removeEventListener('click', outsideHandler, { capture: true });
+      }
+    }
+  }
+
+  function closeAnyInlinePopovers() {
+    document.querySelectorAll('.hah-board-inline-popover').forEach((p) => p.remove());
+  }
+
+  // ── Add patient ──────────────────────────────────────────────────────
 
   function addPatientToStorage(fields) {
     const PRIMARY_KEY = 'hah_prototype_v12_36_162_pin_rebuild_data';
@@ -8439,33 +9021,25 @@ window.HAHBoard = window.HAHBoard || {};
       const id = 'p-' + Date.now() + '-' + Math.floor(Math.random() * 9999);
       const now = new Date().toISOString();
       data.patients[id] = {
-        id,
-        name: fields.name,
-        age: fields.age || null,
-        sex: fields.sex || '',
+        id, name: fields.name,
+        age: fields.age || null, sex: fields.sex || '',
         referralSource: fields.referralSource || '',
-        pathway: fields.pathway || '',
-        doa: fields.doa || '',
-        addedAt: now,
-        form: {}
+        pathway: fields.pathway || '', summaryLine: fields.pathway || '',
+        doa: fields.doa || '', addedAt: now, form: {}
       };
       localStorage.setItem(PRIMARY_KEY, JSON.stringify(data));
       store.setState({ _patientAdded: Date.now() });
       return true;
     } catch (err) {
       console.error('Failed to add patient', err);
-      window.alert('Could not save the new patient. Check browser storage and try again.');
+      window.alert('Could not save the new patient.');
       return false;
     }
   }
 
   window.HAHBoard.boardScreen = {
-    renderLeftPane,
-    renderMainPane,
-    renderRightPane,
-    handleClick,
-    handleChange,
-    afterRender: function () {}
+    renderLeftPane, renderMainPane, renderRightPane,
+    handleClick, handleChange, afterRender: function () {}
   };
 })();
 
@@ -12499,9 +13073,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_064_release.html',
-  source: 'hospital_at_home_board_v0_8_064_source.zip',
-  builtAt: '2026-04-22T19:52:21.595630',
+  filename: 'hospital_at_home_board_v0_8_065_release.html',
+  source: 'hospital_at_home_board_v0_8_065_source.zip',
+  builtAt: '2026-04-22T20:51:42.867128',
   entry: 'desktop.html'
 };
 </script>
