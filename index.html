@@ -7171,6 +7171,7 @@ window.HAHBoard = window.HAHBoard || {};
   let settings = loadLocal(SETTINGS_KEY, DEFAULT_SETTINGS);
   let state = loadLocal(STATE_KEY, DEFAULT_STATE);
   let msalApp = null;
+  let msalInitialisePromise = null;
 
   function loadLocal(key, fallback) {
     try {
@@ -7239,6 +7240,7 @@ window.HAHBoard = window.HAHBoard || {};
   function setClientId(clientId) {
     settings.clientId = String(clientId || '').trim();
     msalApp = null;
+    msalInitialisePromise = null;
     saveSettings();
     state.lastOperation = settings.clientId ? 'Client ID saved' : 'Client ID cleared';
     state.lastError = '';
@@ -7265,7 +7267,7 @@ window.HAHBoard = window.HAHBoard || {};
     setFolderPath(value);
   }
 
-  function getMsalApp() {
+  async function getMsalApp() {
     if (!window.msal) throw new Error('MSAL is not loaded. Open the hosted release with internet access and try again.');
     if (!settings.clientId) throw new Error('Set a Microsoft client ID first.');
     if (!msalApp) {
@@ -7280,13 +7282,26 @@ window.HAHBoard = window.HAHBoard || {};
           storeAuthStateInCookie: false
         }
       });
+      msalInitialisePromise = null;
     }
+
+    // MSAL Browser v3 requires PublicClientApplication.initialize() to be awaited
+    // before loginPopup/acquireToken* calls. Without this, sign-in throws
+    // "uninitialized_public_client_application". Older MSAL versions do not
+    // expose initialize(), so this remains backward-compatible.
+    if (typeof msalApp.initialize === 'function') {
+      if (!msalInitialisePromise) {
+        msalInitialisePromise = msalApp.initialize().then(function () { return msalApp; });
+      }
+      await msalInitialisePromise;
+    }
+
     return msalApp;
   }
 
   async function signIn() {
     try {
-      const app = getMsalApp();
+      const app = await getMsalApp();
       const response = await app.loginPopup({ scopes: GRAPH_SCOPES });
       const account = response && response.account;
       if (account) {
@@ -7308,7 +7323,7 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   async function getAccessToken() {
-    const app = getMsalApp();
+    const app = await getMsalApp();
     let account = app.getActiveAccount();
     if (!account) {
       const accounts = app.getAllAccounts();
@@ -13997,9 +14012,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_072_release.html',
-  source: 'hospital_at_home_board_v0_8_072_source.zip',
-  builtAt: '2026-04-24T14:34:46.309Z',
+  filename: 'hospital_at_home_board_v0_8_073_release.html',
+  source: 'hospital_at_home_board_v0_8_073_source.zip',
+  builtAt: '2026-04-24T18:39:10.940963',
   entry: 'desktop.html'
 };
 </script>
