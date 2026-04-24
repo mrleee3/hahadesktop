@@ -1133,8 +1133,19 @@ html, body {
 .hah-board-col-flags {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   flex-wrap: wrap;
+}
+
+.hah-board-table-head .hah-board-col-flags,
+.hah-board-table-head .hah-board-col-bloods {
+  text-align: center;
+  justify-content: center;
+}
+
+.hah-board-table-head .hah-board-col-bloods {
+  margin: 0;
 }
 
 .hah-board-catchup {
@@ -1201,17 +1212,15 @@ html, body {
 .hah-board-col-bloods {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   align-self: stretch;
   margin: -12px 0;
   padding: 0;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease;
 }
 
 .hah-board-col-bloods.is-taken {
-  background: #f3eeff;
-  box-shadow: inset 3px 0 0 rgba(124,58,237,0.4);
-  padding-left: 12px;
+  background: #ccfbf1;
 }
 
 .hah-board-bloods-icon {
@@ -1230,17 +1239,17 @@ html, body {
 }
 
 .hah-board-bloods-icon:hover {
-  color: #7c3aed;
-  background: rgba(124,58,237,0.12);
+  color: #0e7490;
+  background: rgba(14,116,144,0.1);
 }
 
 .hah-board-bloods-icon.is-taken {
-  color: #7c3aed;
+  color: #0e7490;
 }
 
 .hah-board-bloods-icon.is-taken:hover {
   transform: scale(1.08);
-  background: rgba(124,58,237,0.14);
+  background: rgba(14,116,144,0.14);
 }
 
 /* Flagged filter pill — amber tint when active */
@@ -1252,6 +1261,17 @@ html, body {
 
 .hah-board-filter-pill--flagged.is-active .hah-board-filter-count {
   color: #b45309;
+}
+
+/* Bloods filter pill — teal tint when active */
+.hah-board-filter-pill--bloods.is-active {
+  background: #ccfbf1;
+  border-color: rgba(14,116,144,0.35);
+  color: #0e7490;
+}
+
+.hah-board-filter-pill--bloods.is-active .hah-board-filter-count {
+  color: #0e7490;
 }
 
 /* ─── Inline editable cells ─────────────────────────────────────── */
@@ -5515,6 +5535,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
       pathwayFilter: 'all',
       addPatientModal: false,
       flaggedOnly: false,
+      bloodsOnly: false,
       sortMenuOpen: false
     },
     patient: { jumpListMode: 'current-cohort', composerType: 'board_round', composerLocked: false, composerEditId: null, listSort: (function(){ try { return localStorage.getItem('hah_list_sort') || 'name'; } catch(_) { return 'name'; } })(), sortMenuOpen: false, listFilter: null, bloodOptionsOpen: false, acpModalOpen: false, statusMenuFor: null },
@@ -5684,8 +5705,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_069_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_069_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_070_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_070_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8506,11 +8527,13 @@ window.HAHBoard = window.HAHBoard || {};
     const rows = vm.rows || [];
     const filter = (state.board && state.board.pathwayFilter) || 'all';
     const flaggedOnly = !!(state.board && state.board.flaggedOnly);
+    const bloodsOnly = !!(state.board && state.board.bloodsOnly);
 
     // Apply filters
     let filteredRows = rows.slice();
     if (filter !== 'all') filteredRows = filteredRows.filter((r) => classifyPathway(r) === filter);
     if (flaggedOnly) filteredRows = filteredRows.filter((r) => getPatientExt(r.id).catchUpFlag);
+    if (bloodsOnly)  filteredRows = filteredRows.filter((r) => getPatientExt(r.id).bloodsStatus);
 
     // Sort
     const sortMode = (state.board && state.board.sort) || 'los';
@@ -8621,10 +8644,22 @@ window.HAHBoard = window.HAHBoard || {};
       <span>Flagged</span>
     </button>`;
 
+    const bloodsOnly = !!(state.board && state.board.bloodsOnly);
+    const bloodsPill = `<button type="button"
+      class="hah-board-filter-pill hah-board-filter-pill--bloods${bloodsOnly ? ' is-active' : ''}"
+      data-board-action="toggle-bloods-filter" title="Show only patients with bloods taken">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="${bloodsOnly ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"></circle>
+        ${bloodsOnly ? '<path d="M8 12.5l2.5 2.5L16 9.5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>' : ''}
+      </svg>
+      <span>Bloods</span>
+    </button>`;
+
     const filterBar = `<div class="hah-board-filter-bar">
       ${filterPill('all', 'All', pathwayCounts.all || 0)}
       ${PATHWAYS.map((p) => filterPill(p.key, p.label, pathwayCounts[p.key] || 0, p.colour)).join('')}
       ${flaggedPill}
+      ${bloodsPill}
     </div>`;
 
     const sortLabels = { los: 'LOS', name: 'Name', discharge: 'Discharge' };
@@ -9060,6 +9095,11 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'toggle-flagged-filter') {
       const cur = !!(state.board && state.board.flaggedOnly);
       store.setState({ board: { flaggedOnly: !cur } });
+      return true;
+    }
+    if (action === 'toggle-bloods-filter') {
+      const cur = !!(state.board && state.board.bloodsOnly);
+      store.setState({ board: { bloodsOnly: !cur } });
       return true;
     }
     if (action === 'set-sort') {
@@ -13325,9 +13365,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_069_release.html',
-  source: 'hospital_at_home_board_v0_8_069_source.zip',
-  builtAt: '2026-04-23T19:55:49.683806',
+  filename: 'hospital_at_home_board_v0_8_070_release.html',
+  source: 'hospital_at_home_board_v0_8_070_source.zip',
+  builtAt: '2026-04-24T14:09:35.146716',
   entry: 'desktop.html'
 };
 </script>
