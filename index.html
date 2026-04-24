@@ -7155,7 +7155,7 @@ window.HAHBoard = window.HAHBoard || {};
   const DEFAULT_SETTINGS = {
     clientId: '',
     folderPath: DEFAULT_FOLDER,
-    tenant: 'common'
+    tenant: 'consumers'
   };
 
   const DEFAULT_STATE = {
@@ -7267,6 +7267,18 @@ window.HAHBoard = window.HAHBoard || {};
     setFolderPath(value);
   }
 
+  function normaliseTenant(value) {
+    const tenant = String(value || '').trim().toLowerCase();
+    if (!tenant || tenant === 'common') return 'consumers';
+    return tenant;
+  }
+
+  function getRedirectUri() {
+    // Use a stable SPA redirect URI without cache-buster query strings or hash routes.
+    // For GitHub Pages this gives e.g. https://mrleee3.github.io/hahadesktop/
+    return window.location.origin + window.location.pathname;
+  }
+
   async function getMsalApp() {
     if (!window.msal) throw new Error('MSAL is not loaded. Open the hosted release with internet access and try again.');
     if (!settings.clientId) throw new Error('Set a Microsoft client ID first.');
@@ -7274,8 +7286,8 @@ window.HAHBoard = window.HAHBoard || {};
       msalApp = new window.msal.PublicClientApplication({
         auth: {
           clientId: settings.clientId,
-          authority: `https://login.microsoftonline.com/${settings.tenant || 'common'}`,
-          redirectUri: window.location.href.split('#')[0]
+          authority: `https://login.microsoftonline.com/${normaliseTenant(settings.tenant)}`,
+          redirectUri: getRedirectUri()
         },
         cache: {
           cacheLocation: 'localStorage',
@@ -14012,9 +14024,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_073_release.html',
-  source: 'hospital_at_home_board_v0_8_073_source.zip',
-  builtAt: '2026-04-24T18:39:10.940963',
+  filename: 'hospital_at_home_board_v0_8_074_release.html',
+  source: 'hospital_at_home_board_v0_8_074_source.zip',
+  builtAt: '2026-04-24T18:58:07.581874',
   entry: 'desktop.html'
 };
 </script>
