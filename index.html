@@ -1202,6 +1202,16 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  align-self: stretch;
+  margin: -12px 0;
+  padding: 0;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.hah-board-col-bloods.is-taken {
+  background: #f3eeff;
+  box-shadow: inset 3px 0 0 rgba(124,58,237,0.4);
+  padding-left: 12px;
 }
 
 .hah-board-bloods-icon {
@@ -1221,7 +1231,7 @@ html, body {
 
 .hah-board-bloods-icon:hover {
   color: #7c3aed;
-  background: rgba(124,58,237,0.08);
+  background: rgba(124,58,237,0.12);
 }
 
 .hah-board-bloods-icon.is-taken {
@@ -1230,7 +1240,7 @@ html, body {
 
 .hah-board-bloods-icon.is-taken:hover {
   transform: scale(1.08);
-  background: rgba(124,58,237,0.1);
+  background: rgba(124,58,237,0.14);
 }
 
 /* Flagged filter pill — amber tint when active */
@@ -5674,8 +5684,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_068_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_068_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_069_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_069_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8761,7 +8771,7 @@ window.HAHBoard = window.HAHBoard || {};
         ${flagsHtml.join('')}
         ${catchUpBtn}
       </div>
-      <div class="hah-board-col-bloods${ext.bloodsStatus ? ' has-bloods' : ''}">
+      <div class="hah-board-col-bloods${ext.bloodsStatus ? ' is-taken' : ''}">
         ${renderBloodsCell(ext, row.id)}
       </div>
       <div class="hah-board-col-discharge">
@@ -13315,9 +13325,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_068_release.html',
-  source: 'hospital_at_home_board_v0_8_068_source.zip',
-  builtAt: '2026-04-22T21:46:17.229284',
+  filename: 'hospital_at_home_board_v0_8_069_release.html',
+  source: 'hospital_at_home_board_v0_8_069_source.zip',
+  builtAt: '2026-04-23T19:55:49.683806',
   entry: 'desktop.html'
 };
 </script>
