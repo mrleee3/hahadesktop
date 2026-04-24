@@ -7679,6 +7679,104 @@ window.HAHBoard = window.HAHBoard || {};
     return putJson(path, doc);
   }
 
+  function normaliseEncounterType(type) {
+    const raw = String(type || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
+    if (raw === 'boardround' || raw === 'board_round') return 'board_round';
+    if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
+    if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
+    return 'other';
+  }
+
+  function timelineNoteFromEncounter(encounter) {
+    const fields = encounter && encounter.fields ? encounter.fields : {};
+    const note = encounter && encounter.note ? encounter.note : {};
+    return {
+      issues: String(fields.issueRaw || fields.issues || note.issues || '').trim(),
+      progress: String(fields.progress || note.progress || '').trim(),
+      bloodsIx: String(fields.bloodsIx || fields.bloods || note.bloodsIx || note.bloods || '').trim(),
+      plan: String(fields.plan || note.plan || '').trim()
+    };
+  }
+
+  function timelineEntryFromEncounter(encounter) {
+    const enc = encounter || {};
+    const fields = enc.fields || {};
+    const type = normaliseEncounterType(enc.type);
+    const timestamp = enc.timestamp || enc.completedAt || enc.editedAt || nowIso();
+    const note = timelineNoteFromEncounter(enc);
+    const entry = {
+      id: String(enc.id || `entry:${Date.now().toString(36)}`),
+      type,
+      status: enc.status || 'completed',
+      timestamp,
+      author: enc.author || enc.editedBy || enc.updatedBy || getActorName(),
+      present: Array.isArray(fields.present) ? fields.present.slice() : (Array.isArray(enc.present) ? enc.present.slice() : []),
+      note,
+      fields: clone(fields || {})
+    };
+    if (enc.editedAt) entry.editedAt = enc.editedAt;
+    if (enc.editedBy) entry.editedBy = enc.editedBy;
+    return entry;
+  }
+
+  function deriveJsonDischargeReadiness(fields) {
+    const f = fields || {};
+    if (f.dischargeReady === true || f.dischargeReady === 'true') return 'Ready';
+    const date = String(f.dischargeDate || '').trim();
+    if (!date) return '';
+    if (date === todayKey()) return 'Possible today';
+    const d = new Date(date + 'T12:00:00');
+    const t = new Date(todayKey() + 'T12:00:00');
+    if (!Number.isNaN(d.getTime()) && !Number.isNaN(t.getTime())) {
+      const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+      if (diff === 1) return 'Likely tomorrow';
+    }
+    return 'Not ready';
+  }
+
+  async function upsertPatientTimelineEntry(patientId, encounter) {
+    if (!patientId) throw new Error('Cannot save timeline entry without a patient id.');
+    const id = String(patientId);
+    const entry = timelineEntryFromEncounter(encounter || {});
+    let patient = await loadPatient(id);
+    if (!patient || !patient.id) {
+      patient = makePatientSchema(id, { name: id });
+    }
+
+    patient.timeline = Array.isArray(patient.timeline) ? patient.timeline.slice() : [];
+    const existingIndex = patient.timeline.findIndex(function (row) { return String(row && row.id) === String(entry.id); });
+    if (existingIndex >= 0) {
+      patient.timeline[existingIndex] = Object.assign({}, patient.timeline[existingIndex], entry, { updatedAt: nowIso() });
+    } else {
+      patient.timeline.unshift(entry);
+    }
+    patient.timeline.sort(function (a, b) {
+      return Date.parse(b.timestamp || b.updatedAt || 0) - Date.parse(a.timestamp || a.updatedAt || 0);
+    });
+
+    patient.clinical = Object.assign({}, patient.clinical || {});
+    const note = entry.note || {};
+    if (note.issues) patient.clinical.summary = note.issues;
+    if (note.bloodsIx) patient.clinical.bloodsSummary = note.bloodsIx;
+
+    patient.operational = Object.assign({}, patient.operational || {});
+    const dr = deriveJsonDischargeReadiness(entry.fields || {});
+    if (dr) patient.operational.dischargeReadiness = dr;
+    if (entry.type === 'board_round') patient.operational.boardStatus = 'Discussed';
+
+    await savePatient(patient);
+    try {
+      await appendAudit({
+        type: 'patient-timeline-updated',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Saved ${entry.type.replace(/_/g, ' ')} entry for ${id}`
+      });
+    } catch (_) {}
+    try { await loadPatientDataset(); } catch (_) {}
+    return entry;
+  }
+
   function getActivePatientIds(serviceDoc) {
     const serviceBlock = serviceDoc && serviceDoc.service ? serviceDoc.service : {};
     const patientsBlock = serviceDoc && serviceDoc.patients ? serviceDoc.patients : {};
@@ -7922,6 +8020,7 @@ window.HAHBoard = window.HAHBoard || {};
     loadRound,
     saveRound,
     appendAudit,
+    upsertPatientTimelineEntry,
     makePatientSchema,
     getFilePlan
   };
@@ -10209,6 +10308,87 @@ window.HAHBoard = window.HAHBoard || {};
     try { localStorage.setItem(getBoardSelectionStoreKey(), JSON.stringify(payload)); } catch (_) {}
   }
 
+  function normaliseEncounterType(type) {
+    const raw = String(type || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
+    if (raw === 'boardround' || raw === 'board_round') return 'board_round';
+    if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
+    if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
+    return 'other';
+  }
+
+  function encounterFromJsonTimelineEntry(patientId, entry) {
+    if (!entry) return null;
+    const note = entry.note || {};
+    const fields = Object.assign({}, entry.fields || {}, {
+      issues: String((entry.fields && entry.fields.issues) || note.issues || '').trim(),
+      progress: String((entry.fields && entry.fields.progress) || note.progress || '').trim(),
+      bloods: String((entry.fields && (entry.fields.bloods || entry.fields.bloodsIx)) || note.bloodsIx || note.bloods || '').trim(),
+      plan: String((entry.fields && entry.fields.plan) || note.plan || '').trim()
+    });
+    const type = normaliseEncounterType(entry.type);
+    if (type === 'board_round') {
+      const rawIssues = String(fields.issues || '').trim();
+      fields.issueRaw = fields.issueRaw || rawIssues;
+      fields.issueLines = Array.isArray(fields.issueLines) && fields.issueLines.length
+        ? fields.issueLines
+        : (rawIssues ? rawIssues.split('\n').map((l) => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean) : []);
+      fields.issues = fields.issueLines.length ? fields.issueLines.join('\n') : rawIssues;
+    }
+    return {
+      id: String(entry.id || `json:${patientId}:${entry.timestamp || ''}`),
+      patientId: String(patientId || ''),
+      type,
+      timestamp: entry.timestamp || entry.completedAt || entry.updatedAt || '',
+      author: entry.author || entry.updatedBy || 'Board user',
+      fields,
+      source: 'json'
+    };
+  }
+
+  function getJsonTimelineEncounters(patientSummary) {
+    const raw = patientSummary && patientSummary.sourcePatient ? patientSummary.sourcePatient : {};
+    const jsonRecord = raw && raw.jsonRecord ? raw.jsonRecord : null;
+    const timeline = Array.isArray(jsonRecord && jsonRecord.timeline) ? jsonRecord.timeline : [];
+    return timeline.map((entry) => encounterFromJsonTimelineEntry(patientSummary.id, entry)).filter(Boolean);
+  }
+
+  function getPatientEncounterRows(patientSummary, type) {
+    const localRows = ops && typeof ops.getEncountersForPatient === 'function'
+      ? ops.getEncountersForPatient(patientSummary.id)
+      : [];
+    const jsonRows = getJsonTimelineEncounters(patientSummary);
+    const map = new Map();
+    jsonRows.concat(localRows || []).forEach((row) => {
+      if (!row) return;
+      const key = String(row.id || '');
+      if (!key) return;
+      map.set(key, Object.assign({}, map.get(key) || {}, row));
+    });
+    return Array.from(map.values())
+      .filter((row) => !type || row.type === type)
+      .sort((a, b) => Date.parse(b.timestamp || 0) - Date.parse(a.timestamp || 0));
+  }
+
+  function getLastBoardRoundEntry(patientSummary) {
+    return getPatientEncounterRows(patientSummary, 'board_round')[0] || null;
+  }
+
+  function persistEncounterToJson(patientSummary, encounter) {
+    const raw = patientSummary && patientSummary.sourcePatient ? patientSummary.sourcePatient : {};
+    if (!raw || !raw.jsonRecord) return;
+    const api = window.HAHBoard.sharedJsonStore;
+    if (!api || typeof api.upsertPatientTimelineEntry !== 'function') return;
+    api.upsertPatientTimelineEntry(patientSummary.id, encounter)
+      .then(function () {
+        store.setState({ patient: { _jsonSavedAt: Date.now() } });
+      })
+      .catch(function (err) {
+        console.warn('[H@H JSON store] Could not save patient timeline entry', err);
+        const pane = document.querySelector('#hahRightPane');
+        if (pane) showToast(pane, 'Saved locally · JSON write failed');
+      });
+  }
+
   function todayIso()    { return new Date().toISOString().split('T')[0]; }
   function tomorrowIso() { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }
 
@@ -10575,7 +10755,7 @@ window.HAHBoard = window.HAHBoard || {};
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return renderEmpty();
     const patient     = vm.patient;
-    const encounters  = ops ? ops.getEncountersForPatient(patient.id) : [];
+    const encounters  = getPatientEncounterRows(patient);
     const boardRounds = encounters.filter((e) => e.type === 'board_round');
     const microMdms   = encounters.filter((e) => e.type === 'micro_mdm');
     const respMdms    = encounters.filter((e) => e.type === 'resp_mdm');
@@ -10689,7 +10869,7 @@ window.HAHBoard = window.HAHBoard || {};
       }).join('')}</div>`;
     }
 
-    const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
+    const encounters = getPatientEncounterRows(vm.patient);
     const latestBoard = encounters.find((e) => e.type === 'board_round') || encounters[0] || null;
     let taskCount = 0;
     try {
@@ -11271,7 +11451,7 @@ window.HAHBoard = window.HAHBoard || {};
       return date === todayStr ? 'Today' : date;
     }
 
-    const encounters = ops ? ops.getEncountersForPatient(vm.patient.id) : [];
+    const encounters = getPatientEncounterRows(vm.patient);
     const composerMap = {};
     encounters
       .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
@@ -11446,8 +11626,8 @@ window.HAHBoard = window.HAHBoard || {};
     const scopedComposer = getScopedComposerState(state, vm.patient.id);
     const isLocked     = !!scopedComposer.locked;
     const editingId    = scopedComposer.editId || null;
-    const editingEnc   = editingId && ops ? (ops.getEncountersForPatient(vm.patient.id) || []).find((e) => e.id === editingId) : null;
-    const lastRound    = ops ? ops.getLastBoardRound(vm.patient.id) : null;
+    const editingEnc   = editingId ? (getPatientEncounterRows(vm.patient) || []).find((e) => e.id === editingId) : null;
+    const lastRound    = getLastBoardRoundEntry(vm.patient);
     const boardSel     = loadBoardSelectionToday();
     const heading      = getComposerHeading(composerType, isLocked, editingEnc);
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
@@ -12070,7 +12250,7 @@ window.HAHBoard = window.HAHBoard || {};
   function restoreFields(fields, type) {
     // Pulled values from the last round (same computation as renderComposerForm)
     const vm = d.buildPatientWorkspaceModel(store.getState());
-    const lastRound = (vm && ops) ? ops.getLastBoardRound(vm.patient.id) : null;
+    const lastRound = vm ? getLastBoardRoundEntry(vm.patient) : null;
     const lastF     = lastRound && lastRound.fields;
     const pulledIssues = lastF
       ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
@@ -12410,16 +12590,20 @@ window.HAHBoard = window.HAHBoard || {};
       const hasContent = Object.values(fields).some((v) => v !== null && v !== false && String(v || '').trim().length > 0);
       if (hasContent) {
         let savedId = null;
+        let savedEncounter = null;
         let verb = 'saved';
         if (composerEditId) {
           const updated = ops.updateEncounter(composerEditId, fields);
+          savedEncounter = updated || null;
           savedId = updated ? composerEditId : null;
           verb = 'updated';
         }
         if (!savedId) {
           const created = ops.createEncounter({ patientId: vm.patient.id, type: composerType, fields });
+          savedEncounter = created || null;
           savedId = created ? created.id : null;
         }
+        if (savedEncounter) persistEncounterToJson(vm.patient, savedEncounter);
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
           if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
@@ -12512,7 +12696,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'edit-encounter' && vm && ops) {
       const encId = target.getAttribute('data-encounter-id');
       if (!encId) return false;
-      const encounters = ops.getEncountersForPatient(vm.patient.id) || [];
+      const encounters = getPatientEncounterRows(vm.patient) || [];
       const enc = encounters.find((e) => e.id === encId);
       if (!enc) return false;
       // Switch composer to this encounter's type and load it into the composer
@@ -14250,9 +14434,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_075_release.html',
-  source: 'hospital_at_home_board_v0_8_075_source.zip',
-  builtAt: '2026-04-24T19:10:27.308158',
+  filename: 'hospital_at_home_board_v0_8_076_release.html',
+  source: 'hospital_at_home_board_v0_8_076_source.zip',
+  builtAt: '2026-04-24T19:19:23.931090',
   entry: 'desktop.html'
 };
 </script>
