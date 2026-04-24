@@ -581,6 +581,16 @@ html, body {
   transition: none !important;
 }
 
+.hah-settings-error {
+  border: 1px solid rgba(193, 59, 59, 0.18);
+  background: rgba(193, 59, 59, 0.08);
+  color: #9f1d1d;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-board.css */
@@ -5510,6 +5520,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
 </head>
 <body class="hah-desktop-body">
   <div id="desktop-root"></div>
@@ -7126,6 +7137,561 @@ window.HAHBoard = window.HAHBoard || {};
     getDischargedPatients,
     isPatientDischarged,
     clearAllOpsState
+  };
+})();
+
+</script>
+  <script>
+/* inlined: js/31-shared-json-store.js */
+(function () {
+  window.HAHBoard = window.HAHBoard || {};
+
+  const SETTINGS_KEY = 'hah_board_shared_json_store_settings';
+  const STATE_KEY = 'hah_board_shared_json_store_state';
+  const DEFAULT_FOLDER = 'H@H Board Data';
+  const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
+  const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite'];
+
+  const DEFAULT_SETTINGS = {
+    clientId: '',
+    folderPath: DEFAULT_FOLDER,
+    tenant: 'common'
+  };
+
+  const DEFAULT_STATE = {
+    account: null,
+    lastInitialisedAt: '',
+    lastTestAt: '',
+    lastError: '',
+    lastOperation: '',
+    remoteReady: false,
+    knownFiles: []
+  };
+
+  let settings = loadLocal(SETTINGS_KEY, DEFAULT_SETTINGS);
+  let state = loadLocal(STATE_KEY, DEFAULT_STATE);
+  let msalApp = null;
+
+  function loadLocal(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return clone(fallback);
+      return Object.assign(clone(fallback), JSON.parse(raw));
+    } catch (_) {
+      return clone(fallback);
+    }
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (_) {}
+    refreshShell('JSON store');
+  }
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function normalisePath(path) {
+    return String(path || DEFAULT_FOLDER).trim().replace(/^\/+|\/+$/g, '') || DEFAULT_FOLDER;
+  }
+
+  function childPath(parent, child) {
+    const base = normalisePath(parent);
+    return `${base}/${String(child || '').replace(/^\/+|\/+$/g, '')}`;
+  }
+
+  function encodePath(path) {
+    return normalisePath(path).split('/').map(encodeURIComponent).join('/');
+  }
+
+  function refreshShell(label) {
+    if (window.HAHBoard && window.HAHBoard.store) {
+      const current = window.HAHBoard.store.getState ? window.HAHBoard.store.getState() : null;
+      const syncState = label || (state.remoteReady ? 'JSON store ready' : 'JSON store');
+      try { window.HAHBoard.store.setState({ ui: { syncState } }); } catch (_) {}
+    }
+  }
+
+  function getInfo() {
+    return {
+      settings: clone(settings),
+      state: clone(state),
+      msalAvailable: !!window.msal,
+      configured: !!settings.clientId,
+      folderPath: normalisePath(settings.folderPath),
+      status: state.lastError ? 'Error' : (state.remoteReady ? 'Ready' : (settings.clientId ? 'Configured' : 'Not configured')),
+      filePlan: getFilePlan()
+    };
+  }
+
+  function setClientId(clientId) {
+    settings.clientId = String(clientId || '').trim();
+    msalApp = null;
+    saveSettings();
+    state.lastOperation = settings.clientId ? 'Client ID saved' : 'Client ID cleared';
+    state.lastError = '';
+    saveState();
+  }
+
+  function setFolderPath(folderPath) {
+    settings.folderPath = normalisePath(folderPath || DEFAULT_FOLDER);
+    saveSettings();
+    state.lastOperation = 'Folder path saved';
+    state.lastError = '';
+    saveState();
+  }
+
+  function promptClientId() {
+    const value = window.prompt('Microsoft app/client ID', settings.clientId || '');
+    if (value === null) return;
+    setClientId(value);
+  }
+
+  function promptFolderPath() {
+    const value = window.prompt('OneDrive data folder path', settings.folderPath || DEFAULT_FOLDER);
+    if (value === null) return;
+    setFolderPath(value);
+  }
+
+  function getMsalApp() {
+    if (!window.msal) throw new Error('MSAL is not loaded. Open the hosted release with internet access and try again.');
+    if (!settings.clientId) throw new Error('Set a Microsoft client ID first.');
+    if (!msalApp) {
+      msalApp = new window.msal.PublicClientApplication({
+        auth: {
+          clientId: settings.clientId,
+          authority: `https://login.microsoftonline.com/${settings.tenant || 'common'}`,
+          redirectUri: window.location.href.split('#')[0]
+        },
+        cache: {
+          cacheLocation: 'localStorage',
+          storeAuthStateInCookie: false
+        }
+      });
+    }
+    return msalApp;
+  }
+
+  async function signIn() {
+    try {
+      const app = getMsalApp();
+      const response = await app.loginPopup({ scopes: GRAPH_SCOPES });
+      const account = response && response.account;
+      if (account) {
+        app.setActiveAccount(account);
+        state.account = {
+          username: account.username || '',
+          name: account.name || '',
+          homeAccountId: account.homeAccountId || ''
+        };
+      }
+      state.lastOperation = 'Signed in to Microsoft';
+      state.lastError = '';
+      saveState();
+      return state.account;
+    } catch (err) {
+      recordError(err);
+      throw err;
+    }
+  }
+
+  async function getAccessToken() {
+    const app = getMsalApp();
+    let account = app.getActiveAccount();
+    if (!account) {
+      const accounts = app.getAllAccounts();
+      account = accounts && accounts[0];
+      if (account) app.setActiveAccount(account);
+    }
+    if (!account) {
+      await signIn();
+      account = app.getActiveAccount();
+    }
+    try {
+      const response = await app.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
+      return response.accessToken;
+    } catch (_) {
+      const response = await app.acquireTokenPopup({ scopes: GRAPH_SCOPES });
+      return response.accessToken;
+    }
+  }
+
+  async function graphFetch(path, options) {
+    const token = await getAccessToken();
+    const response = await fetch(`${GRAPH_ROOT}${path}`, Object.assign({}, options || {}, {
+      headers: Object.assign({ Authorization: `Bearer ${token}` }, options && options.headers ? options.headers : {})
+    }));
+    if (!response.ok) {
+      let detail = '';
+      try { detail = await response.text(); } catch (_) {}
+      const err = new Error(`Graph ${response.status}: ${detail || response.statusText}`);
+      err.status = response.status;
+      throw err;
+    }
+    return response;
+  }
+
+  async function graphJson(path, options) {
+    const response = await graphFetch(path, options);
+    if (response.status === 204) return null;
+    return response.json();
+  }
+
+  async function existsPath(path) {
+    try {
+      await graphJson(`/me/drive/root:/${encodePath(path)}`);
+      return true;
+    } catch (err) {
+      if (err.status === 404) return false;
+      throw err;
+    }
+  }
+
+  async function ensureFolder(path) {
+    const clean = normalisePath(path);
+    const parts = clean.split('/').filter(Boolean);
+    let current = '';
+    for (const part of parts) {
+      const parent = current;
+      current = current ? `${current}/${part}` : part;
+      if (await existsPath(current)) continue;
+      const parentEndpoint = parent
+        ? `/me/drive/root:/${encodePath(parent)}:/children`
+        : '/me/drive/root/children';
+      await graphJson(parentEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: part,
+          folder: {},
+          '@microsoft.graph.conflictBehavior': 'fail'
+        })
+      });
+    }
+  }
+
+  async function getJson(path) {
+    const response = await graphFetch(`/me/drive/root:/${encodePath(path)}:/content`);
+    return response.json();
+  }
+
+  async function putJson(path, data) {
+    const folder = path.split('/').slice(0, -1).join('/');
+    if (folder) await ensureFolder(folder);
+    return graphJson(`/me/drive/root:/${encodePath(path)}:/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data, null, 2)
+    });
+  }
+
+  async function putJsonIfMissing(path, data) {
+    if (await existsPath(path)) return { existed: true };
+    const item = await putJson(path, data);
+    return { existed: false, item };
+  }
+
+  function schemaHeader(type) {
+    return {
+      schema: 'hah-board-json-store',
+      schemaVersion: 1,
+      type,
+      createdAt: nowIso(),
+      updatedAt: nowIso()
+    };
+  }
+
+  function makeServiceSchema() {
+    return Object.assign(schemaHeader('service'), {
+      service: {
+        name: 'Hospital at Home',
+        dataFolder: normalisePath(settings.folderPath),
+        activePatientIds: [],
+        patientOrder: [],
+        archivedPatientIds: []
+      },
+      presets: {
+        pathways: [],
+        clinicians: ['LK', 'SS', 'GM', 'AA', 'JT'],
+        boardViews: []
+      },
+      meta: {
+        lastMigrationAt: '',
+        lastWriter: getActorName()
+      }
+    });
+  }
+
+  function makeTasksSchema() {
+    return Object.assign(schemaHeader('tasks'), {
+      tasks: [],
+      meta: { lastWriter: getActorName() }
+    });
+  }
+
+  function makeRoundIndexSchema() {
+    return Object.assign(schemaHeader('round-index'), {
+      dates: [],
+      meta: { lastWriter: getActorName() }
+    });
+  }
+
+  function makeAuditSchema() {
+    return Object.assign(schemaHeader('audit'), {
+      events: [{
+        id: `audit:${Date.now().toString(36)}`,
+        at: nowIso(),
+        actor: getActorName(),
+        type: 'store-initialised',
+        summary: 'Shared JSON store initialised'
+      }]
+    });
+  }
+
+  function makePatientSchema(id, seed) {
+    const patientId = id || `patient:${Date.now().toString(36)}`;
+    const s = seed || {};
+    return Object.assign(schemaHeader('patient'), {
+      id: patientId,
+      identity: {
+        name: s.name || '',
+        age: s.age || '',
+        sex: s.sex || '',
+        identifiers: {}
+      },
+      service: {
+        referredFrom: s.referredFrom || '',
+        admittedDate: s.admittedDate || '',
+        pathway: s.pathway || '',
+        location: s.location || ''
+      },
+      alerts: {
+        dnar: !!s.dnar,
+        acp: !!s.acp,
+        escalation: s.escalation || ''
+      },
+      clinical: {
+        summary: s.summary || '',
+        persistentIssues: [],
+        medicationFocus: '',
+        bloodsSummary: '',
+        obs: {},
+        medications: [],
+        ivTherapies: []
+      },
+      operational: {
+        boardStatus: 'Not discussed',
+        dischargeReadiness: '',
+        blockers: [],
+        priority: ''
+      },
+      timeline: [],
+      drafts: {
+        boardround: {},
+        microMdm: {},
+        respMdm: {},
+        other: {}
+      },
+      meta: {
+        updatedAt: nowIso(),
+        updatedBy: getActorName(),
+        version: 1
+      }
+    });
+  }
+
+  function makeRoundSchema(date) {
+    return Object.assign(schemaHeader('round'), {
+      date: date || todayKey(),
+      present: [],
+      discussedPatientIds: [],
+      summaries: [],
+      meta: { lastWriter: getActorName() }
+    });
+  }
+
+  function getFilePlan() {
+    const root = normalisePath(settings.folderPath);
+    return [
+      `${root}/service.json`,
+      `${root}/tasks.json`,
+      `${root}/patients/`,
+      `${root}/rounds/_index.json`,
+      `${root}/rounds/${todayKey()}.json`,
+      `${root}/audit/${todayKey()}.json`
+    ];
+  }
+
+  async function initialiseStore() {
+    try {
+      const root = normalisePath(settings.folderPath);
+      await ensureFolder(root);
+      await ensureFolder(childPath(root, 'patients'));
+      await ensureFolder(childPath(root, 'rounds'));
+      await ensureFolder(childPath(root, 'audit'));
+      const writes = [];
+      writes.push(await putJsonIfMissing(childPath(root, 'service.json'), makeServiceSchema()));
+      writes.push(await putJsonIfMissing(childPath(root, 'tasks.json'), makeTasksSchema()));
+      writes.push(await putJsonIfMissing(childPath(root, 'rounds/_index.json'), makeRoundIndexSchema()));
+      writes.push(await putJsonIfMissing(childPath(root, `rounds/${todayKey()}.json`), makeRoundSchema(todayKey())));
+      writes.push(await putJsonIfMissing(childPath(root, `audit/${todayKey()}.json`), makeAuditSchema()));
+      state.knownFiles = getFilePlan();
+      state.remoteReady = true;
+      state.lastInitialisedAt = nowIso();
+      state.lastOperation = `Initialised shared JSON store (${writes.filter(w => !w.existed).length} files created)`;
+      state.lastError = '';
+      saveState();
+      return clone(state);
+    } catch (err) {
+      recordError(err);
+      throw err;
+    }
+  }
+
+  async function testReadWrite() {
+    try {
+      const root = normalisePath(settings.folderPath);
+      await ensureFolder(childPath(root, 'audit'));
+      const path = childPath(root, 'audit/_connection-test.json');
+      const payload = {
+        schema: 'hah-board-json-store',
+        type: 'connection-test',
+        at: nowIso(),
+        actor: getActorName(),
+        userAgent: navigator.userAgent
+      };
+      await putJson(path, payload);
+      const readBack = await getJson(path);
+      if (!readBack || readBack.type !== 'connection-test') throw new Error('Connection test file did not read back correctly.');
+      state.remoteReady = true;
+      state.lastTestAt = nowIso();
+      state.lastOperation = 'OneDrive JSON read/write test passed';
+      state.lastError = '';
+      state.knownFiles = Array.from(new Set([].concat(state.knownFiles || [], getFilePlan(), [path])));
+      saveState();
+      return readBack;
+    } catch (err) {
+      recordError(err);
+      throw err;
+    }
+  }
+
+  async function loadService() {
+    return getJson(childPath(settings.folderPath, 'service.json'));
+  }
+
+  async function saveService(service) {
+    const next = Object.assign({}, service || {}, { updatedAt: nowIso() });
+    return putJson(childPath(settings.folderPath, 'service.json'), next);
+  }
+
+  async function loadPatient(patientId) {
+    return getJson(childPath(settings.folderPath, `patients/${patientId}.json`));
+  }
+
+  async function savePatient(patient) {
+    if (!patient || !patient.id) throw new Error('Cannot save patient without an id.');
+    patient.meta = Object.assign({}, patient.meta || {}, { updatedAt: nowIso(), updatedBy: getActorName(), version: (patient.meta && patient.meta.version || 0) + 1 });
+    return putJson(childPath(settings.folderPath, `patients/${patient.id}.json`), patient);
+  }
+
+  async function loadTasks() {
+    return getJson(childPath(settings.folderPath, 'tasks.json'));
+  }
+
+  async function saveTasks(tasksDoc) {
+    const next = Object.assign({}, tasksDoc || {}, { updatedAt: nowIso() });
+    return putJson(childPath(settings.folderPath, 'tasks.json'), next);
+  }
+
+  async function loadRound(date) {
+    return getJson(childPath(settings.folderPath, `rounds/${date || todayKey()}.json`));
+  }
+
+  async function saveRound(date, roundDoc) {
+    const next = Object.assign({}, roundDoc || {}, { date: date || todayKey(), updatedAt: nowIso() });
+    return putJson(childPath(settings.folderPath, `rounds/${date || todayKey()}.json`), next);
+  }
+
+  async function appendAudit(event) {
+    const root = normalisePath(settings.folderPath);
+    const path = childPath(root, `audit/${todayKey()}.json`);
+    let doc;
+    try { doc = await getJson(path); } catch (_) { doc = makeAuditSchema(); }
+    doc.events = Array.isArray(doc.events) ? doc.events : [];
+    doc.events.unshift(Object.assign({ id: `audit:${Date.now().toString(36)}`, at: nowIso(), actor: getActorName() }, event || {}));
+    doc.updatedAt = nowIso();
+    return putJson(path, doc);
+  }
+
+  function downloadStarterSchemas() {
+    const root = normalisePath(settings.folderPath);
+    const bundle = {
+      service: makeServiceSchema(),
+      tasks: makeTasksSchema(),
+      todayRound: makeRoundSchema(todayKey()),
+      todayAudit: makeAuditSchema(),
+      examplePatient: makePatientSchema('example-patient')
+    };
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `hah-board-json-store-starter-${todayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    state.lastOperation = `Downloaded starter schema bundle for ${root}`;
+    state.lastError = '';
+    saveState();
+  }
+
+  function recordError(err) {
+    state.lastError = err && err.message ? err.message : String(err || 'Unknown error');
+    state.lastOperation = 'Shared JSON store error';
+    saveState();
+  }
+
+  function getActorName() {
+    if (window.HAHBoard.ops && typeof window.HAHBoard.ops.getActorName === 'function') {
+      return window.HAHBoard.ops.getActorName();
+    }
+    return 'Board user';
+  }
+
+  window.HAHBoard.sharedJsonStore = {
+    getInfo,
+    setClientId,
+    setFolderPath,
+    promptClientId,
+    promptFolderPath,
+    signIn,
+    initialiseStore,
+    testReadWrite,
+    downloadStarterSchemas,
+    loadService,
+    saveService,
+    loadPatient,
+    savePatient,
+    loadTasks,
+    saveTasks,
+    loadRound,
+    saveRound,
+    appendAudit,
+    makePatientSchema,
+    getFilePlan
   };
 })();
 
@@ -12851,6 +13417,10 @@ window.HAHBoard = window.HAHBoard || {};
         store.setState({ boardroundMode: !current });
         return;
       }
+      if (action && action.indexOf('settings-json-') === 0) {
+        handleSharedJsonStoreAction(action);
+        return;
+      }
       if (action === 'settings-actor' && window.HAHBoard.ops) {
         window.HAHBoard.ops.promptActorName();
         return;
@@ -12906,6 +13476,32 @@ window.HAHBoard = window.HAHBoard || {};
         if (input) input.focus();
       }
     });
+  }
+
+  async function handleSharedJsonStoreAction(action) {
+    const shared = window.HAHBoard.sharedJsonStore;
+    if (!shared) {
+      window.alert('Shared JSON store module is not loaded.');
+      return;
+    }
+    try {
+      if (action === 'settings-json-client') shared.promptClientId();
+      else if (action === 'settings-json-folder') shared.promptFolderPath();
+      else if (action === 'settings-json-signin') await shared.signIn();
+      else if (action === 'settings-json-init') await shared.initialiseStore();
+      else if (action === 'settings-json-test') await shared.testReadWrite();
+      else if (action === 'settings-json-download-schema') shared.downloadStarterSchemas();
+      else if (action === 'settings-json-refresh') {
+        if (window.HAHBoard.store) window.HAHBoard.store.setState({ ui: { syncState: 'JSON store' } });
+      }
+    } catch (err) {
+      console.error('[H@H JSON store]', err);
+      window.alert(err && err.message ? err.message : 'Shared JSON store action failed.');
+    }
+    if (window.HAHBoard.store) {
+      const snap = window.HAHBoard.store.getState();
+      window.HAHBoard.store.setState({ ui: { syncState: snap.ui && snap.ui.syncState ? snap.ui.syncState : 'JSON store' } });
+    }
   }
 
   function delegateScreenClick(event, state) {
@@ -13183,11 +13779,16 @@ window.HAHBoard = window.HAHBoard || {};
     const buildInfo = window.HAHBoard.update && typeof window.HAHBoard.update.getBuildInfo === 'function'
       ? window.HAHBoard.update.getBuildInfo()
       : { buildId: '—', buildFilename: '—', sourceFilename: '—' };
+    const sharedJson = window.HAHBoard.sharedJsonStore;
+    const jsonInfo = sharedJson && typeof sharedJson.getInfo === 'function' ? sharedJson.getInfo() : null;
+    const jsonSettings = jsonInfo ? jsonInfo.settings : null;
+    const jsonState = jsonInfo ? jsonInfo.state : null;
+    const jsonFiles = jsonInfo ? jsonInfo.filePlan : [];
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
         <section class="hah-card hah-surface-hero">
-          <h1 class="hah-surface-title">Shared operational sync</h1>
-          <p class="hah-surface-subtitle">Operational state, tasks, board notes, and round summaries shared across same-origin tabs/windows, with import/export snapshots for manual handoff.</p>
+          <h1 class="hah-surface-title">Data and sync</h1>
+          <p class="hah-surface-subtitle">Local operational state plus the new shared OneDrive JSON store foundation for replacing the spreadsheet.</p>
         </section>
 
         <section class="hah-card">
@@ -13217,6 +13818,37 @@ window.HAHBoard = window.HAHBoard || {};
               <button type="button" class="hah-inline-pill" data-action="settings-export">Export ops snapshot</button>
               <button type="button" class="hah-inline-pill" data-action="settings-import">Import ops snapshot</button>
               <button type="button" class="hah-inline-pill" data-action="settings-clear">Clear ops state</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="hah-card">
+          <div class="hah-card-inner">
+            <div class="hah-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="hah-card-title">Shared patient JSON store</div>
+                <div class="hah-card-subtitle">Backend foundation for mobile + desktop to share one JSON-backed patient database on OneDrive.</div>
+              </div>
+              <span class="hah-badge ${jsonInfo && jsonInfo.remoteReady ? 'is-good' : (jsonInfo && jsonState && jsonState.lastError ? 'is-danger' : 'is-neutral')}">${escapeHtml(jsonInfo ? jsonInfo.status : 'Not loaded')}</span>
+            </div>
+            <div class="hah-settings-grid" style="margin-top:16px;">
+              <div class="hah-settings-stat"><div class="hah-kv-label">Client ID</div><div class="hah-kv-value" style="word-break:break-all;font-size:11px;">${escapeHtml(jsonSettings && jsonSettings.clientId ? jsonSettings.clientId : 'Not set')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">OneDrive folder</div><div class="hah-kv-value">${escapeHtml(jsonInfo ? jsonInfo.folderPath : 'H@H Board Data')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Account</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.account ? (jsonState.account.name || jsonState.account.username) : 'Not signed in')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Last test</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.lastTestAt ? new Date(jsonState.lastTestAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
+            </div>
+            ${jsonState && jsonState.lastError ? '<div class="hah-settings-error" style="margin-top:12px;">' + escapeHtml(jsonState.lastError) + '</div>' : ''}
+            ${jsonState && jsonState.lastOperation ? '<div class="hah-muted" style="margin-top:12px;font-size:13px;">' + escapeHtml(jsonState.lastOperation) + '</div>' : ''}
+            <div class="hah-settings-actions" style="margin-top:16px;">
+              <button type="button" class="hah-inline-pill" data-action="settings-json-client">Set client ID</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-folder">Set data folder</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-signin">Sign in Microsoft</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-init">Initialise store</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-test">Test read/write</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-download-schema">Download starter schema</button>
+            </div>
+            <div class="hah-settings-list" style="margin-top:16px;">
+              ${(jsonFiles || []).map(function(file) { return '<div class="hah-settings-list-item"><div class="hah-settings-list-title">' + escapeHtml(file) + '</div><div class="hah-settings-list-sub">' + (String(file).endsWith('/') ? 'Folder' : 'JSON document') + '</div></div>'; }).join('')}
             </div>
           </div>
         </section>
@@ -13365,9 +13997,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_071_release.html',
-  source: 'hospital_at_home_board_v0_8_071_source.zip',
-  builtAt: '2026-04-24T14:20:16.968062',
+  filename: 'hospital_at_home_board_v0_8_072_release.html',
+  source: 'hospital_at_home_board_v0_8_072_source.zip',
+  builtAt: '2026-04-24T14:34:46.309Z',
   entry: 'desktop.html'
 };
 </script>
