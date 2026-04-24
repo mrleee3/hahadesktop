@@ -1070,9 +1070,9 @@ html, body {
 }
 
 .hah-board-pathway-chip.is-frailty {
-  background: #f3eeff;
-  color: #6b21a8;
-  border-color: rgba(124,58,237,0.3);
+  background: #fed7aa;
+  color: #9a3412;
+  border-color: rgba(194,65,12,0.3);
 }
 
 .hah-board-pathway-chip.is-resp {
@@ -1220,7 +1220,7 @@ html, body {
 }
 
 .hah-board-col-bloods.is-taken {
-  background: #ccfbf1;
+  background: #f3eeff;
 }
 
 .hah-board-bloods-icon {
@@ -1239,17 +1239,17 @@ html, body {
 }
 
 .hah-board-bloods-icon:hover {
-  color: #0e7490;
-  background: rgba(14,116,144,0.1);
+  color: #7c3aed;
+  background: rgba(124,58,237,0.12);
 }
 
 .hah-board-bloods-icon.is-taken {
-  color: #0e7490;
+  color: #7c3aed;
 }
 
 .hah-board-bloods-icon.is-taken:hover {
   transform: scale(1.08);
-  background: rgba(14,116,144,0.14);
+  background: rgba(124,58,237,0.14);
 }
 
 /* Flagged filter pill — amber tint when active */
@@ -1263,15 +1263,15 @@ html, body {
   color: #b45309;
 }
 
-/* Bloods filter pill — teal tint when active */
+/* Bloods filter pill — purple tint when active */
 .hah-board-filter-pill--bloods.is-active {
-  background: #ccfbf1;
-  border-color: rgba(14,116,144,0.35);
-  color: #0e7490;
+  background: #f3eeff;
+  border-color: rgba(124,58,237,0.35);
+  color: #6b21a8;
 }
 
 .hah-board-filter-pill--bloods.is-active .hah-board-filter-count {
-  color: #0e7490;
+  color: #6b21a8;
 }
 
 /* ─── Inline editable cells ─────────────────────────────────────── */
@@ -5705,8 +5705,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_070_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_070_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_071_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_071_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8444,7 +8444,7 @@ window.HAHBoard = window.HAHBoard || {};
   const ops = window.HAHBoard.ops;
 
   const PATHWAYS = [
-    { key: 'frailty', label: 'Frailty',  colour: '#7c3aed', match: /\bfrail|geriatr|falls?|elderly/i },
+    { key: 'frailty', label: 'Frailty',  colour: '#c2410c', match: /\bfrail|geriatr|falls?|elderly/i },
     { key: 'resp',    label: 'Resp',     colour: '#2f6fed', match: /\bresp|lrti|pneumonia|cap|copd|asthma|bronch|covid|pleural/i },
     { key: 'iv',      label: 'IV',       colour: '#059669', match: /\bcellulitis|iv\b|intraven|infect|bacter|osteomy|sepsis|pyelo/i },
     { key: 'other',   label: 'Other',    colour: '#64748b', match: null }
@@ -13365,9 +13365,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_070_release.html',
-  source: 'hospital_at_home_board_v0_8_070_source.zip',
-  builtAt: '2026-04-24T14:09:35.146716',
+  filename: 'hospital_at_home_board_v0_8_071_release.html',
+  source: 'hospital_at_home_board_v0_8_071_source.zip',
+  builtAt: '2026-04-24T14:20:16.968062',
   entry: 'desktop.html'
 };
 </script>
