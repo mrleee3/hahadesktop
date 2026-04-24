@@ -7530,6 +7530,7 @@ window.HAHBoard = window.HAHBoard || {};
         persistentIssues: [],
         medicationFocus: '',
         bloodsSummary: '',
+        acp: {},
         obs: {},
         medications: [],
         ivTherapies: []
@@ -7648,6 +7649,40 @@ window.HAHBoard = window.HAHBoard || {};
     if (!patient || !patient.id) throw new Error('Cannot save patient without an id.');
     patient.meta = Object.assign({}, patient.meta || {}, { updatedAt: nowIso(), updatedBy: getActorName(), version: (patient.meta && patient.meta.version || 0) + 1 });
     return putJson(childPath(settings.folderPath, `patients/${patient.id}.json`), patient);
+  }
+
+  function mergeDeep(target, patch) {
+    const out = Object.assign({}, target || {});
+    Object.keys(patch || {}).forEach(function (key) {
+      const value = patch[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        out[key] = mergeDeep(out[key] && typeof out[key] === 'object' && !Array.isArray(out[key]) ? out[key] : {}, value);
+      } else if (Array.isArray(value)) {
+        out[key] = value.slice();
+      } else {
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+
+  async function patchPatientRecord(patientId, patch) {
+    if (!patientId) throw new Error('Cannot patch patient without an id.');
+    const id = String(patientId);
+    let patient = await loadPatient(id);
+    if (!patient || !patient.id) patient = makePatientSchema(id, { name: id });
+    patient = mergeDeep(patient, patch || {});
+    await savePatient(patient);
+    try {
+      await appendAudit({
+        type: 'patient-record-patched',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Updated patient record for ${id}`
+      });
+    } catch (_) {}
+    try { await loadPatientDataset(); } catch (_) {}
+    return patient;
   }
 
   async function loadTasks() {
@@ -8015,6 +8050,7 @@ window.HAHBoard = window.HAHBoard || {};
     saveService,
     loadPatient,
     savePatient,
+    patchPatientRecord,
     loadTasks,
     saveTasks,
     loadRound,
@@ -10388,6 +10424,50 @@ window.HAHBoard = window.HAHBoard || {};
         if (pane) showToast(pane, 'Saved locally · JSON write failed');
       });
   }
+  function persistPatientPatchToJson(patientId, patch) {
+    const api = window.HAHBoard.sharedJsonStore;
+    if (!api || typeof api.patchPatientRecord !== 'function') return;
+    api.patchPatientRecord(String(patientId || ''), patch || {})
+      .then(function () {
+        store.setState({ patient: { _jsonPatientSavedAt: Date.now() } });
+      })
+      .catch(function (err) {
+        // Local/demo patients will not have a JSON file yet; keep the local workflow quiet.
+        console.warn('[H@H JSON store] Could not patch patient record', err);
+      });
+  }
+
+  function acpPatchForJson(acp) {
+    const row = acp || {};
+    const hasAcp = !!(row.dnacprStatus || row.tepStatus || row.jicMeds || row.tep || (row.notes && String(row.notes).trim()));
+    const escalationParts = [];
+    if (row.tep) escalationParts.push(String(row.tep).trim());
+    if (row.tepStatus) escalationParts.push('UCP ' + String(row.tepStatus).replace(/_/g, ' '));
+    return {
+      alerts: {
+        dnar: row.dnacprStatus === 'yes',
+        acp: hasAcp,
+        escalation: escalationParts.filter(Boolean).join(' · ')
+      },
+      clinical: {
+        acp: Object.assign({}, row)
+      }
+    };
+  }
+
+  function getJsonAcpForPatient(patientSummary) {
+    const raw = patientSummary && patientSummary.sourcePatient ? patientSummary.sourcePatient : {};
+    const jsonRecord = raw && raw.jsonRecord ? raw.jsonRecord : null;
+    return jsonRecord && jsonRecord.clinical && jsonRecord.clinical.acp && typeof jsonRecord.clinical.acp === 'object'
+      ? jsonRecord.clinical.acp
+      : {};
+  }
+
+  function getAcpStateForVm(vm) {
+    const ps = ops ? ops.getPatientState(vm.patient.id) : {};
+    const localAcp = ps && ps.acp && typeof ps.acp === 'object' ? ps.acp : {};
+    return Object.keys(localAcp).length ? localAcp : getJsonAcpForPatient(vm.patient);
+  }
 
   function todayIso()    { return new Date().toISOString().split('T')[0]; }
   function tomorrowIso() { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }
@@ -11019,8 +11099,7 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function renderAcpCard(vm) {
-    const ps     = ops ? ops.getPatientState(vm.patient.id) : {};
-    const acp    = ps.acp || {};
+    const acp    = getAcpStateForVm(vm);
     const dnacpr = acp.dnacprStatus || '';
     const ucp    = acp.tepStatus    || '';
     const tep    = acp.tep          || '';
@@ -11062,8 +11141,7 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function renderAcpModal(vm) {
-    const ps     = ops ? ops.getPatientState(vm.patient.id) : {};
-    const acp    = ps.acp || {};
+    const acp    = getAcpStateForVm(vm);
 
     function choiceRow(field, value, label) {
       const active = acp[field] === value;
@@ -12448,6 +12526,7 @@ window.HAHBoard = window.HAHBoard || {};
       } else {
         ops.setBoardStatus(pid, newStatus);
       }
+      persistPatientPatchToJson(pid, { operational: { boardStatus: newStatus } });
       store.setState({ patient: { statusMenuFor: null } });
       return true;
     }
@@ -12489,6 +12568,7 @@ window.HAHBoard = window.HAHBoard || {};
         acp[field] = (acp[field] === val) ? '' : val;
       }
       ops.patchPatientState(vm.patient.id, { acp });
+      persistPatientPatchToJson(vm.patient.id, acpPatchForJson(acp));
       return true;
     }
     if (action === 'acp-done' && vm && ops) {
@@ -12497,10 +12577,12 @@ window.HAHBoard = window.HAHBoard || {};
       const ps    = ops.getPatientState(vm.patient.id);
       const acp   = Object.assign({}, ps.acp || {}, { tep: tep.trim(), notes: notes.trim() });
       ops.patchPatientState(vm.patient.id, { acp });
+      persistPatientPatchToJson(vm.patient.id, acpPatchForJson(acp));
       store.setState({ patient: { acpModalOpen: false } }); return true;
     }
     if (action === 'acp-clear' && vm && ops) {
       ops.patchPatientState(vm.patient.id, { acp: {} });
+      persistPatientPatchToJson(vm.patient.id, { alerts: { dnar: false, acp: false, escalation: '' }, clinical: { acp: {} } });
       store.setState({ patient: { acpModalOpen: false } }); return true;
     }
     if (action === 'toggle-blood-options') {
@@ -12550,9 +12632,9 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'back-board') { router.goToBoard(state.board.savedView === 'all-active' ? null : state.board.savedView); return true; }
     if (action === 'next' && vm) { const n = vm.contextRows[vm.selectedIndex + 1]; if (n) { store.setState({ selectedPatientId: n.id }); router.goToPatient(n.id); } return true; }
     if (action === 'prev' && vm) { const p = vm.contextRows[vm.selectedIndex - 1]; if (p) { store.setState({ selectedPatientId: p.id }); router.goToPatient(p.id); } return true; }
-    if (action === 'set-discussed' && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Discussed'); return true; }
-    if (action === 'set-actioned'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Actioned');  return true; }
-    if (action === 'set-deferred'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Deferred');  return true; }
+    if (action === 'set-discussed' && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Discussed'); persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: 'Discussed' } }); return true; }
+    if (action === 'set-actioned'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Actioned');  persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: 'Actioned' } }); return true; }
+    if (action === 'set-deferred'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Deferred');  persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: 'Deferred' } }); return true; }
 
     if (action === 'add-task' && vm && ops) {
       const created = ops.promptCreateTask(vm.patient, { createdFrom: 'Patient workspace', boardLink: vm.patient.boardStatus, dueAt: vm.patient.reviewDueAt || '' });
@@ -12606,7 +12688,7 @@ window.HAHBoard = window.HAHBoard || {};
         if (savedEncounter) persistEncounterToJson(vm.patient, savedEncounter);
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
-          if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
+          if (dr) { ops.setDischargeReadiness(vm.patient.id, dr); persistPatientPatchToJson(vm.patient.id, { operational: { dischargeReadiness: dr } }); }
           // If round active, mark this patient as Discussed and try to auto-advance
           if (typeof ops.getActiveRound === 'function' && ops.getActiveRound()) {
             ops.markPatientDiscussed(vm.patient.id);
@@ -12732,8 +12814,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (!target) return false;
     const vm = d.buildPatientWorkspaceModel(state);
     const action = target.getAttribute('data-patient-action');
-    if (action === 'set-board-status' && vm && ops) { ops.setBoardStatus(vm.patient.id, target.value); return true; }
-    if (action === 'set-discharge'    && vm && ops) { ops.setDischargeReadiness(vm.patient.id, target.value); return true; }
+    if (action === 'set-board-status' && vm && ops) { ops.setBoardStatus(vm.patient.id, target.value); persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: target.value } }); return true; }
+    if (action === 'set-discharge'    && vm && ops) { ops.setDischargeReadiness(vm.patient.id, target.value); persistPatientPatchToJson(vm.patient.id, { operational: { dischargeReadiness: target.value } }); return true; }
     return false;
   }
 
@@ -14434,9 +14516,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_076_release.html',
-  source: 'hospital_at_home_board_v0_8_076_source.zip',
-  builtAt: '2026-04-24T19:19:23.931090',
+  filename: 'hospital_at_home_board_v0_8_077_release.html',
+  source: 'hospital_at_home_board_v0_8_077_source.zip',
+  builtAt: '2026-04-24T19:32:56.417214',
   entry: 'desktop.html'
 };
 </script>
