@@ -5716,8 +5716,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_071_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_071_source.zip';
+  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_075_release.html';
+  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_075_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -7148,6 +7148,7 @@ window.HAHBoard = window.HAHBoard || {};
 
   const SETTINGS_KEY = 'hah_board_shared_json_store_settings';
   const STATE_KEY = 'hah_board_shared_json_store_state';
+  const PATIENT_CACHE_KEY = 'hah_board_shared_json_store_patient_cache';
   const DEFAULT_FOLDER = 'H@H Board Data';
   const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
   const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite'];
@@ -7168,8 +7169,17 @@ window.HAHBoard = window.HAHBoard || {};
     knownFiles: []
   };
 
+  const DEFAULT_PATIENT_CACHE = {
+    loadedAt: '',
+    source: '',
+    service: null,
+    rows: [],
+    lastError: ''
+  };
+
   let settings = loadLocal(SETTINGS_KEY, DEFAULT_SETTINGS);
   let state = loadLocal(STATE_KEY, DEFAULT_STATE);
+  let patientCache = loadLocal(PATIENT_CACHE_KEY, DEFAULT_PATIENT_CACHE);
   let msalApp = null;
   let msalInitialisePromise = null;
 
@@ -7190,6 +7200,11 @@ window.HAHBoard = window.HAHBoard || {};
   function saveState() {
     try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (_) {}
     refreshShell('JSON store');
+  }
+
+  function savePatientCache() {
+    try { localStorage.setItem(PATIENT_CACHE_KEY, JSON.stringify(patientCache)); } catch (_) {}
+    refreshShell(patientCache.rows && patientCache.rows.length ? 'JSON patients' : 'JSON store');
   }
 
   function clone(value) {
@@ -7233,7 +7248,8 @@ window.HAHBoard = window.HAHBoard || {};
       configured: !!settings.clientId,
       folderPath: normalisePath(settings.folderPath),
       status: state.lastError ? 'Error' : (state.remoteReady ? 'Ready' : (settings.clientId ? 'Configured' : 'Not configured')),
-      filePlan: getFilePlan()
+      filePlan: getFilePlan(),
+      patientCache: clone(patientCache)
     };
   }
 
@@ -7663,6 +7679,191 @@ window.HAHBoard = window.HAHBoard || {};
     return putJson(path, doc);
   }
 
+  function getActivePatientIds(serviceDoc) {
+    const serviceBlock = serviceDoc && serviceDoc.service ? serviceDoc.service : {};
+    const patientsBlock = serviceDoc && serviceDoc.patients ? serviceDoc.patients : {};
+    const ids = serviceBlock.activePatientIds || patientsBlock.activeIds || [];
+    return Array.isArray(ids) ? ids.map(String).filter(Boolean) : [];
+  }
+
+  function setActivePatientIds(serviceDoc, ids) {
+    const next = Object.assign({}, serviceDoc || makeServiceSchema());
+    next.service = Object.assign({}, next.service || {});
+    next.service.activePatientIds = ids.slice();
+    next.service.patientOrder = ids.slice();
+    next.patients = Object.assign({}, next.patients || {});
+    next.patients.activeIds = ids.slice();
+    next.patients.sortOrder = ids.slice();
+    next.updatedAt = nowIso();
+    next.meta = Object.assign({}, next.meta || {}, { lastWriter: getActorName() });
+    return next;
+  }
+
+  function latestTimelineEntry(patient) {
+    const entries = Array.isArray(patient && patient.timeline) ? patient.timeline.slice() : [];
+    entries.sort(function (a, b) {
+      return Date.parse(b.timestamp || b.completedAt || b.updatedAt || 0) - Date.parse(a.timestamp || a.completedAt || a.updatedAt || 0);
+    });
+    return entries[0] || null;
+  }
+
+  function mapJsonPatientToLegacyRaw(patient) {
+    const identity = patient.identity || {};
+    const serviceBlock = patient.service || {};
+    const alerts = patient.alerts || {};
+    const clinical = patient.clinical || {};
+    const operational = patient.operational || {};
+    const latest = latestTimelineEntry(patient);
+    const note = latest && latest.note ? latest.note : {};
+    const issueLines = Array.isArray(clinical.persistentIssues)
+      ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n')
+      : '';
+    const summary = clinical.summary || note.issues || issueLines || serviceBlock.pathway || '';
+    return {
+      id: patient.id,
+      name: identity.name || patient.name || patient.id,
+      age: identity.age || '',
+      sex: identity.sex || '',
+      location: serviceBlock.location || '',
+      pathway: serviceBlock.pathway || '',
+      referralSource: serviceBlock.referredFrom || '',
+      doa: serviceBlock.admittedDate || '',
+      priority: operational.priority || '',
+      boardStatus: operational.boardStatus || 'Not discussed',
+      dischargeReadiness: operational.dischargeReadiness || '',
+      dnar: !!alerts.dnar,
+      acp: !!alerts.acp,
+      escalation: alerts.escalation || '',
+      summary,
+      listDetails: [summary, alerts.dnar ? 'DNAR' : '', alerts.acp ? 'ACP' : '', alerts.escalation || ''].filter(Boolean).join('\n'),
+      form: {
+        issues: note.issues || issueLines || '',
+        examination: note.progress || '',
+        plan: note.plan || '',
+        bloods: note.bloodsIx || clinical.bloodsSummary || '',
+        forDischargeSummary: operational.dischargeReadiness || '',
+        obs: clinical.obs || {},
+        medEntries: Array.isArray(clinical.medications) ? clinical.medications : [],
+        ivEntries: Array.isArray(clinical.ivTherapies) ? clinical.ivTherapies : []
+      },
+      jsonRecord: patient
+    };
+  }
+
+  async function createTestPatient() {
+    try {
+      const root = normalisePath(settings.folderPath);
+      let serviceDoc;
+      try { serviceDoc = await loadService(); }
+      catch (_) {
+        await initialiseStore();
+        serviceDoc = await loadService();
+      }
+
+      const id = 'test-patient-001';
+      const patient = makePatientSchema(id, {
+        name: 'Mrs JSON-test',
+        age: 82,
+        sex: 'F',
+        referredFrom: 'GP',
+        admittedDate: todayKey(),
+        pathway: 'Heart failure',
+        location: 'Home',
+        dnar: false,
+        acp: false,
+        summary: 'Heart failure monitoring on H@H'
+      });
+      patient.clinical.bloodsSummary = 'CRP 8 · Cr 108 · Na 138 · K 4.3';
+      patient.operational.dischargeReadiness = 'Possible today';
+      patient.operational.boardStatus = 'Not discussed';
+      patient.timeline = [{
+        id: 'entry-json-test-001',
+        type: 'boardround',
+        status: 'completed',
+        timestamp: nowIso(),
+        author: getActorName(),
+        present: [getActorName()],
+        note: {
+          issues: 'Heart failure\nMonitoring weight and renal function',
+          bloodsIx: 'CRP 8 · Cr 108 · Na 138 · K 4.3',
+          progress: 'Clinically stable on H@H monitoring',
+          plan: 'GP to please review diuretics and repeat U&Es in 1–2 weeks\nAim for 0.5-1kg weight loss/day - if greater flag with Dr'
+        }
+      }];
+
+      await savePatient(patient);
+      const currentIds = getActivePatientIds(serviceDoc);
+      const nextIds = currentIds.includes(id) ? currentIds : currentIds.concat(id);
+      await saveService(setActivePatientIds(serviceDoc, nextIds));
+      await appendAudit({ type: 'test-patient-created', summary: 'Created JSON test patient' });
+      state.remoteReady = true;
+      state.lastOperation = 'Created JSON test patient';
+      state.lastError = '';
+      state.knownFiles = Array.from(new Set([].concat(state.knownFiles || [], getFilePlan(), [childPath(root, `patients/${id}.json`)])));
+      saveState();
+      await loadPatientDataset();
+      return patient;
+    } catch (err) {
+      recordError(err);
+      throw err;
+    }
+  }
+
+  async function loadPatientDataset() {
+    try {
+      const serviceDoc = await loadService();
+      const ids = getActivePatientIds(serviceDoc);
+      const rows = [];
+      for (const id of ids) {
+        try {
+          const patient = await loadPatient(id);
+          if (patient && patient.id) rows.push(mapJsonPatientToLegacyRaw(patient));
+        } catch (err) {
+          console.warn('[H@H JSON store] Could not load patient', id, err);
+        }
+      }
+      patientCache = {
+        loadedAt: nowIso(),
+        source: 'json',
+        service: serviceDoc,
+        rows,
+        lastError: ''
+      };
+      state.remoteReady = true;
+      state.lastOperation = rows.length ? `Loaded ${rows.length} JSON patient record(s)` : 'JSON store loaded; no active patient records yet';
+      state.lastError = '';
+      savePatientCache();
+      saveState();
+      return clone(patientCache);
+    } catch (err) {
+      patientCache.lastError = err && err.message ? err.message : String(err || 'Unknown error');
+      savePatientCache();
+      recordError(err);
+      throw err;
+    }
+  }
+
+  function getCachedPatientBundle() {
+    if (!patientCache || !Array.isArray(patientCache.rows) || !patientCache.rows.length) return null;
+    return {
+      source: 'json',
+      storageKey: normalisePath(settings.folderPath),
+      currentPatientId: patientCache.rows[0] && patientCache.rows[0].id ? String(patientCache.rows[0].id) : null,
+      patientSortMode: 'json-store',
+      patientSortDirection: '',
+      rows: clone(patientCache.rows),
+      loadedAt: patientCache.loadedAt || ''
+    };
+  }
+
+  function clearPatientCache() {
+    patientCache = clone(DEFAULT_PATIENT_CACHE);
+    savePatientCache();
+    state.lastOperation = 'Cleared JSON patient cache; local/demo source will be used';
+    state.lastError = '';
+    saveState();
+  }
+
   function downloadStarterSchemas() {
     const root = normalisePath(settings.folderPath);
     const bundle = {
@@ -7707,6 +7908,10 @@ window.HAHBoard = window.HAHBoard || {};
     signIn,
     initialiseStore,
     testReadWrite,
+    createTestPatient,
+    loadPatientDataset,
+    getCachedPatientBundle,
+    clearPatientCache,
     downloadStarterSchemas,
     loadService,
     saveService,
@@ -7796,6 +8001,11 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function getPatientSourceBundle() {
+    const jsonBundle = window.HAHBoard.sharedJsonStore && typeof window.HAHBoard.sharedJsonStore.getCachedPatientBundle === 'function'
+      ? window.HAHBoard.sharedJsonStore.getCachedPatientBundle()
+      : null;
+    if (jsonBundle && Array.isArray(jsonBundle.rows) && jsonBundle.rows.length) return jsonBundle;
+
     const adapter = window.HAHBoard.adapters && window.HAHBoard.adapters.getPatients;
     if (typeof adapter === 'function') {
       const result = adapter();
@@ -7940,8 +8150,8 @@ window.HAHBoard = window.HAHBoard || {};
   function inferEscalationFlags(raw) {
     const text = getCombinedText(raw);
     return {
-      dnar: detectBooleanFromText(text, [/\bdnar\b/, /not for resuscitation/, /not for cpr/]),
-      acp: detectBooleanFromText(text, [/\bacp\b/, /advance care/i, /ceiling of care/i])
+      dnar: !!raw.dnar || !!(raw.alerts && raw.alerts.dnar) || detectBooleanFromText(text, [/\bdnar\b/, /not for resuscitation/, /not for cpr/]),
+      acp: !!raw.acp || !!(raw.alerts && raw.alerts.acp) || detectBooleanFromText(text, [/\bacp\b/, /advance care/i, /ceiling of care/i])
     };
   }
 
@@ -8634,6 +8844,13 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
 
+  function getSourceLabel(source) {
+    if (source === 'json') return 'OneDrive JSON';
+    if (source === 'live') return 'Live app storage';
+    if (source === 'adapter') return 'Adapter';
+    return 'Demo data';
+  }
+
   function buildTasksViewModel(state) {
     const boardVm = buildBoardViewModel(state);
     const allTasks = buildAllTasks(boardVm.rows).filter((task) => !['Done', 'Cancelled'].includes(task.status));
@@ -8643,7 +8860,7 @@ window.HAHBoard = window.HAHBoard || {};
     const selectedTask = sorted.find((task) => String(task.id) === selectedTaskId) || sorted[0] || null;
     const selectedPatient = selectedTask ? selectedTask.patient : null;
     const relatedTasks = selectedTask ? sorted.filter((task) => task.patientId === selectedTask.patientId && task.id !== selectedTask.id).slice(0, 4) : [];
-    const sourceLabel = boardVm.source === 'live' ? 'Live app storage' : boardVm.source === 'adapter' ? 'Adapter' : 'Demo data';
+    const sourceLabel = getSourceLabel(boardVm.source);
     return {
       rows: sorted,
       metrics: buildTaskMetrics(allTasks),
@@ -9000,8 +9217,8 @@ window.HAHBoard = window.HAHBoard || {};
       presetLabel: preset === 'board-prep' ? 'Board prep' : preset === 'clinical-risk' ? 'Clinical risk' : preset === 'capacity-flow' ? 'Capacity and flow' : 'Service overview',
       range,
       rangeLabel: range === 'today' ? 'Today' : range === '48h' ? 'Last 48h' : range === '30d' ? 'Last 30 days' : 'Last 7 days',
-      headerSubtitle: `${boardVm.source === 'live' ? 'Live app storage' : boardVm.source === 'adapter' ? 'Adapter data' : 'Demo data'} · current service intelligence view`,
-      sourceLabel: boardVm.source === 'live' ? 'Live app storage' : boardVm.source === 'adapter' ? 'Adapter' : 'Demo data',
+      headerSubtitle: `${getSourceLabel(boardVm.source)} · current service intelligence view`,
+      sourceLabel: getSourceLabel(boardVm.source),
       boardRows: allPatients,
       allTasks,
       metrics,
@@ -13517,6 +13734,9 @@ window.HAHBoard = window.HAHBoard || {};
       else if (action === 'settings-json-signin') await shared.signIn();
       else if (action === 'settings-json-init') await shared.initialiseStore();
       else if (action === 'settings-json-test') await shared.testReadWrite();
+      else if (action === 'settings-json-create-test-patient') await shared.createTestPatient();
+      else if (action === 'settings-json-load-patients') await shared.loadPatientDataset();
+      else if (action === 'settings-json-clear-patient-cache') shared.clearPatientCache();
       else if (action === 'settings-json-download-schema') shared.downloadStarterSchemas();
       else if (action === 'settings-json-refresh') {
         if (window.HAHBoard.store) window.HAHBoard.store.setState({ ui: { syncState: 'JSON store' } });
@@ -13810,6 +14030,7 @@ window.HAHBoard = window.HAHBoard || {};
     const jsonInfo = sharedJson && typeof sharedJson.getInfo === 'function' ? sharedJson.getInfo() : null;
     const jsonSettings = jsonInfo ? jsonInfo.settings : null;
     const jsonState = jsonInfo ? jsonInfo.state : null;
+    const jsonPatientCache = jsonInfo && jsonInfo.patientCache ? jsonInfo.patientCache : null;
     const jsonFiles = jsonInfo ? jsonInfo.filePlan : [];
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
@@ -13863,6 +14084,8 @@ window.HAHBoard = window.HAHBoard || {};
               <div class="hah-settings-stat"><div class="hah-kv-label">OneDrive folder</div><div class="hah-kv-value">${escapeHtml(jsonInfo ? jsonInfo.folderPath : 'H@H Board Data')}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">Account</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.account ? (jsonState.account.name || jsonState.account.username) : 'Not signed in')}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">Last test</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.lastTestAt ? new Date(jsonState.lastTestAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Patient source</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows && jsonPatientCache.rows.length ? 'OneDrive JSON' : 'Local/demo fallback')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">JSON patients loaded</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows ? String(jsonPatientCache.rows.length) : '0')}${jsonPatientCache && jsonPatientCache.loadedAt ? ' · ' + escapeHtml(new Date(jsonPatientCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</div></div>
             </div>
             ${jsonState && jsonState.lastError ? '<div class="hah-settings-error" style="margin-top:12px;">' + escapeHtml(jsonState.lastError) + '</div>' : ''}
             ${jsonState && jsonState.lastOperation ? '<div class="hah-muted" style="margin-top:12px;font-size:13px;">' + escapeHtml(jsonState.lastOperation) + '</div>' : ''}
@@ -13872,6 +14095,9 @@ window.HAHBoard = window.HAHBoard || {};
               <button type="button" class="hah-inline-pill" data-action="settings-json-signin">Sign in Microsoft</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-init">Initialise store</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-test">Test read/write</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-create-test-patient">Create test patient</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-load-patients">Load JSON patients</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-clear-patient-cache">Use local fallback</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-download-schema">Download starter schema</button>
             </div>
             <div class="hah-settings-list" style="margin-top:16px;">
@@ -14024,9 +14250,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_074_release.html',
-  source: 'hospital_at_home_board_v0_8_074_source.zip',
-  builtAt: '2026-04-24T18:58:07.581874',
+  filename: 'hospital_at_home_board_v0_8_075_release.html',
+  source: 'hospital_at_home_board_v0_8_075_source.zip',
+  builtAt: '2026-04-24T19:10:27.308158',
   entry: 'desktop.html'
 };
 </script>
