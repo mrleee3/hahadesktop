@@ -5545,6 +5545,212 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   }
 }
 
+
+/* ─── Tasks v2.1 workflow polish ─────────────────────────────────────── */
+
+.hah-task-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.hah-task-mini-stat {
+  min-height: 58px;
+  border: 1px solid rgba(25,45,72,0.06);
+  background: rgba(255,255,255,0.62);
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hah-task-mini-stat span {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+}
+
+.hah-task-mini-stat strong {
+  margin-top: 2px;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.hah-action-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hah-action-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hah-action-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.hah-action-section-title {
+  font-size: 14.5px;
+  font-weight: 850;
+  letter-spacing: -0.015em;
+  color: var(--desk-text);
+}
+
+.hah-action-section-title span {
+  margin-left: 5px;
+  color: var(--desk-text-muted);
+  font-weight: 750;
+}
+
+.hah-action-section-sub {
+  margin-top: 3px;
+  font-size: 12.3px;
+  line-height: 1.35;
+  color: var(--desk-text-muted);
+}
+
+.hah-action-section.is-suggested-section {
+  padding-top: 2px;
+}
+
+.hah-action-section.is-suggested-section .hah-action-section-head {
+  padding-top: 12px;
+  border-top: 1px solid rgba(25,45,72,0.055);
+}
+
+.hah-action-section.is-suggested-section .hah-action-item {
+  background: rgba(255,255,255,0.50);
+  border-color: rgba(25,45,72,0.045);
+  box-shadow: none;
+}
+
+.hah-action-section.is-suggested-section .hah-action-item:not(.is-selected) {
+  opacity: 0.92;
+}
+
+.hah-action-section.is-suggested-section .hah-action-item.is-selected {
+  opacity: 1;
+  background: rgba(47,111,237,0.07);
+}
+
+.hah-task-primary-btn {
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(47,111,237,0.22);
+  background: rgba(47,111,237,0.92);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 850;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(47,111,237,0.16);
+}
+
+.hah-task-primary-btn:hover {
+  background: rgba(36,92,210,0.96);
+}
+
+.hah-task-actions .hah-task-primary-btn {
+  margin-right: 2px;
+}
+
+.hah-task-summary-pill.is-static {
+  cursor: default;
+}
+
+.hah-task-summary-pill.is-static:hover {
+  border-color: rgba(25,45,72,0.075);
+}
+
+.hah-task-summary-pill.is-static strong {
+  color: var(--desk-text);
+}
+
+.hah-action-list {
+  gap: 9px;
+}
+
+.hah-action-item {
+  min-height: 86px;
+  padding: 13px 15px;
+}
+
+.hah-action-title {
+  font-size: 14.25px;
+  line-height: 1.28;
+}
+
+.hah-action-sub {
+  margin-top: 4px;
+}
+
+.hah-action-note {
+  margin-top: 6px;
+}
+
+.hah-action-meta {
+  align-items: center;
+  align-content: center;
+}
+
+.hah-action-item.is-soft .hah-action-title {
+  font-weight: 760;
+}
+
+.hah-action-item.is-soft .hah-action-meta .hah-badge {
+  opacity: 0.92;
+}
+
+.hah-task-detail-title {
+  font-size: 16.5px;
+  font-weight: 850;
+}
+
+.hah-task-type-line {
+  margin: 11px 0 10px;
+}
+
+.hah-task-briefing {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hah-task-composer-sub {
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.hah-primary-btn {
+  display: none;
+}
+
+.hah-task-actions--composer .hah-task-primary-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 14px;
+}
+
+@media (max-width: 2100px) {
+  .hah-task-mini-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 </style>
   <style>
 /* inlined: css/desktop-insights.css */
@@ -13608,26 +13814,12 @@ window.HAHBoard = window.HAHBoard || {};
 
     return c.stack([
       c.card('Task views', `
-        <div class="hah-task-pane-intro">Switch between operational action lists.</div>
+        <div class="hah-task-pane-intro">Operational lists for today’s work.</div>
         <div class="hah-task-view-rows">${viewRows}</div>
       `),
-      c.card('Task focus', `
-        ${c.keyValueGrid([
-          { label: 'View', value: viewLabel(savedView) },
-          { label: 'Visible', value: vm.totalTasks },
-          { label: 'Patient', value: focusPatient ? focusPatient.name : 'All patients' },
-          { label: 'Source', value: vm.sourceLabel }
-        ])}
-      `, {
-        subtitle: focusPatient ? 'Filtered to one patient' : 'Service-wide'
-      }),
-      focusPatient ? c.card('Focused patient', `
-        <div class="hah-task-spotlight">
-          <div class="hah-task-spotlight-title">${c.escapeHtml(focusPatient.name)}</div>
-          <div class="hah-task-spotlight-sub">${c.escapeHtml([focusPatient.referralSource ? 'Referred from ' + focusPatient.referralSource : '', focusPatient.pathway, focusPatient.dischargeReadiness].filter(Boolean).join(' · '))}</div>
-          <div class="hah-task-spotlight-flags">${renderPatientFlags(focusPatient)}</div>
-        </div>
-      `, { headerRight: `<button type="button" class="hah-inline-pill" data-task-action="clear-patient-filter">Show all</button>` }) : ''
+      c.card(focusPatient ? 'Patient focus' : 'Today', `
+        ${focusPatient ? renderFocusedPatient(focusPatient) : renderTodayTaskStats(vm)}
+      `)
     ].filter(Boolean));
   }
 
@@ -13635,6 +13827,8 @@ window.HAHBoard = window.HAHBoard || {};
     const vm = d.buildTasksViewModel(state);
     const strip = renderTaskSummaryStrip(state, vm);
     const selectedId = vm.selectedTask && vm.selectedTask.id;
+    const teamRows = vm.rows.filter(isManualTask);
+    const suggestedRows = vm.rows.filter((task) => !isManualTask(task));
 
     if (!vm.rows.length) {
       return `
@@ -13645,11 +13839,11 @@ window.HAHBoard = window.HAHBoard || {};
               <div class="hah-task-toolbar">
                 <div>
                   <div class="hah-task-title">${c.escapeHtml(viewLabel(state.tasks.savedView || 'all-open'))}</div>
-                  <div class="hah-task-sub">No tasks in this view</div>
+                  <div class="hah-task-sub">No actions in this view</div>
                 </div>
-                <div class="hah-task-toolbar-group">${taskPill('Add team task', 'add-task')}</div>
+                <div class="hah-task-toolbar-group">${primaryAction('Add team task', 'add-task')}</div>
               </div>
-              ${c.emptyState('No tasks in this view', 'Try another saved view, clear patient focus, or create a team task.')}
+              ${c.emptyState('No actions in this view', 'Try another view, clear patient focus, or create a team task.')}
             </div>
           </section>
         </div>
@@ -13665,7 +13859,7 @@ window.HAHBoard = window.HAHBoard || {};
               <div class="hah-task-toolbar-group hah-task-toolbar-meta">
                 <div>
                   <div class="hah-task-title">${c.escapeHtml(viewLabel(state.tasks.savedView || 'all-open'))}</div>
-                  <div class="hah-task-sub">${vm.totalTasks} visible · ${manualCount(vm.rows)} team · ${derivedCount(vm.rows)} suggested</div>
+                  <div class="hah-task-sub">${vm.totalTasks} visible · ${teamRows.length} team · ${suggestedRows.length} suggested</div>
                 </div>
                 ${state.tasks.filters && state.tasks.filters.patientId && vm.selectedPatient ? `<div class="hah-task-focus-pill">Focused on ${c.escapeHtml(vm.selectedPatient.name)}</div>` : ''}
               </div>
@@ -13673,12 +13867,13 @@ window.HAHBoard = window.HAHBoard || {};
                 ${taskPill('Due', 'set-sort', 'data-sort-key="due"', (state.tasks.sort || 'due') === 'due')}
                 ${taskPill('Priority', 'set-sort', 'data-sort-key="priority"', state.tasks.sort === 'priority')}
                 ${taskPill('Patient', 'set-sort', 'data-sort-key="patient"', state.tasks.sort === 'patient')}
-                ${taskPill('Add team task', 'add-task')}
+                ${primaryAction('Add team task', 'add-task')}
               </div>
             </div>
 
-            <div class="hah-action-list">
-              ${vm.rows.map((task) => renderTaskItem(task, String(task.id) === String(selectedId))).join('')}
+            <div class="hah-action-sections">
+              ${renderActionSection('Team tasks', 'Explicit tasks owned by the team.', teamRows, selectedId, { manual: true })}
+              ${renderActionSection('Suggested actions', 'Inferred from boardround content and patient state. Accept only the ones that need ownership.', suggestedRows, selectedId, { suggested: true })}
             </div>
           </div>
         </section>
@@ -13696,8 +13891,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (!task) {
       return c.stack([
         c.card('Task detail', `
-          ${c.emptyState('No task selected', 'Select an action to see ownership, patient context and controls.')}
-          <div class="hah-task-actions hah-task-actions--spaced">${taskPill('Add team task', 'add-task')}</div>
+          ${c.emptyState('No action selected', 'Select an action to see ownership, patient context and controls.')}
+          <div class="hah-task-actions hah-task-actions--spaced">${primaryAction('Add team task', 'add-task')}</div>
         `)
       ]);
     }
@@ -13714,7 +13909,7 @@ window.HAHBoard = window.HAHBoard || {};
           ${dueBadge(task.dueState)}
           ${c.badge(task.category, 'neutral')}
         </div>
-        <div class="hah-task-note">${c.escapeHtml(task.note || task.sourceLine || 'Operational task for the selected patient.')}</div>
+        <div class="hah-task-note">${c.escapeHtml(task.note || task.sourceLine || 'Operational action for the selected patient.')}</div>
       `, {
         subtitle: `${task.owner || 'Unassigned'} · ${formatDue(task.dueAt, task.dueState)}`
       }),
@@ -13783,10 +13978,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function renderSuggestedControls(task) {
     return c.card('Suggested action', `
-      <div class="hah-task-briefing">This has been inferred from patient data, plan text or boardround state. Accept it to make it a team-owned task, or dismiss it if it is not useful.</div>
+      <div class="hah-task-briefing">Suggested actions are not team-owned until accepted. Accept this if it needs tracking, or dismiss it if it is noise.</div>
       <div class="hah-task-actions hah-task-actions--spaced">
-        ${taskPill('Accept as team task', 'accept-suggestion')}
-        ${taskPill('Dismiss suggestion', 'dismiss-suggestion')}
+        ${primaryAction('Accept as team task', 'accept-suggestion')}
+        ${taskPill('Dismiss', 'dismiss-suggestion')}
         ${taskPill('Open patient', 'open-patient')}
       </div>
     `);
@@ -13863,13 +14058,13 @@ window.HAHBoard = window.HAHBoard || {};
           </label>
 
           <div class="hah-task-actions hah-task-actions--composer">
-            <button type="button" class="hah-primary-btn" data-task-action="save-task-composer">${mode === 'edit' ? 'Update task' : 'Create task'}</button>
+            ${primaryAction(mode === 'edit' ? 'Update task' : 'Create task', 'save-task-composer')}
             ${taskPill('Cancel', 'close-task-composer')}
           </div>
         </div>
       `),
       baseTask && mode !== 'edit' ? c.card('Starting context', `
-        <div class="hah-task-note">${c.escapeHtml(baseTask.title || '')}</div>
+        <div class="hah-task-note">${c.escapeHtml(baseTask.title || baseTask.note || '')}</div>
         <div class="hah-task-type-line">${baseTask.patient ? c.badge(baseTask.patient.name, 'neutral') : ''}${baseTask.category ? c.badge(baseTask.category, 'neutral') : ''}</div>
       `) : ''
     ].filter(Boolean));
@@ -13878,18 +14073,23 @@ window.HAHBoard = window.HAHBoard || {};
   function renderTaskSummaryStrip(state, vm) {
     const key = state.tasks.savedView || 'all-open';
     const metrics = [
-      { key: 'all-open', label: 'Open', value: vm.viewCounts['all-open'] || 0 },
-      { key: 'due-today', label: 'Due today', value: vm.viewCounts['due-today'] || 0 },
-      { key: 'waiting-external', label: 'Waiting', value: vm.viewCounts['waiting-external'] || 0 },
-      { key: 'unassigned', label: 'Unassigned', value: vm.viewCounts.unassigned || 0 },
-      { key: 'boardround-actions', label: 'Boardround', value: vm.viewCounts['boardround-actions'] || 0 }
+      { key: 'all-open', label: 'Open', value: vm.viewCounts['all-open'] || 0, action: true },
+      { key: 'due-today', label: 'Due today', value: vm.viewCounts['due-today'] || 0, action: true },
+      { key: 'waiting-external', label: 'Waiting', value: vm.viewCounts['waiting-external'] || 0, action: true },
+      { key: 'team', label: 'Team tasks', value: manualCount(vm.rows), action: false },
+      { key: 'suggested', label: 'Suggested', value: derivedCount(vm.rows), action: false }
     ];
     return `<section class="hah-task-summary-strip">
-      ${metrics.map((m) => `
+      ${metrics.map((m) => m.action ? `
         <button type="button" class="hah-task-summary-pill${key === m.key ? ' is-active' : ''}" data-task-action="set-view" data-view-key="${c.escapeHtml(m.key)}">
           <span>${c.escapeHtml(m.label)}</span>
           <strong>${c.escapeHtml(m.value)}</strong>
         </button>
+      ` : `
+        <div class="hah-task-summary-pill is-static">
+          <span>${c.escapeHtml(m.label)}</span>
+          <strong>${c.escapeHtml(m.value)}</strong>
+        </div>
       `).join('')}
     </section>`;
   }
@@ -13903,22 +14103,78 @@ window.HAHBoard = window.HAHBoard || {};
     `;
   }
 
-  function renderTaskItem(task, selected) {
+  function renderTodayTaskStats(vm) {
+    return `<div class="hah-task-mini-stats">
+      ${miniStat('Open', vm.viewCounts['all-open'] || 0)}
+      ${miniStat('Team', manualCount(vm.rows))}
+      ${miniStat('Suggested', derivedCount(vm.rows))}
+      ${miniStat('Waiting', vm.viewCounts['waiting-external'] || 0)}
+    </div>`;
+  }
+
+  function renderFocusedPatient(patient) {
+    return `
+      <div class="hah-task-spotlight">
+        <div class="hah-task-spotlight-title">${c.escapeHtml(patient.name)}</div>
+        <div class="hah-task-spotlight-sub">${c.escapeHtml([patient.referralSource ? 'Referred from ' + patient.referralSource : '', patient.pathway, patient.dischargeReadiness].filter(Boolean).join(' · '))}</div>
+        <div class="hah-task-spotlight-flags">${renderPatientFlags(patient)}</div>
+        <button type="button" class="hah-inline-pill" data-task-action="clear-patient-filter">Show all tasks</button>
+      </div>
+    `;
+  }
+
+  function miniStat(label, value) {
+    return `<div class="hah-task-mini-stat"><span>${c.escapeHtml(label)}</span><strong>${c.escapeHtml(value)}</strong></div>`;
+  }
+
+  function renderActionSection(title, subtitle, rows, selectedId, opts) {
+    const options = opts || {};
+    if (!rows.length) {
+      return `
+        <section class="hah-action-section ${options.suggested ? 'is-suggested-section' : 'is-team-section'}">
+          <div class="hah-action-section-head">
+            <div>
+              <div class="hah-action-section-title">${c.escapeHtml(title)}</div>
+              <div class="hah-action-section-sub">${c.escapeHtml(options.suggested ? 'No suggestions in this view.' : 'No team-owned tasks yet.')}</div>
+            </div>
+            ${options.manual ? primaryAction('Add team task', 'add-task') : ''}
+          </div>
+        </section>
+      `;
+    }
+    return `
+      <section class="hah-action-section ${options.suggested ? 'is-suggested-section' : 'is-team-section'}">
+        <div class="hah-action-section-head">
+          <div>
+            <div class="hah-action-section-title">${c.escapeHtml(title)} <span>${rows.length}</span></div>
+            <div class="hah-action-section-sub">${c.escapeHtml(subtitle)}</div>
+          </div>
+          ${options.manual ? primaryAction('Add team task', 'add-task') : ''}
+        </div>
+        <div class="hah-action-list">
+          ${rows.map((task) => renderTaskItem(task, String(task.id) === String(selectedId), options)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderTaskItem(task, selected, options) {
+    const opts = options || {};
     const manual = isManualTask(task);
     const blocker = task.blocker ? `<div class="hah-action-blocker">Blocker: ${c.escapeHtml(task.blocker)}</div>` : '';
     const board = task.boardLink ? `<span class="hah-action-muted">${c.escapeHtml(task.boardLink)}</span>` : '';
     return `
-      <button type="button" class="hah-action-item${selected ? ' is-selected' : ''}${manual ? ' is-manual' : ' is-suggested'}" data-task-action="select-task" data-task-id="${c.escapeHtml(task.id)}">
+      <button type="button" class="hah-action-item${selected ? ' is-selected' : ''}${manual ? ' is-manual' : ' is-suggested'}${opts.suggested ? ' is-soft' : ''}" data-task-action="select-task" data-task-id="${c.escapeHtml(task.id)}">
         <div class="hah-action-main">
           <div class="hah-action-title-row">
             <span class="hah-action-title">${c.escapeHtml(task.title)}</span>
-            ${sourceBadge(task)}
           </div>
           <div class="hah-action-sub">${c.escapeHtml(task.patient.name)} · ${c.escapeHtml([task.patient.pathway, task.patient.referralSource ? 'from ' + task.patient.referralSource : ''].filter(Boolean).join(' · '))}</div>
           ${task.note || task.sourceLine ? `<div class="hah-action-note">${c.escapeHtml(task.note || task.sourceLine)}</div>` : ''}
           ${blocker}
         </div>
         <div class="hah-action-meta">
+          ${manual ? sourceBadge(task) : ''}
           ${statusBadge(task.status)}
           ${dueBadge(task.dueState)}
           ${priorityBadge(task.priority)}
@@ -13963,7 +14219,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (task.patient.dischargeReadiness === 'Possible today' || task.patient.dischargeReadiness === 'Ready') {
       parts.push('It may influence discharge flow for the patient.');
     }
-    return parts.join(' ') || 'Operational task linked to the selected patient and current board state.';
+    return parts.join(' ') || 'Operational action linked to the selected patient and current board state.';
   }
 
   function handleClick(event, state) {
@@ -14144,6 +14400,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function taskPill(label, action, attrs, active) {
     return `<button type="button" class="hah-inline-pill${active ? ' is-active' : ''}" data-task-action="${c.escapeHtml(action)}" ${attrs || ''}>${c.escapeHtml(label)}</button>`;
+  }
+
+  function primaryAction(label, action, attrs) {
+    return `<button type="button" class="hah-task-primary-btn" data-task-action="${c.escapeHtml(action)}" ${attrs || ''}>${c.escapeHtml(label)}</button>`;
   }
 
   function statusControl(task, status) {
@@ -15390,9 +15650,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_079_release.html',
-  source: 'hospital_at_home_board_v0_8_079_source.zip',
-  builtAt: '2026-04-24T20:12:21.952247',
+  filename: 'hospital_at_home_board_v0_8_080_release.html',
+  source: 'hospital_at_home_board_v0_8_080_source.zip',
+  builtAt: '2026-04-24T20:21:35.871704',
   entry: 'desktop.html'
 };
 </script>
