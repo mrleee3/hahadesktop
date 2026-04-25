@@ -9639,6 +9639,8 @@ window.HAHBoard = window.HAHBoard || {};
         break;
       case 'patient-focus':
         break;
+      case 'completed':
+        break;
       case 'boardround-actions':
         out = out.filter((task) => ['Not discussed', 'In discussion', 'Discussed'].includes(String(task.boardLink || '')) || /boardround/i.test(String(task.createdFrom || '')));
         break;
@@ -9745,18 +9747,33 @@ window.HAHBoard = window.HAHBoard || {};
 
   function buildTasksViewModel(state) {
     const boardVm = buildBoardViewModel(state);
-    const allTasks = buildAllTasks(boardVm.rows).filter((task) => !['Done', 'Cancelled'].includes(task.status));
-    const filtered = filterTasks(allTasks, state);
+    const allTaskRows = buildAllTasks(boardVm.rows);
+    const activeTasks = allTaskRows.filter((task) => !['Done', 'Cancelled'].includes(task.status));
+    const completedTasks = allTaskRows.filter((task) => task.status === 'Done');
+
+    const savedView = state.tasks && state.tasks.savedView;
+    const sourceRows = savedView === 'completed' ? completedTasks : activeTasks;
+    const filtered = filterTasks(sourceRows, state);
     const sorted = sortTasks(filtered, state.tasks.sort || 'due');
+
+    const patientId = state.tasks && state.tasks.filters && state.tasks.filters.patientId;
+    const completedRows = sortTasks(
+      patientId ? completedTasks.filter((task) => String(task.patientId) === String(patientId)) : completedTasks,
+      state.tasks.sort || 'due'
+    );
+
     const selectedTaskId = String(state.selectedTaskId || state.route.entityId || (sorted[0] && sorted[0].id) || '');
     const selectedTask = sorted.find((task) => String(task.id) === selectedTaskId) || sorted[0] || null;
     const selectedPatient = selectedTask ? selectedTask.patient : null;
     const relatedTasks = selectedTask ? sorted.filter((task) => task.patientId === selectedTask.patientId && task.id !== selectedTask.id).slice(0, 4) : [];
     const sourceLabel = getSourceLabel(boardVm.source);
+    const counts = buildTaskViewCounts(activeTasks);
+    counts.completed = completedRows.length;
     return {
       rows: sorted,
-      metrics: buildTaskMetrics(allTasks),
-      viewCounts: buildTaskViewCounts(allTasks),
+      completedRows,
+      metrics: buildTaskMetrics(activeTasks),
+      viewCounts: counts,
       selectedTask,
       selectedPatient,
       relatedTasks,
@@ -13872,8 +13889,13 @@ window.HAHBoard = window.HAHBoard || {};
             </div>
 
             <div class="hah-action-sections">
-              ${renderActionSection('Team tasks', 'Explicit tasks owned by the team.', teamRows, selectedId, { manual: true })}
-              ${renderActionSection('Suggested actions', 'Inferred from boardround content and patient state. Accept only the ones that need ownership.', suggestedRows, selectedId, { suggested: true })}
+              ${(state.tasks.savedView || 'all-open') === 'completed'
+                ? renderActionSection('Completed', 'Done tasks are kept here for reference.', vm.rows, selectedId, { completed: true })
+                : `
+                  ${renderActionSection('Team tasks', 'Explicit tasks owned by the team.', teamRows, selectedId, { manual: true })}
+                  ${renderActionSection('Suggested actions', 'Inferred from boardround content and patient state. Accept only the ones that need ownership.', suggestedRows, selectedId, { suggested: true })}
+                  ${completedRows.length ? renderActionSection('Completed', 'Done tasks are kept here for reference.', completedRows, selectedId, { completed: true, compact: true }) : ''}
+                `}
             </div>
           </div>
         </section>
@@ -14077,7 +14099,8 @@ window.HAHBoard = window.HAHBoard || {};
       { key: 'due-today', label: 'Due today', value: vm.viewCounts['due-today'] || 0, action: true },
       { key: 'waiting-external', label: 'Waiting', value: vm.viewCounts['waiting-external'] || 0, action: true },
       { key: 'team', label: 'Team tasks', value: manualCount(vm.rows), action: false },
-      { key: 'suggested', label: 'Suggested', value: derivedCount(vm.rows), action: false }
+      { key: 'suggested', label: 'Suggested', value: derivedCount(vm.rows), action: false },
+      { key: 'completed', label: 'Completed', value: vm.viewCounts.completed || 0, action: true }
     ];
     return `<section class="hah-task-summary-strip">
       ${metrics.map((m) => m.action ? `
@@ -14109,6 +14132,7 @@ window.HAHBoard = window.HAHBoard || {};
       ${miniStat('Team', manualCount(vm.rows))}
       ${miniStat('Suggested', derivedCount(vm.rows))}
       ${miniStat('Waiting', vm.viewCounts['waiting-external'] || 0)}
+      ${miniStat('Done', vm.viewCounts.completed || 0)}
     </div>`;
   }
 
@@ -15650,9 +15674,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_080_release.html',
-  source: 'hospital_at_home_board_v0_8_080_source.zip',
-  builtAt: '2026-04-24T20:21:35.871704',
+  filename: 'hospital_at_home_board_v0_8_081_release.html',
+  source: 'hospital_at_home_board_v0_8_081_source.zip',
+  builtAt: '2026-04-25T06:50:33.477661',
   entry: 'desktop.html'
 };
 </script>
