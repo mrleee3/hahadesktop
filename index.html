@@ -6445,7 +6445,22 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   function goToBoard(preset) { navigate({ view: 'board', preset: preset || null }); }
   function goToPatient(patientId) { navigate({ view: 'patient', entityId: patientId || null }); }
-  function goToTasks(preset) { navigate({ view: 'tasks', preset: preset || null }); }
+  function goToTasks(preset) {
+    const view = preset || 'all-open';
+    try {
+      const current = store.getState ? store.getState() : {};
+      const existingFilters = current.tasks && current.tasks.filters ? current.tasks.filters : {};
+      store.setState({
+        selectedTaskId: null,
+        tasks: {
+          savedView: view,
+          taskComposer: (current.tasks && current.tasks.taskComposer) || { open: false },
+          filters: view === 'patient-focus' ? existingFilters : { patientId: null }
+        }
+      });
+    } catch (_) {}
+    navigate({ view: 'tasks', preset: preset || null });
+  }
   function goToInsights(preset) { navigate({ view: 'insights', preset: preset || null }); }
 
   window.HAHBoard.router = {
@@ -13410,9 +13425,25 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'set-actioned'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Actioned');  persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: 'Actioned' } }); return true; }
     if (action === 'set-deferred'  && vm && ops) { ops.setBoardStatus(vm.patient.id, 'Deferred');  persistPatientPatchToJson(vm.patient.id, { operational: { boardStatus: 'Deferred' } }); return true; }
 
-    if (action === 'add-task' && vm && ops) {
-      const created = ops.promptCreateTask(vm.patient, { createdFrom: 'Patient workspace', boardLink: vm.patient.boardStatus, dueAt: vm.patient.reviewDueAt || '' });
-      if (created) store.setState({ selectedTaskId: created.id });
+    if (action === 'add-task' && vm) {
+      store.setState({
+        selectedPatientId: vm.patient.id,
+        selectedTaskId: null,
+        tasks: {
+          savedView: 'patient-focus',
+          filters: { patientId: vm.patient.id },
+          taskComposer: {
+            open: true,
+            mode: 'create',
+            patientId: vm.patient.id,
+            seedTitle: '',
+            seedNote: '',
+            seedCategory: 'Clinical review',
+            seedDueAt: vm.patient.reviewDueAt || ''
+          }
+        }
+      });
+      router.goToTasks('patient-focus');
       return true;
     }
     if (action === 'open-tasks' && vm) {
@@ -14556,6 +14587,7 @@ window.HAHBoard = window.HAHBoard || {};
       case 'high-priority': return 'High priority';
       case 'unassigned': return 'Unassigned';
       case 'patient-focus': return 'Patient focus';
+      case 'completed': return 'Completed';
       default: return 'All open';
     }
   }
@@ -15674,9 +15706,9 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
 <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_081_release.html',
-  source: 'hospital_at_home_board_v0_8_081_source.zip',
-  builtAt: '2026-04-25T06:50:33.477661',
+  filename: 'hospital_at_home_board_v0_8_082_release.html',
+  source: 'hospital_at_home_board_v0_8_082_source.zip',
+  builtAt: '2026-04-25T06:59:04.021643',
   entry: 'desktop.html'
 };
 </script>
