@@ -4703,6 +4703,69 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
 }
 
+
+/* ─── JSON patient record editor ─────────────────────────────────────── */
+.hah-record-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hah-record-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(25,45,72,0.055);
+}
+
+.hah-record-row:last-child {
+  border-bottom: 0;
+}
+
+.hah-record-row span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+}
+
+.hah-record-row strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--desk-text);
+  text-align: right;
+}
+
+.hah-record-hint {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--desk-text-muted);
+}
+
+.hah-record-check {
+  min-height: 36px;
+  border: 1px solid var(--desk-border);
+  border-radius: 10px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--desk-text);
+}
+
+.hah-record-check input {
+  accent-color: rgba(47,111,237,0.95);
+}
+
+.hah-patient-record-modal {
+  width: min(520px, calc(100vw - 32px));
+}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -6284,9 +6347,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_085_release.html',
-  source: 'hospital_at_home_board_v0_8_085_source.zip',
-  builtAt: '2026-04-27T19:58:37.588001',
+  filename: 'hospital_at_home_board_v0_8_086_release.html',
+  source: 'hospital_at_home_board_v0_8_086_source.zip',
+  builtAt: '2026-04-27T20:19:13.039240',
   entry: 'desktop.html'
 };
 </script>
@@ -6496,8 +6559,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_085_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_085_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_086_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_086_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8479,6 +8542,181 @@ window.HAHBoard = window.HAHBoard || {};
     return out;
   }
 
+  function slugifyPatientName(name) {
+    const slug = String(name || 'patient')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 36) || 'patient';
+    return slug;
+  }
+
+  function normalisePatientCoreFields(fields) {
+    const f = fields || {};
+    return {
+      name: String(f.name || '').trim(),
+      age: String(f.age || '').trim(),
+      sex: String(f.sex || '').trim(),
+      referredFrom: String(f.referredFrom || f.referralSource || '').trim(),
+      admittedDate: String(f.admittedDate || f.doa || '').trim(),
+      pathway: String(f.pathway || '').trim(),
+      location: String(f.location || '').trim(),
+      dnar: f.dnar === true || f.dnar === 'true' || f.dnar === 'yes' || f.dnar === '1',
+      acp: f.acp === true || f.acp === 'true' || f.acp === 'yes' || f.acp === '1',
+      escalation: String(f.escalation || '').trim(),
+      summary: String(f.summary || '').trim()
+    };
+  }
+
+  function patientCorePatch(fields) {
+    const f = normalisePatientCoreFields(fields);
+    const patch = {
+      identity: {
+        name: f.name,
+        age: f.age,
+        sex: f.sex
+      },
+      service: {
+        referredFrom: f.referredFrom,
+        admittedDate: f.admittedDate,
+        pathway: f.pathway,
+        location: f.location
+      },
+      alerts: {
+        dnar: !!f.dnar,
+        acp: !!f.acp,
+        escalation: f.escalation
+      }
+    };
+    if (f.summary) {
+      patch.clinical = { summary: f.summary };
+    }
+    return patch;
+  }
+
+  function getArchivedPatientIds(serviceDoc) {
+    const serviceBlock = serviceDoc && serviceDoc.service ? serviceDoc.service : {};
+    const patientsBlock = serviceDoc && serviceDoc.patients ? serviceDoc.patients : {};
+    const ids = serviceBlock.archivedPatientIds || patientsBlock.archivedIds || [];
+    return Array.isArray(ids) ? ids.map(String).filter(Boolean) : [];
+  }
+
+  function setArchivedPatientIds(serviceDoc, ids) {
+    const next = Object.assign({}, serviceDoc || makeServiceSchema());
+    next.service = Object.assign({}, next.service || {});
+    next.service.archivedPatientIds = ids.slice();
+    next.patients = Object.assign({}, next.patients || {});
+    next.patients.archivedIds = ids.slice();
+    next.updatedAt = nowIso();
+    next.meta = Object.assign({}, next.meta || {}, { lastWriter: getActorName() });
+    return next;
+  }
+
+  async function createPatientRecord(fields) {
+    const f = normalisePatientCoreFields(fields);
+    if (!f.name) throw new Error('Patient name is required.');
+    let serviceDoc;
+    try { serviceDoc = await loadService(); }
+    catch (_) {
+      await initialiseStore();
+      serviceDoc = await loadService();
+    }
+    const id = `patient-${Date.now().toString(36)}-${slugifyPatientName(f.name)}`;
+    const patient = makePatientSchema(id, {
+      name: f.name,
+      age: f.age,
+      sex: f.sex,
+      referredFrom: f.referredFrom,
+      admittedDate: f.admittedDate,
+      pathway: f.pathway,
+      location: f.location,
+      dnar: f.dnar,
+      acp: f.acp,
+      escalation: f.escalation,
+      summary: f.summary || f.pathway
+    });
+    await savePatient(patient);
+
+    const active = Array.from(new Set(getActivePatientIds(serviceDoc).concat([id])));
+    const archived = getArchivedPatientIds(serviceDoc).filter(function (x) { return String(x) !== String(id); });
+    serviceDoc = setActivePatientIds(serviceDoc, active);
+    serviceDoc = setArchivedPatientIds(serviceDoc, archived);
+    await saveService(serviceDoc);
+
+    try {
+      await appendAudit({
+        type: 'patient-created',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Created patient record for ${f.name}`
+      });
+    } catch (_) {}
+    await loadPatientDataset();
+    state.lastOperation = `Created JSON patient record for ${f.name}`;
+    state.lastError = '';
+    saveState();
+    return patient;
+  }
+
+  async function updatePatientCore(patientId, fields) {
+    if (!patientId) throw new Error('Cannot update patient without an id.');
+    const id = String(patientId);
+    let patient = await loadPatient(id);
+    if (!patient || !patient.id) patient = makePatientSchema(id, { name: id });
+    patient = mergeDeep(patient, patientCorePatch(fields));
+    await savePatient(patient);
+    try {
+      await appendAudit({
+        type: 'patient-core-updated',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Updated patient details for ${patient.identity && patient.identity.name ? patient.identity.name : id}`
+      });
+    } catch (_) {}
+    await loadPatientDataset();
+    state.lastOperation = `Updated JSON patient details`;
+    state.lastError = '';
+    saveState();
+    return patient;
+  }
+
+  async function archivePatientRecord(patientId) {
+    if (!patientId) throw new Error('Cannot archive patient without an id.');
+    const id = String(patientId);
+    let serviceDoc = await loadService();
+    const active = getActivePatientIds(serviceDoc).filter(function (x) { return String(x) !== id; });
+    const archived = Array.from(new Set(getArchivedPatientIds(serviceDoc).concat([id])));
+    serviceDoc = setActivePatientIds(serviceDoc, active);
+    serviceDoc = setArchivedPatientIds(serviceDoc, archived);
+    await saveService(serviceDoc);
+
+    try {
+      let patient = await loadPatient(id);
+      if (patient && patient.id) {
+        patient.operational = Object.assign({}, patient.operational || {}, {
+          archivedAt: nowIso(),
+          archivedBy: getActorName(),
+          boardStatus: 'Archived'
+        });
+        await savePatient(patient);
+      }
+    } catch (_) {}
+
+    try {
+      await appendAudit({
+        type: 'patient-archived',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Archived patient ${id}`
+      });
+    } catch (_) {}
+    await loadPatientDataset();
+    state.lastOperation = `Archived JSON patient record`;
+    state.lastError = '';
+    saveState();
+    return true;
+  }
+
   async function patchPatientRecord(patientId, patch) {
     if (!patientId) throw new Error('Cannot patch patient without an id.');
     const id = String(patientId);
@@ -8997,6 +9235,9 @@ window.HAHBoard = window.HAHBoard || {};
     loadPatient,
     savePatient,
     patchPatientRecord,
+    createPatientRecord,
+    updatePatientCore,
+    archivePatientRecord,
     loadTasks,
     saveTasks,
     loadTaskDataset,
@@ -11098,8 +11339,16 @@ window.HAHBoard = window.HAHBoard || {};
       const referralSource = (document.getElementById('hahAddPtReferral') || {}).value || '';
       const pathway = (document.getElementById('hahAddPtPathway') || {}).value || '';
       const doa = (document.getElementById('hahAddPtDoa') || {}).value || '';
-      const ok = addPatientToStorage({ name: name.trim(), age: age ? parseInt(age, 10) : null, sex, referralSource: referralSource.trim(), pathway: pathway.trim(), doa });
-      if (ok) store.setState({ board: { addPatientModal: false } });
+      const fields = { name: name.trim(), age: age ? parseInt(age, 10) : null, sex, referralSource: referralSource.trim(), pathway: pathway.trim(), doa };
+      if (shouldUseJsonStoreForNewPatient()) {
+        addPatientToJsonStore(fields).catch(function (err) {
+          console.error('[H@H JSON store] Could not create patient', err);
+          window.alert(err && err.message ? err.message : 'Could not create the JSON patient record.');
+        });
+      } else {
+        const ok = addPatientToStorage(fields);
+        if (ok) store.setState({ board: { addPatientModal: false } });
+      }
       return true;
     }
     if (action === 'set-capacity') {
@@ -11216,6 +11465,39 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   // ── Add patient ──────────────────────────────────────────────────────
+
+  function shouldUseJsonStoreForNewPatient() {
+    try {
+      const shared = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+      if (!shared || typeof shared.getInfo !== 'function') return false;
+      const info = shared.getInfo();
+      return !!(info && info.configured && info.state && info.state.remoteReady);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function addPatientToJsonStore(fields) {
+    const shared = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+    if (!shared || typeof shared.createPatientRecord !== 'function') throw new Error('Shared JSON store is not available.');
+    const patient = await shared.createPatientRecord({
+      name: fields.name,
+      age: fields.age || '',
+      sex: fields.sex || '',
+      referredFrom: fields.referralSource || '',
+      admittedDate: fields.doa || '',
+      pathway: fields.pathway || '',
+      location: fields.location || 'Home',
+      summary: fields.pathway || ''
+    });
+    if (patient && patient.id) {
+      store.setState({ selectedPatientId: patient.id, board: { addPatientModal: false } });
+      if (router && typeof router.goToPatient === 'function') router.goToPatient(patient.id);
+    } else {
+      store.setState({ board: { addPatientModal: false } });
+    }
+    return true;
+  }
 
   function addPatientToStorage(fields) {
     const PRIMARY_KEY = 'hah_prototype_v12_36_162_pin_rebuild_data';
@@ -11415,6 +11697,28 @@ window.HAHBoard = window.HAHBoard || {};
         // Local/demo patients will not have a JSON file yet; keep the local workflow quiet.
         console.warn('[H@H JSON store] Could not patch patient record', err);
       });
+  }
+
+  function isJsonPatient(patient) {
+    const raw = patient && patient.sourcePatient ? patient.sourcePatient : {};
+    return !!(raw && raw.jsonRecord);
+  }
+
+  function getJsonPatientRecord(patient) {
+    const raw = patient && patient.sourcePatient ? patient.sourcePatient : {};
+    return raw && raw.jsonRecord ? raw.jsonRecord : null;
+  }
+
+  function updatePatientCoreJson(patientId, fields) {
+    const api = window.HAHBoard.sharedJsonStore;
+    if (!api || typeof api.updatePatientCore !== 'function') return Promise.reject(new Error('Shared JSON store is not available.'));
+    return api.updatePatientCore(String(patientId || ''), fields || {});
+  }
+
+  function archivePatientJson(patientId) {
+    const api = window.HAHBoard.sharedJsonStore;
+    if (!api || typeof api.archivePatientRecord !== 'function') return Promise.reject(new Error('Shared JSON store is not available.'));
+    return api.archivePatientRecord(String(patientId || ''));
   }
 
   function acpPatchForJson(acp) {
@@ -11864,6 +12168,7 @@ window.HAHBoard = window.HAHBoard || {};
         <div class="hah-ws-col" data-col="right">${rightHtml}</div>
       </div>
       ${state.patient && state.patient.acpModalOpen ? renderAcpModal(vm) : ''}
+      ${state.patient && state.patient.editPatientModalOpen ? renderPatientRecordModal(vm) : ''}
     </div>`;
   }
 
@@ -12677,6 +12982,119 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
   }
 
+  function renderPatientRecordCard(vm) {
+    const patient = vm.patient;
+    const json = isJsonPatient(patient);
+    const raw = getJsonPatientRecord(patient);
+    const sub = json ? 'Saved in OneDrive JSON' : 'Local/demo patient';
+    return c.card('Patient record', `
+      <div class="hah-record-summary">
+        <div class="hah-record-row"><span>Referral</span><strong>${c.escapeHtml(vm.referralSource || '—')}</strong></div>
+        <div class="hah-record-row"><span>Admitted</span><strong>${c.escapeHtml(vm.admissionDate || '—')}</strong></div>
+        <div class="hah-record-row"><span>Pathway</span><strong>${c.escapeHtml(patient.pathway || '—')}</strong></div>
+        <div class="hah-record-row"><span>Source</span><strong>${c.escapeHtml(sub)}</strong></div>
+      </div>
+      <div class="hah-task-actions hah-task-actions--spaced">
+        <button type="button" class="hah-inline-pill${json ? ' is-primary' : ''}" data-patient-action="open-edit-patient-record"${json ? '' : ' disabled'}>Edit details</button>
+        <button type="button" class="hah-inline-pill" data-patient-action="open-tasks">Open tasks</button>
+      </div>
+      ${json ? '' : '<div class="hah-record-hint">Load JSON patients to edit the shared patient record.</div>'}
+    `, { subtitle: raw && raw.meta && raw.meta.updatedAt ? 'Updated ' + new Date(raw.meta.updatedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : sub });
+  }
+
+  function renderPatientRecordModal(vm) {
+    const patient = vm.patient;
+    const raw = getJsonPatientRecord(patient) || {};
+    const identity = raw.identity || {};
+    const svc = raw.service || {};
+    const alerts = raw.alerts || {};
+    const clinical = raw.clinical || {};
+    return `<div class="hah-board-modal-overlay" data-patient-action="patient-record-backdrop">
+      <div class="hah-board-modal hah-patient-record-modal" role="dialog" aria-modal="true" aria-label="Edit patient details">
+        <div class="hah-board-modal-head">
+          <span class="hah-board-modal-title">Edit patient details</span>
+          <button type="button" class="hah-board-modal-close" data-patient-action="close-edit-patient-record">×</button>
+        </div>
+        <div class="hah-board-modal-body">
+          <div class="hah-board-modal-field">
+            <label for="hahEditPtName">Name</label>
+            <input type="text" id="hahEditPtName" class="hah-board-modal-input" value="${c.escapeHtml(identity.name || patient.name || '')}" autocomplete="off">
+          </div>
+          <div class="hah-board-modal-grid">
+            <div class="hah-board-modal-field">
+              <label for="hahEditPtAge">Age</label>
+              <input type="number" id="hahEditPtAge" class="hah-board-modal-input" min="0" max="120" value="${c.escapeHtml(identity.age || patient.age || '')}">
+            </div>
+            <div class="hah-board-modal-field">
+              <label for="hahEditPtSex">Sex</label>
+              <select id="hahEditPtSex" class="hah-board-modal-input">
+                ${['', 'M', 'F'].map(function (sex) { return '<option value="' + c.escapeHtml(sex) + '"' + (String(identity.sex || patient.sex || '') === sex ? ' selected' : '') + '>' + c.escapeHtml(sex || '—') + '</option>'; }).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="hah-board-modal-field">
+            <label for="hahEditPtReferral">Referral source</label>
+            <input type="text" id="hahEditPtReferral" class="hah-board-modal-input" value="${c.escapeHtml(svc.referredFrom || vm.referralSource || '')}" autocomplete="off">
+          </div>
+          <div class="hah-board-modal-field">
+            <label for="hahEditPtPathway">Problem / referred for</label>
+            <input type="text" id="hahEditPtPathway" class="hah-board-modal-input" value="${c.escapeHtml(svc.pathway || patient.pathway || '')}" autocomplete="off">
+          </div>
+          <div class="hah-board-modal-grid">
+            <div class="hah-board-modal-field">
+              <label for="hahEditPtDoa">H@H start date</label>
+              <input type="date" id="hahEditPtDoa" class="hah-board-modal-input" value="${c.escapeHtml(svc.admittedDate || vm.admissionDate || '')}">
+            </div>
+            <div class="hah-board-modal-field">
+              <label for="hahEditPtLocation">Location</label>
+              <input type="text" id="hahEditPtLocation" class="hah-board-modal-input" value="${c.escapeHtml(svc.location || patient.location || '')}" autocomplete="off">
+            </div>
+          </div>
+          <div class="hah-board-modal-field">
+            <label for="hahEditPtSummary">Working summary</label>
+            <input type="text" id="hahEditPtSummary" class="hah-board-modal-input" value="${c.escapeHtml(clinical.summary || patient.summaryLine || '')}" autocomplete="off">
+          </div>
+          <div class="hah-board-modal-grid">
+            <label class="hah-record-check"><input type="checkbox" id="hahEditPtDnar"${alerts.dnar || patient.dnar ? ' checked' : ''}> DNAR</label>
+            <label class="hah-record-check"><input type="checkbox" id="hahEditPtAcp"${alerts.acp || patient.acp ? ' checked' : ''}> ACP</label>
+          </div>
+          <div class="hah-board-modal-field">
+            <label for="hahEditPtEscalation">Escalation / TEP</label>
+            <input type="text" id="hahEditPtEscalation" class="hah-board-modal-input" value="${c.escapeHtml(alerts.escalation || '')}" autocomplete="off">
+          </div>
+        </div>
+        <div class="hah-board-modal-footer">
+          <button type="button" class="hah-inline-pill" data-patient-action="close-edit-patient-record">Cancel</button>
+          <button type="button" class="hah-inline-pill is-primary" data-patient-action="commit-edit-patient-record">Save details</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function collectPatientRecordFields() {
+    const get = (id) => {
+      const el = document.getElementById(id);
+      return el ? String(el.value || '').trim() : '';
+    };
+    const checked = (id) => {
+      const el = document.getElementById(id);
+      return !!(el && el.checked);
+    };
+    return {
+      name: get('hahEditPtName'),
+      age: get('hahEditPtAge'),
+      sex: get('hahEditPtSex'),
+      referredFrom: get('hahEditPtReferral'),
+      admittedDate: get('hahEditPtDoa'),
+      pathway: get('hahEditPtPathway'),
+      location: get('hahEditPtLocation'),
+      summary: get('hahEditPtSummary'),
+      dnar: checked('hahEditPtDnar'),
+      acp: checked('hahEditPtAcp'),
+      escalation: get('hahEditPtEscalation')
+    };
+  }
+
   function renderRightPane(state) {
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return c.stack([c.card("Today's board round", c.emptyState('No patient selected', 'Open a patient from the board.'), { subtitle: "Select a patient to continue today’s note." })]);
@@ -12729,7 +13147,8 @@ window.HAHBoard = window.HAHBoard || {};
         </div>
       </div>` : ''}
     `),
-      `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">Discharge</button>`
+      renderPatientRecordCard(vm),
+      `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">${isJsonPatient(vm.patient) ? 'Archive / discharge' : 'Discharge'}</button>`
     ]);
   }
 
@@ -13788,10 +14207,52 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
 
+    if (action === 'open-edit-patient-record' && vm) {
+      if (!isJsonPatient(vm.patient)) return true;
+      store.setState({ patient: { editPatientModalOpen: true } });
+      return true;
+    }
+    if (action === 'close-edit-patient-record') {
+      store.setState({ patient: { editPatientModalOpen: false } });
+      return true;
+    }
+    if (action === 'patient-record-backdrop') {
+      if (event.target.classList && event.target.classList.contains('hah-board-modal-overlay')) {
+        store.setState({ patient: { editPatientModalOpen: false } });
+      }
+      return true;
+    }
+    if (action === 'commit-edit-patient-record' && vm) {
+      if (!isJsonPatient(vm.patient)) return true;
+      const fields = collectPatientRecordFields();
+      if (!fields.name) { window.alert('Please enter a patient name.'); return true; }
+      updatePatientCoreJson(vm.patient.id, fields)
+        .then(function () {
+          store.setState({ patient: { editPatientModalOpen: false } });
+        })
+        .catch(function (err) {
+          console.error('[H@H JSON store] Could not update patient details', err);
+          window.alert(err && err.message ? err.message : 'Could not update patient details.');
+        });
+      return true;
+    }
+
     if (action === 'discharge-patient' && vm && ops) {
       const patient = vm.patient;
-      const msg = 'Discharge ' + patient.name + ' from the service?\n\nThe patient will be removed from the active board. You can restore them from Settings.';
+      const msg = (isJsonPatient(patient) ? 'Archive / discharge ' : 'Discharge ') + patient.name + ' from the service?\n\nThe patient will be removed from the active board. The patient record and timeline will be kept.';
       if (!window.confirm(msg)) return true;
+      if (isJsonPatient(patient)) {
+        archivePatientJson(patient.id)
+          .then(function () {
+            store.setState({ selectedPatientId: null, patient: { editPatientModalOpen: false } });
+            router.goToBoard(state.board.savedView === 'all-active' ? null : state.board.savedView);
+          })
+          .catch(function (err) {
+            console.error('[H@H JSON store] Could not archive patient', err);
+            window.alert(err && err.message ? err.message : 'Could not archive patient.');
+          });
+        return true;
+      }
       ops.dischargePatient(patient.id, {
         name: patient.name,
         pathway: patient.pathway,
