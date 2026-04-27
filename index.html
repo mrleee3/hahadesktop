@@ -6284,9 +6284,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_084_release.html',
-  source: 'hospital_at_home_board_v0_8_084_source.zip',
-  builtAt: '2026-04-27T19:48:45.196026',
+  filename: 'hospital_at_home_board_v0_8_085_release.html',
+  source: 'hospital_at_home_board_v0_8_085_source.zip',
+  builtAt: '2026-04-27T19:58:37.588001',
   entry: 'desktop.html'
 };
 </script>
@@ -6496,8 +6496,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_084_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_084_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_085_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_085_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -7303,6 +7303,21 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
+  function isManualTaskId(taskId) {
+    return String(taskId || '').startsWith('manual:');
+  }
+
+  function persistTeamTaskToJson(task) {
+    try {
+      const shared = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+      if (!shared || typeof shared.upsertTaskRecord !== 'function') return;
+      if (!task || !isManualTaskId(task.id)) return;
+      shared.upsertTaskRecord(task).catch(function (err) {
+        console.warn('[H@H JSON store] Could not persist team task', err);
+      });
+    } catch (_) {}
+  }
+
   function getTaskPatch(taskId) {
     return clone(state.taskPatches[String(taskId)] || {});
   }
@@ -7324,6 +7339,7 @@ window.HAHBoard = window.HAHBoard || {};
         summary: summariseTaskPatch(state.customTasks[existingIndex], patch)
       });
       saveState('task-updated', { taskId: key });
+      persistTeamTaskToJson(state.customTasks[existingIndex]);
       return clone(state.customTasks[existingIndex]);
     }
 
@@ -7358,6 +7374,7 @@ window.HAHBoard = window.HAHBoard || {};
       blocker: String(taskInput.blocker || '').trim(),
       createdFrom: String(taskInput.createdFrom || 'Board').trim(),
       createdBy: getActorName(),
+      createdAt: String(taskInput.createdAt || nowIso()).trim(),
       boardLink: String(taskInput.boardLink || '').trim(),
       updatedAt: nowIso(),
       updatedBy: getActorName()
@@ -7371,6 +7388,7 @@ window.HAHBoard = window.HAHBoard || {};
       summary: `Created task: ${task.title}`
     });
     saveState('task-created', { taskId: task.id });
+    persistTeamTaskToJson(task);
     return clone(task);
   }
 
@@ -7929,6 +7947,7 @@ window.HAHBoard = window.HAHBoard || {};
   const SETTINGS_KEY = 'hah_board_shared_json_store_settings';
   const STATE_KEY = 'hah_board_shared_json_store_state';
   const PATIENT_CACHE_KEY = 'hah_board_shared_json_store_patient_cache';
+  const TASK_CACHE_KEY = 'hah_board_shared_json_store_task_cache';
   const DEFAULT_FOLDER = 'H@H Board Data';
   const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
   const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite'];
@@ -7957,9 +7976,17 @@ window.HAHBoard = window.HAHBoard || {};
     lastError: ''
   };
 
+  const DEFAULT_TASK_CACHE = {
+    loadedAt: '',
+    source: '',
+    tasks: [],
+    lastError: ''
+  };
+
   let settings = loadLocal(SETTINGS_KEY, DEFAULT_SETTINGS);
   let state = loadLocal(STATE_KEY, DEFAULT_STATE);
   let patientCache = loadLocal(PATIENT_CACHE_KEY, DEFAULT_PATIENT_CACHE);
+  let taskCache = loadLocal(TASK_CACHE_KEY, DEFAULT_TASK_CACHE);
   let msalApp = null;
   let msalInitialisePromise = null;
 
@@ -7985,6 +8012,11 @@ window.HAHBoard = window.HAHBoard || {};
   function savePatientCache() {
     try { localStorage.setItem(PATIENT_CACHE_KEY, JSON.stringify(patientCache)); } catch (_) {}
     refreshShell(patientCache.rows && patientCache.rows.length ? 'JSON patients' : 'JSON store');
+  }
+
+  function saveTaskCache() {
+    try { localStorage.setItem(TASK_CACHE_KEY, JSON.stringify(taskCache)); } catch (_) {}
+    refreshShell(taskCache.tasks && taskCache.tasks.length ? 'JSON tasks' : 'JSON store');
   }
 
   function clone(value) {
@@ -8029,7 +8061,8 @@ window.HAHBoard = window.HAHBoard || {};
       folderPath: normalisePath(settings.folderPath),
       status: state.lastError ? 'Error' : (state.remoteReady ? 'Ready' : (settings.clientId ? 'Configured' : 'Not configured')),
       filePlan: getFilePlan(),
-      patientCache: clone(patientCache)
+      patientCache: clone(patientCache),
+      taskCache: clone(taskCache)
     };
   }
 
@@ -8465,13 +8498,141 @@ window.HAHBoard = window.HAHBoard || {};
     return patient;
   }
 
+  function normaliseTaskRecord(task) {
+    const t = task || {};
+    const id = String(t.id || `manual:${String(t.patientId || 'patient')}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 6)}`);
+    return {
+      id,
+      patientId: String(t.patientId || ''),
+      title: String(t.title || '').trim(),
+      note: String(t.note || '').trim(),
+      category: String(t.category || 'Clinical review').trim(),
+      owner: String(t.owner || 'Unassigned').trim(),
+      dueAt: String(t.dueAt || '').trim(),
+      priority: String(t.priority || 'Medium').trim(),
+      status: String(t.status || 'Open').trim(),
+      blocker: String(t.blocker || '').trim(),
+      createdFrom: String(t.createdFrom || 'Tasks').trim(),
+      createdBy: String(t.createdBy || t.updatedBy || getActorName()).trim(),
+      createdAt: String(t.createdAt || t.updatedAt || nowIso()).trim(),
+      updatedAt: String(t.updatedAt || nowIso()).trim(),
+      updatedBy: String(t.updatedBy || getActorName()).trim(),
+      boardLink: String(t.boardLink || '').trim()
+    };
+  }
+
+  function normaliseTasksDoc(doc) {
+    const base = doc && typeof doc === 'object' ? doc : makeTasksSchema();
+    const tasks = Array.isArray(base.tasks) ? base.tasks.map(normaliseTaskRecord).filter(function (task) {
+      return task.patientId && task.title;
+    }) : [];
+    return Object.assign(makeTasksSchema(), base, {
+      tasks,
+      updatedAt: base.updatedAt || nowIso(),
+      meta: Object.assign({}, base.meta || {}, { lastWriter: (base.meta && base.meta.lastWriter) || getActorName() })
+    });
+  }
+
   async function loadTasks() {
-    return getJson(childPath(settings.folderPath, 'tasks.json'));
+    const doc = normaliseTasksDoc(await getJson(childPath(settings.folderPath, 'tasks.json')));
+    taskCache = {
+      loadedAt: nowIso(),
+      source: 'json',
+      tasks: clone(doc.tasks || []),
+      lastError: ''
+    };
+    saveTaskCache();
+    state.lastOperation = `Loaded ${taskCache.tasks.length} JSON task${taskCache.tasks.length === 1 ? '' : 's'}`;
+    state.lastError = '';
+    saveState();
+    return doc;
   }
 
   async function saveTasks(tasksDoc) {
-    const next = Object.assign({}, tasksDoc || {}, { updatedAt: nowIso() });
-    return putJson(childPath(settings.folderPath, 'tasks.json'), next);
+    const next = normaliseTasksDoc(Object.assign({}, tasksDoc || {}, { updatedAt: nowIso() }));
+    await putJson(childPath(settings.folderPath, 'tasks.json'), next);
+    taskCache = {
+      loadedAt: nowIso(),
+      source: 'json',
+      tasks: clone(next.tasks || []),
+      lastError: ''
+    };
+    saveTaskCache();
+    return next;
+  }
+
+  async function loadTaskDataset() {
+    try {
+      return await loadTasks();
+    } catch (err) {
+      taskCache.lastError = err && err.message ? err.message : String(err || 'Unknown error');
+      saveTaskCache();
+      recordError(err);
+      throw err;
+    }
+  }
+
+  function getCachedTasks() {
+    return taskCache && Array.isArray(taskCache.tasks) ? clone(taskCache.tasks) : [];
+  }
+
+  function clearTaskCache() {
+    taskCache = clone(DEFAULT_TASK_CACHE);
+    saveTaskCache();
+    state.lastOperation = 'Cleared JSON task cache';
+    state.lastError = '';
+    saveState();
+  }
+
+  async function upsertTaskRecord(taskInput) {
+    const task = normaliseTaskRecord(taskInput || {});
+    if (!task.patientId || !task.title) return null;
+    let doc;
+    try {
+      doc = normaliseTasksDoc(await getJson(childPath(settings.folderPath, 'tasks.json')));
+    } catch (_) {
+      doc = makeTasksSchema();
+    }
+    const rows = Array.isArray(doc.tasks) ? doc.tasks.slice() : [];
+    const idx = rows.findIndex(function (row) { return String(row.id) === String(task.id); });
+    if (idx >= 0) rows[idx] = Object.assign({}, rows[idx], task, { updatedAt: nowIso(), updatedBy: getActorName() });
+    else rows.unshift(Object.assign({}, task, { createdAt: task.createdAt || nowIso(), updatedAt: nowIso(), updatedBy: getActorName() }));
+    doc.tasks = rows;
+    doc.meta = Object.assign({}, doc.meta || {}, { lastWriter: getActorName() });
+    const saved = await saveTasks(doc);
+    try {
+      await appendAudit({
+        type: idx >= 0 ? 'task-json-updated' : 'task-json-created',
+        entityType: 'task',
+        entityId: task.id,
+        summary: `${idx >= 0 ? 'Updated' : 'Created'} team task: ${task.title}`
+      });
+    } catch (_) {}
+    return (saved.tasks || []).find(function (row) { return String(row.id) === String(task.id); }) || task;
+  }
+
+  async function patchTaskRecord(taskId, patch) {
+    const id = String(taskId || '');
+    if (!id) return null;
+    let doc;
+    try { doc = normaliseTasksDoc(await getJson(childPath(settings.folderPath, 'tasks.json'))); }
+    catch (_) { doc = makeTasksSchema(); }
+    const rows = Array.isArray(doc.tasks) ? doc.tasks.slice() : [];
+    const idx = rows.findIndex(function (row) { return String(row.id) === id; });
+    if (idx < 0) return null;
+    rows[idx] = Object.assign({}, rows[idx], patch || {}, { updatedAt: nowIso(), updatedBy: getActorName() });
+    doc.tasks = rows;
+    doc.meta = Object.assign({}, doc.meta || {}, { lastWriter: getActorName() });
+    const saved = await saveTasks(doc);
+    try {
+      await appendAudit({
+        type: 'task-json-patched',
+        entityType: 'task',
+        entityId: id,
+        summary: `Updated team task: ${rows[idx].title || id}`
+      });
+    } catch (_) {}
+    return (saved.tasks || []).find(function (row) { return String(row.id) === id; }) || rows[idx];
   }
 
   async function loadRound(date) {
@@ -8742,8 +8903,11 @@ window.HAHBoard = window.HAHBoard || {};
         rows,
         lastError: ''
       };
+      try { await loadTaskDataset(); } catch (_) {}
       state.remoteReady = true;
-      state.lastOperation = rows.length ? `Loaded ${rows.length} JSON patient record(s)` : 'JSON store loaded; no active patient records yet';
+      state.lastOperation = rows.length
+        ? `Loaded ${rows.length} JSON patient record(s) and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s)`
+        : `JSON store loaded; no active patient records yet. ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s) loaded.`;
       state.lastError = '';
       savePatientCache();
       saveState();
@@ -8771,8 +8935,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function clearPatientCache() {
     patientCache = clone(DEFAULT_PATIENT_CACHE);
+    taskCache = clone(DEFAULT_TASK_CACHE);
     savePatientCache();
-    state.lastOperation = 'Cleared JSON patient cache; local/demo source will be used';
+    saveTaskCache();
+    state.lastOperation = 'Cleared JSON patient/task cache; local/demo source will be used';
     state.lastError = '';
     saveState();
   }
@@ -8833,6 +8999,11 @@ window.HAHBoard = window.HAHBoard || {};
     patchPatientRecord,
     loadTasks,
     saveTasks,
+    loadTaskDataset,
+    getCachedTasks,
+    clearTaskCache,
+    upsertTaskRecord,
+    patchTaskRecord,
     loadRound,
     saveRound,
     appendAudit,
@@ -9754,10 +9925,22 @@ window.HAHBoard = window.HAHBoard || {};
     const patientMap = new Map(boardRows.map((row) => [String(row.id), row]));
     const opsState = getOpsState();
     const derivedTasks = boardRows.flatMap(buildTasksForPatient).map(applyTaskPatch);
-    const customTasks = Array.isArray(opsState.customTasks)
+    const localCustomTasks = Array.isArray(opsState.customTasks)
       ? opsState.customTasks.map((task) => buildCustomTask(task, patientMap)).filter(Boolean)
       : [];
-    return derivedTasks.concat(customTasks);
+    const jsonTasksRaw = window.HAHBoard.sharedJsonStore && typeof window.HAHBoard.sharedJsonStore.getCachedTasks === 'function'
+      ? window.HAHBoard.sharedJsonStore.getCachedTasks()
+      : [];
+    const jsonCustomTasks = Array.isArray(jsonTasksRaw)
+      ? jsonTasksRaw.map((task) => buildCustomTask(Object.assign({ createdFrom: 'JSON tasks' }, task), patientMap)).filter(Boolean)
+      : [];
+
+    const customMap = new Map();
+    jsonCustomTasks.concat(localCustomTasks).forEach((task) => {
+      if (!task || !task.id) return;
+      customMap.set(String(task.id), Object.assign({}, customMap.get(String(task.id)) || {}, task));
+    });
+    return derivedTasks.concat(Array.from(customMap.values()));
   }
 
 
@@ -15203,6 +15386,7 @@ window.HAHBoard = window.HAHBoard || {};
       else if (action === 'settings-json-test') await shared.testReadWrite();
       else if (action === 'settings-json-create-test-patient') await shared.createTestPatient();
       else if (action === 'settings-json-load-patients') await shared.loadPatientDataset();
+      else if (action === 'settings-json-load-tasks') await shared.loadTaskDataset();
       else if (action === 'settings-json-clear-patient-cache') shared.clearPatientCache();
       else if (action === 'settings-json-download-schema') shared.downloadStarterSchemas();
       else if (action === 'settings-json-refresh') {
@@ -15498,6 +15682,7 @@ window.HAHBoard = window.HAHBoard || {};
     const jsonSettings = jsonInfo ? jsonInfo.settings : null;
     const jsonState = jsonInfo ? jsonInfo.state : null;
     const jsonPatientCache = jsonInfo && jsonInfo.patientCache ? jsonInfo.patientCache : null;
+    const jsonTaskCache = jsonInfo && jsonInfo.taskCache ? jsonInfo.taskCache : null;
     const jsonFiles = jsonInfo ? jsonInfo.filePlan : [];
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
@@ -15553,6 +15738,7 @@ window.HAHBoard = window.HAHBoard || {};
               <div class="hah-settings-stat"><div class="hah-kv-label">Last test</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.lastTestAt ? new Date(jsonState.lastTestAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">Patient source</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows && jsonPatientCache.rows.length ? 'OneDrive JSON' : 'Local/demo fallback')}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">JSON patients loaded</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows ? String(jsonPatientCache.rows.length) : '0')}${jsonPatientCache && jsonPatientCache.loadedAt ? ' · ' + escapeHtml(new Date(jsonPatientCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">JSON tasks loaded</div><div class="hah-kv-value">${escapeHtml(jsonTaskCache && jsonTaskCache.tasks ? String(jsonTaskCache.tasks.length) : '0')}${jsonTaskCache && jsonTaskCache.loadedAt ? ' · ' + escapeHtml(new Date(jsonTaskCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</div></div>
             </div>
             ${jsonState && jsonState.lastError ? '<div class="hah-settings-error" style="margin-top:12px;">' + escapeHtml(jsonState.lastError) + '</div>' : ''}
             ${jsonState && jsonState.lastOperation ? '<div class="hah-muted" style="margin-top:12px;font-size:13px;">' + escapeHtml(jsonState.lastOperation) + '</div>' : ''}
@@ -15563,7 +15749,8 @@ window.HAHBoard = window.HAHBoard || {};
               <button type="button" class="hah-inline-pill" data-action="settings-json-init">Initialise store</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-test">Test read/write</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-create-test-patient">Create test patient</button>
-              <button type="button" class="hah-inline-pill" data-action="settings-json-load-patients">Load JSON patients</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-load-patients">Load JSON patients/tasks</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-load-tasks">Load JSON tasks only</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-clear-patient-cache">Use local fallback</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-download-schema">Download starter schema</button>
             </div>
