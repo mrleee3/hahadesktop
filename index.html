@@ -4933,6 +4933,10 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   width: min(520px, calc(100vw - 32px));
 }
 
+
+/* ─── Mobile clinical review compact metadata ───────────────────────── */
+.hah-log-mobile-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:2px}.hah-log-mobile-meta span{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:999px;background:rgba(47,111,237,.065);border:1px solid rgba(47,111,237,.12);color:rgba(37,80,160,.95);font-size:10.5px;font-weight:700;line-height:1.2}
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -6514,9 +6518,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_089_json_sync_release.html',
-  source: 'hospital_at_home_board_v0_8_089_json_sync_source.zip',
-  builtAt: '2026-04-27T22:29:04.492122',
+  filename: 'hospital_at_home_board_v0_8_090_json_mapping_release.html',
+  source: 'hospital_at_home_board_v0_8_090_json_mapping_source.zip',
+  builtAt: '2026-04-27T22:50:54.304689',
   entry: 'desktop.html'
 };
 </script>
@@ -9186,6 +9190,9 @@ window.HAHBoard = window.HAHBoard || {};
     const note = entry.note || {};
     if (note.issues) patient.clinical.summary = note.issues;
     if (note.bloodsIx) patient.clinical.bloodsSummary = note.bloodsIx;
+    if (note.progress) patient.clinical.currently = note.progress;
+    if (note.examination) patient.clinical.examination = note.examination;
+    if (note.plan) patient.clinical.plan = note.plan;
 
     patient.operational = Object.assign({}, patient.operational || {});
     const dr = deriveJsonDischargeReadiness(entry.fields || {});
@@ -9239,47 +9246,21 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function mapJsonPatientToLegacyRaw(patient) {
-    const identity = patient.identity || {};
-    const serviceBlock = patient.service || {};
-    const alerts = patient.alerts || {};
-    const clinical = patient.clinical || {};
-    const operational = patient.operational || {};
+    const identity = patient.identity || {}, serviceBlock = patient.service || {}, alerts = patient.alerts || {}, clinical = patient.clinical || {}, operational = patient.operational || {};
     const latest = latestTimelineEntry(patient, isBoardStyleTimelineEntry) || latestTimelineEntry(patient);
-    const note = latest && latest.note ? latest.note : {};
-    const issueLines = Array.isArray(clinical.persistentIssues)
-      ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n')
-      : '';
+    const note = timelineNoteFromEncounter(latest || {});
+    const fields = latest && latest.fields ? latest.fields : {};
+    const latestObs = fields.obs && typeof fields.obs === 'object' ? fields.obs : {};
+    const obs = Object.assign({}, clinical.obs && typeof clinical.obs === 'object' ? clinical.obs : {}, latestObs);
+    const acp = clinical.acp && typeof clinical.acp === 'object' ? clinical.acp : {};
+    const meds = Array.isArray(clinical.medications) ? clinical.medications : (Array.isArray(fields.medications) ? fields.medications : []);
+    const ivs = Array.isArray(clinical.ivTherapies) ? clinical.ivTherapies : (Array.isArray(fields.ivTherapies) ? fields.ivTherapies : []);
+    const issueLines = Array.isArray(clinical.persistentIssues) ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n') : '';
     const summary = clinical.summary || note.issues || issueLines || serviceBlock.pathway || '';
-    return {
-      id: patient.id,
-      name: identity.name || patient.name || patient.id,
-      age: identity.age || '',
-      sex: identity.sex || '',
-      location: serviceBlock.location || '',
-      pathway: serviceBlock.pathway || '',
-      referralSource: serviceBlock.referredFrom || '',
-      doa: serviceBlock.admittedDate || '',
-      priority: operational.priority || '',
-      boardStatus: operational.boardStatus || 'Not discussed',
-      dischargeReadiness: operational.dischargeReadiness || '',
-      dnar: !!alerts.dnar,
-      acp: !!alerts.acp,
-      escalation: alerts.escalation || '',
-      summary,
-      listDetails: [summary, alerts.dnar ? 'DNAR' : '', alerts.acp ? 'ACP' : '', alerts.escalation || ''].filter(Boolean).join('\n'),
-      form: {
-        issues: note.issues || issueLines || '',
-        currently: note.progress || '',
-        examination: note.examination || '',
-        plan: note.plan || '',
-        bloods: note.bloodsIx || clinical.bloodsSummary || '',
-        forDischargeSummary: operational.dischargeReadiness || '',
-        obs: clinical.obs || {},
-        medEntries: Array.isArray(clinical.medications) ? clinical.medications : [],
-        ivEntries: Array.isArray(clinical.ivTherapies) ? clinical.ivTherapies : []
-      },
-      jsonRecord: patient
-    };
+    const dnacprYes = !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes';
+    const acpPresent = !!alerts.acp || String(acp.tepStatus || '').toLowerCase() === 'present' || !!String(acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes || '').trim();
+    const escalation = alerts.escalation || acp.ceilingOfCare || acp.tep || '';
+    return {id:patient.id,name:identity.name||patient.name||patient.id,age:identity.age||'',sex:identity.sex||'',location:serviceBlock.location||'',pathway:serviceBlock.pathway||'',referralSource:serviceBlock.referredFrom||'',doa:serviceBlock.admittedDate||'',priority:operational.priority||'',boardStatus:operational.boardStatus||'Not discussed',dischargeReadiness:operational.dischargeReadiness||'',dnar:dnacprYes,acp:acpPresent,alerts:{dnar:dnacprYes,acp:acpPresent,escalation},escalation,summary,listDetails:[summary,dnacprYes?'DNAR':'',acpPresent?'ACP':'',escalation].filter(Boolean).join('\n'),form:Object.assign({},obs,{issues:note.issues||issueLines||'',currently:note.progress||clinical.currently||'',examination:note.examination||clinical.examination||'',plan:note.plan||clinical.plan||'',bloods:note.bloodsIx||clinical.bloodsSummary||'',forDischargeSummary:operational.dischargeReadiness||'',obs,medEntries:meds,ivEntries:ivs,medsGiven:meds.length>0,ivGiven:ivs.length>0,pmh:clinical.pmh||'',socialHistory:clinical.socialHistory||''}),updatedAt:(patient.meta&&patient.meta.updatedAt)||patient.updatedAt||'',importedAt:(latest&&(latest.timestamp||latest.updatedAt))||(patient.meta&&patient.meta.updatedAt)||patient.updatedAt||'',jsonRecord:patient};
   }
 
   async function createTestPatient() {
@@ -12019,21 +12000,8 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function acpPatchForJson(acp) {
-    const row = acp || {};
-    const hasAcp = !!(row.dnacprStatus || row.tepStatus || row.jicMeds || row.tep || (row.notes && String(row.notes).trim()));
-    const escalationParts = [];
-    if (row.tep) escalationParts.push(String(row.tep).trim());
-    if (row.tepStatus) escalationParts.push('UCP ' + String(row.tepStatus).replace(/_/g, ' '));
-    return {
-      alerts: {
-        dnar: row.dnacprStatus === 'yes',
-        acp: hasAcp,
-        escalation: escalationParts.filter(Boolean).join(' · ')
-      },
-      clinical: {
-        acp: Object.assign({}, row)
-      }
-    };
+    const row = acp || {};const ceiling=String(row.ceilingOfCare||row.tep||'').trim();const notes=String(row.notes||row.acpNotes||'').trim();const ucp=String(row.tepStatus||'').trim();const hasAcp=ucp==='present'||!!ceiling||!!notes||!!row.jicMeds||!!row.tep;const escalationParts=[];if(ceiling)escalationParts.push(ceiling);if(ucp)escalationParts.push('UCP '+ucp.replace(/_/g,' '));
+    return {alerts:{dnar:row.dnacprStatus==='yes',acp:hasAcp,escalation:escalationParts.filter(Boolean).join(' · ')},clinical:{acp:Object.assign({},row,{ceilingOfCare:ceiling,tep:ceiling,notes,acpNotes:notes,tepStatus:ucp})}};
   }
 
   function getJsonAcpForPatient(patientSummary) {
@@ -12579,6 +12547,10 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-log-card">${header}<div class="hah-log-entries">${latestHtml}</div>${earlierHtml}</div>`;
   }
 
+
+  function compactObsText(obs) {const o=obs&&typeof obs==='object'?obs:{};const parts=[];if(o.temp)parts.push('T '+o.temp);if(o.bp)parts.push('BP '+o.bp);if(o.hr)parts.push('HR '+o.hr);if(o.spo2)parts.push('SpO₂ '+o.spo2+'%'+(o.oxygenFlow?' on '+o.oxygenFlow:(String(o.oxygen||'')==='2'?' on O₂':' RA')));if(o.rr)parts.push('RR '+o.rr);if(o.weight)parts.push('Wt '+o.weight+'kg');if(o.bm)parts.push('BM '+o.bm);return parts.join(' · ');}
+  function compactAcpText(acp) {const a=acp&&typeof acp==='object'?acp:{};const parts=[];if(a.dnacprStatus)parts.push('DNACPR '+(a.dnacprStatus==='yes'?'yes':a.dnacprStatus));if(a.tepStatus)parts.push('UCP '+String(a.tepStatus).replace(/_/g,' '));const tep=a.tep||a.ceilingOfCare||'';if(tep)parts.push('TEP '+tep);return parts.join(' · ');}
+
   function renderPatientLogEntry(enc, isLatest) {
     const f = enc.fields || {};
     const type = enc.type || 'board_round';
@@ -12607,6 +12579,7 @@ window.HAHBoard = window.HAHBoard || {};
     const planBody = planText
       ? `<div class="hah-log-field-body">${c.escapeHtml(planText)}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
+    const metaBits=[];const obsText=compactObsText(f.obs);const acpText=compactAcpText(f.acp);const medsN=Array.isArray(f.medications)?f.medications.length:0;const ivN=Array.isArray(f.ivTherapies)?f.ivTherapies.length:0;if(isMobile&&obsText)metaBits.push('Obs: '+obsText);if(isMobile&&acpText)metaBits.push('ACP: '+acpText);if(isMobile&&medsN)metaBits.push('Meds: '+medsN);if(isMobile&&ivN)metaBits.push('IV: '+ivN);const metaHtml=isMobile&&metaBits.length?`<div class="hah-log-mobile-meta">${metaBits.map((m)=>`<span>${c.escapeHtml(m)}</span>`).join('')}</div>`:'';
     const cols = isMobile ? [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Currently</div>${progressBody}</div>`,
@@ -12630,6 +12603,7 @@ window.HAHBoard = window.HAHBoard || {};
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
       <div class="hah-log-entry-grid${isMobile ? ' is-mobile-review' : ''}">${cols.join('')}</div>
+      ${metaHtml}
     </div>`;
   }
 
@@ -12707,8 +12681,9 @@ window.HAHBoard = window.HAHBoard || {};
     const acp    = getAcpStateForVm(vm);
     const dnacpr = acp.dnacprStatus || '';
     const ucp    = acp.tepStatus    || '';
-    const tep    = acp.tep          || '';
+    const tep    = acp.tep || acp.ceilingOfCare || '';
     const jic    = acp.jicMeds      || '';
+    const acpNotesText = acp.notes || acp.acpNotes || '';
 
     const dnacprText = dnacpr === 'yes' ? 'Yes' + (acp.dnacprFormSeen ? ' · Form seen' : '')
                       : dnacpr === 'no' ? 'No'
@@ -12717,7 +12692,7 @@ window.HAHBoard = window.HAHBoard || {};
     const jicText    = jic === 'in_property'  ? 'In property'
                      : jic === 'in_process'   ? 'In process'
                      : jic === 'not_prescribed' ? 'Not prescribed' : '';
-    const hasData    = dnacpr || ucp || tep || jic || (acp.notes && String(acp.notes).trim());
+    const hasData    = dnacpr || ucp || tep || jic || (acpNotesText && String(acpNotesText).trim());
 
     function row(label, value, extraClass) {
       if (!value) return '';
@@ -13137,14 +13112,14 @@ window.HAHBoard = window.HAHBoard || {};
     const encounters = getPatientEncounterRows(vm.patient);
     const composerMap = {};
     encounters
-      .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
+      .filter((e) => (e.type === 'board_round' || e.type === 'mobile_clinical_review') && e.fields && String(e.fields.bloods || e.fields.bloodsIx || '').trim())
       .forEach((e) => {
         const dt = new Date(e.timestamp);
         const encDateStr = isNaN(dt.getTime()) ? null
           : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         const encounterDate = encDateStr === todayStr ? 'Today' : (encDateStr || null);
 
-        String(e.fields.bloods).split(/\n+/).forEach((rawLine) => {
+        String(e.fields.bloods || e.fields.bloodsIx || '').split(/\n+/).forEach((rawLine) => {
           let line = rawLine.trim();
           if (!line) return;
           let date = encounterDate;
