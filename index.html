@@ -243,9 +243,6 @@ html, body {
   position: relative;
   transition: background 120ms ease;
   z-index: 20;
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 .hah-resize-handle[data-resize="left"]  { grid-area: handle-l; }
@@ -461,86 +458,6 @@ html, body {
   }
 }
 
-/* iPad / smaller laptop — left pane becomes a slide-in drawer */
-@media (max-width: 1180px) {
-  .hah-desktop-app {
-    grid-template-columns: var(--desk-nav-w) 0 0 minmax(0, 1fr) 6px var(--desk-right-w);
-  }
-  .hah-resize-handle#hahResizeLeft,
-  .hah-left-pane {
-    display: none;
-  }
-
-  /* When the drawer is toggled open, the left pane appears as a fixed overlay */
-  .hah-desktop-app.is-left-drawer-open .hah-left-pane {
-    display: block;
-    position: fixed;
-    top: var(--desk-header-h);
-    left: var(--desk-nav-w);
-    bottom: 0;
-    width: 320px;
-    max-width: calc(100vw - var(--desk-nav-w) - 32px);
-    z-index: 220;
-    background: linear-gradient(180deg, #f6f8fc, #eef2f9);
-    border-right: 1px solid var(--desk-border);
-    box-shadow: 4px 0 24px rgba(15,23,42,0.12);
-    overflow-y: auto;
-    padding: 14px;
-    animation: hah-drawer-in 220ms ease-out;
-  }
-
-  .hah-desktop-app.is-left-drawer-open .hah-drawer-backdrop {
-    display: block;
-    position: fixed;
-    inset: var(--desk-header-h) 0 0 var(--desk-nav-w);
-    background: rgba(15,23,42,0.32);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    z-index: 210;
-    animation: hah-drawer-fade 220ms ease-out;
-  }
-
-  .hah-drawer-backdrop { display: none; }
-
-  /* Show the drawer toggle in the header on small screens */
-  .hah-drawer-toggle { display: inline-flex !important; }
-}
-
-@keyframes hah-drawer-in {
-  from { transform: translateX(-100%); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes hah-drawer-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* Drawer toggle button — hidden on desktop, visible on iPad via media query */
-.hah-drawer-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.16);
-  color: #fff;
-  cursor: pointer;
-  margin-right: 6px;
-  transition: background 140ms ease;
-}
-
-.hah-drawer-toggle:hover {
-  background: rgba(255,255,255,0.24);
-}
-
-.hah-drawer-toggle:active {
-  transform: scale(0.95);
-}
-
 
 .hah-header {
   box-shadow: 0 10px 24px rgba(17, 37, 63, 0.03);
@@ -674,6 +591,23 @@ html, body {
   line-height: 1.35;
 }
 
+
+
+.hah-header .hah-pill-btn.is-update {
+  background: rgba(245,158,11,0.24);
+  border-color: rgba(255,255,255,0.36);
+  color: #fff;
+}
+
+.hah-header .hah-pill-btn.is-syncing {
+  opacity: 0.78;
+  cursor: progress;
+}
+
+.hah-header .hah-pill-btn.is-error {
+  background: rgba(220,38,38,0.24);
+  border-color: rgba(255,255,255,0.34);
+}
 
 /* ─── JSON status refinement ─────────────────────────────────────────── */
 .hah-json-status-card {
@@ -1038,6 +972,34 @@ html, body {
 
 .hah-board-filter-pill.is-active .hah-board-filter-count {
   color: rgba(47,111,237,0.95);
+}
+
+
+.hah-board-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid rgba(47,111,237,0.18);
+  border-radius: 999px;
+  background: rgba(47,111,237,0.055);
+  color: rgba(47,111,237,0.95);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: 4px;
+}
+
+.hah-board-sync-btn:hover {
+  background: rgba(47,111,237,0.11);
+  border-color: rgba(47,111,237,0.32);
+}
+
+.hah-board-sync-btn.has-update {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.38);
+  color: #b45309;
 }
 
 /* ─── Table ──────────────────────────────────────────────────────── */
@@ -3233,6 +3195,61 @@ html, body {
   color: var(--desk-text-muted);
 }
 
+
+
+.hah-pt-sync-btn {
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(47,111,237,0.18);
+  background: rgba(47,111,237,0.07);
+  color: rgba(47,111,237,0.95);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hah-pt-sync-btn:hover {
+  background: rgba(47,111,237,0.13);
+  border-color: rgba(47,111,237,0.32);
+}
+
+.hah-pt-sync-btn.has-update {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.38);
+  color: #b45309;
+}
+
+.hah-log-entry-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(25,45,72,0.045);
+  color: var(--desk-text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hah-log-entry.is-mobile-review .hah-log-entry-type {
+  background: rgba(47,111,237,0.085);
+  color: rgba(36,92,210,1);
+}
+
+.hah-log-entry-grid.is-mobile-review {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1440px) {
+  .hah-log-entry-grid.is-mobile-review {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ─── Patient compact / narrow mode ─────────────────────────────────── */
 
@@ -6497,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_089_release.html',
-  source: 'hospital_at_home_board_v0_8_089_source.zip',
-  builtAt: '2026-04-27T21:26:38.350493',
+  filename: 'hospital_at_home_board_v0_8_089_json_sync_release.html',
+  source: 'hospital_at_home_board_v0_8_089_json_sync_source.zip',
+  builtAt: '2026-04-27T22:29:04.492122',
   entry: 'desktop.html'
 };
 </script>
@@ -6709,8 +6726,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_089_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_089_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_088_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_088_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8178,7 +8195,10 @@ window.HAHBoard = window.HAHBoard || {};
     lastError: '',
     lastOperation: '',
     remoteReady: false,
-    knownFiles: []
+    knownFiles: [],
+    updateAvailable: false,
+    lastUpdateCheckAt: '',
+    lastRemoteUpdateAt: ''
   };
 
   const DEFAULT_PATIENT_CACHE = {
@@ -8261,7 +8281,7 @@ window.HAHBoard = window.HAHBoard || {};
   function refreshShell(label) {
     if (window.HAHBoard && window.HAHBoard.store) {
       const current = window.HAHBoard.store.getState ? window.HAHBoard.store.getState() : null;
-      const syncState = label || (state.remoteReady ? 'JSON store ready' : 'JSON store');
+      const syncState = state.updateAvailable ? 'update-available' : (label || (state.remoteReady ? 'JSON store ready' : 'JSON store'));
       try { window.HAHBoard.store.setState({ ui: { syncState } }); } catch (_) {}
     }
   }
@@ -8273,7 +8293,7 @@ window.HAHBoard = window.HAHBoard || {};
       msalAvailable: !!window.msal,
       configured: !!settings.clientId,
       folderPath: normalisePath(settings.folderPath),
-      status: state.lastError ? 'Error' : (state.remoteReady ? 'Ready' : (settings.clientId ? 'Configured' : 'Not configured')),
+      status: state.lastError ? 'Error' : (state.updateAvailable ? 'Update available' : (state.remoteReady ? 'Ready' : (settings.clientId ? 'Configured' : 'Not configured'))),
       filePlan: getFilePlan(),
       patientCache: clone(patientCache),
       taskCache: clone(taskCache)
@@ -8417,6 +8437,10 @@ window.HAHBoard = window.HAHBoard || {};
     const response = await graphFetch(path, options);
     if (response.status === 204) return null;
     return response.json();
+  }
+
+  async function getItemMeta(path) {
+    return graphJson(`/me/drive/root:/${encodePath(path)}`);
   }
 
   async function existsPath(path) {
@@ -9084,6 +9108,7 @@ window.HAHBoard = window.HAHBoard || {};
   function normaliseEncounterType(type) {
     const raw = String(type || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
     if (raw === 'boardround' || raw === 'board_round') return 'board_round';
+    if (raw === 'mobile_clinical_review' || raw === 'mobileclinicalreview' || raw === 'mobile_clinical_update' || raw === 'mobileclinicalupdate') return 'mobile_clinical_review';
     if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
     if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
     return 'other';
@@ -9094,7 +9119,8 @@ window.HAHBoard = window.HAHBoard || {};
     const note = encounter && encounter.note ? encounter.note : {};
     return {
       issues: String(fields.issueRaw || fields.issues || note.issues || '').trim(),
-      progress: String(fields.progress || note.progress || '').trim(),
+      progress: String(fields.progress || fields.currently || note.progress || '').trim(),
+      examination: String(fields.examination || note.examination || '').trim(),
       bloodsIx: String(fields.bloodsIx || fields.bloods || note.bloodsIx || note.bloods || '').trim(),
       plan: String(fields.plan || note.plan || '').trim()
     };
@@ -9199,12 +9225,17 @@ window.HAHBoard = window.HAHBoard || {};
     return next;
   }
 
-  function latestTimelineEntry(patient) {
+  function latestTimelineEntry(patient, predicate) {
     const entries = Array.isArray(patient && patient.timeline) ? patient.timeline.slice() : [];
     entries.sort(function (a, b) {
       return Date.parse(b.timestamp || b.completedAt || b.updatedAt || 0) - Date.parse(a.timestamp || a.completedAt || a.updatedAt || 0);
     });
-    return entries[0] || null;
+    return entries.find(function (entry) { return !predicate || predicate(entry); }) || null;
+  }
+
+  function isBoardStyleTimelineEntry(entry) {
+    const type = normaliseEncounterType(entry && entry.type);
+    return type === 'board_round' || type === 'mobile_clinical_review';
   }
 
   function mapJsonPatientToLegacyRaw(patient) {
@@ -9213,7 +9244,7 @@ window.HAHBoard = window.HAHBoard || {};
     const alerts = patient.alerts || {};
     const clinical = patient.clinical || {};
     const operational = patient.operational || {};
-    const latest = latestTimelineEntry(patient);
+    const latest = latestTimelineEntry(patient, isBoardStyleTimelineEntry) || latestTimelineEntry(patient);
     const note = latest && latest.note ? latest.note : {};
     const issueLines = Array.isArray(clinical.persistentIssues)
       ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n')
@@ -9238,7 +9269,8 @@ window.HAHBoard = window.HAHBoard || {};
       listDetails: [summary, alerts.dnar ? 'DNAR' : '', alerts.acp ? 'ACP' : '', alerts.escalation || ''].filter(Boolean).join('\n'),
       form: {
         issues: note.issues || issueLines || '',
-        examination: note.progress || '',
+        currently: note.progress || '',
+        examination: note.examination || '',
         plan: note.plan || '',
         bloods: note.bloodsIx || clinical.bloodsSummary || '',
         forDischargeSummary: operational.dischargeReadiness || '',
@@ -9342,6 +9374,7 @@ window.HAHBoard = window.HAHBoard || {};
       };
       try { await loadTaskDataset(); } catch (_) {}
       state.remoteReady = true;
+      state.updateAvailable = false;
       state.lastOperation = rows.length
         ? `Loaded ${rows.length} active JSON patient(s), ${archivedRows.length} archived patient(s), and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s)`
         : `JSON store loaded; no active patient records. ${archivedRows.length} archived patient(s) and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s) loaded.`;
@@ -9352,6 +9385,54 @@ window.HAHBoard = window.HAHBoard || {};
     } catch (err) {
       patientCache.lastError = err && err.message ? err.message : String(err || 'Unknown error');
       savePatientCache();
+      recordError(err);
+      throw err;
+    }
+  }
+
+  function getRemoteStampFromMeta(meta) {
+    const raw = meta && (meta.lastModifiedDateTime || meta.fileSystemInfo && meta.fileSystemInfo.lastModifiedDateTime);
+    const t = Date.parse(raw || 0);
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  async function checkForRemoteUpdates(patientId) {
+    try {
+      const loadedAt = Date.parse(patientCache && patientCache.loadedAt || 0) || 0;
+      if (!loadedAt) {
+        state.updateAvailable = false;
+        state.lastUpdateCheckAt = nowIso();
+        saveState();
+        return { available: false, count: 0, reason: 'No JSON cache loaded yet' };
+      }
+      const ids = [];
+      if (patientId) {
+        ids.push(String(patientId));
+      } else if (patientCache && Array.isArray(patientCache.rows)) {
+        patientCache.rows.forEach(function (row) { if (row && row.id) ids.push(String(row.id)); });
+      }
+      let changed = 0;
+      let latestRemote = 0;
+      const paths = ids.slice(0, 80).map(function (id) { return childPath(settings.folderPath, `patients/${id}.json`); });
+      paths.push(childPath(settings.folderPath, 'tasks.json'));
+      for (const path of paths) {
+        try {
+          const meta = await getItemMeta(path);
+          const stamp = getRemoteStampFromMeta(meta);
+          latestRemote = Math.max(latestRemote, stamp);
+          if (stamp && stamp > loadedAt + 5000) changed += 1;
+        } catch (_) {}
+      }
+      state.updateAvailable = changed > 0;
+      state.lastUpdateCheckAt = nowIso();
+      state.lastRemoteUpdateAt = latestRemote ? new Date(latestRemote).toISOString() : '';
+      state.lastOperation = changed > 0
+        ? `JSON update available (${changed} changed file${changed === 1 ? '' : 's'})`
+        : 'No JSON updates found';
+      state.lastError = '';
+      saveState();
+      return { available: changed > 0, count: changed, latestRemoteAt: state.lastRemoteUpdateAt };
+    } catch (err) {
       recordError(err);
       throw err;
     }
@@ -9426,6 +9507,7 @@ window.HAHBoard = window.HAHBoard || {};
     testReadWrite,
     createTestPatient,
     loadPatientDataset,
+    checkForRemoteUpdates,
     getCachedPatientBundle,
     clearPatientCache,
     downloadStarterSchemas,
@@ -11052,6 +11134,10 @@ window.HAHBoard = window.HAHBoard || {};
             </button>
             ${sortMenu}
           </div>
+          <button type="button" class="hah-board-sync-btn${state.ui && state.ui.syncState === 'update-available' ? ' has-update' : ''}" data-action="sync-json" title="${state.ui && state.ui.syncState === 'update-available' ? 'JSON update available — press to reload' : 'Sync with shared JSON'}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path><path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path></svg>
+            ${state.ui && state.ui.syncState === 'update-available' ? 'Reload JSON' : 'Sync JSON'}
+          </button>
           <button type="button" class="hah-board-add-btn" data-board-action="open-add-patient">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add patient
@@ -11809,6 +11895,7 @@ window.HAHBoard = window.HAHBoard || {};
   function normaliseEncounterType(type) {
     const raw = String(type || '').trim().toLowerCase().replace(/[-\s]+/g, '_');
     if (raw === 'boardround' || raw === 'board_round') return 'board_round';
+    if (raw === 'mobile_clinical_review' || raw === 'mobileclinicalreview' || raw === 'mobile_clinical_update' || raw === 'mobileclinicalupdate') return 'mobile_clinical_review';
     if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
     if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
     return 'other';
@@ -11819,12 +11906,14 @@ window.HAHBoard = window.HAHBoard || {};
     const note = entry.note || {};
     const fields = Object.assign({}, entry.fields || {}, {
       issues: String((entry.fields && entry.fields.issues) || note.issues || '').trim(),
-      progress: String((entry.fields && entry.fields.progress) || note.progress || '').trim(),
+      progress: String((entry.fields && (entry.fields.progress || entry.fields.currently)) || note.progress || '').trim(),
+      currently: String((entry.fields && (entry.fields.currently || entry.fields.progress)) || note.progress || '').trim(),
+      examination: String((entry.fields && entry.fields.examination) || note.examination || '').trim(),
       bloods: String((entry.fields && (entry.fields.bloods || entry.fields.bloodsIx)) || note.bloodsIx || note.bloods || '').trim(),
       plan: String((entry.fields && entry.fields.plan) || note.plan || '').trim()
     });
     const type = normaliseEncounterType(entry.type);
-    if (type === 'board_round') {
+    if (type === 'board_round' || type === 'mobile_clinical_review') {
       const rawIssues = String(fields.issues || '').trim();
       fields.issueRaw = fields.issueRaw || rawIssues;
       fields.issueLines = Array.isArray(fields.issueLines) && fields.issueLines.length
@@ -11869,6 +11958,14 @@ window.HAHBoard = window.HAHBoard || {};
 
   function getLastBoardRoundEntry(patientSummary) {
     return getPatientEncounterRows(patientSummary, 'board_round')[0] || null;
+  }
+
+  function isBoardTemplateEncounter(enc) {
+    return enc && (enc.type === 'board_round' || enc.type === 'mobile_clinical_review');
+  }
+
+  function getLastBoardTemplateEntry(patientSummary) {
+    return (getPatientEncounterRows(patientSummary) || []).find(isBoardTemplateEncounter) || null;
   }
 
   function persistEncounterToJson(patientSummary, encounter) {
@@ -12320,7 +12417,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (!vm) return renderEmpty();
     const patient     = vm.patient;
     const encounters  = getPatientEncounterRows(patient);
-    const boardRounds = encounters.filter((e) => e.type === 'board_round');
+    const patientLog = encounters.filter(isBoardTemplateEncounter);
     const microMdms   = encounters.filter((e) => e.type === 'micro_mdm');
     const respMdms    = encounters.filter((e) => e.type === 'resp_mdm');
     const otherEncs   = encounters.filter((e) => e.type === 'other');
@@ -12331,7 +12428,7 @@ window.HAHBoard = window.HAHBoard || {};
       switch (key) {
         case 'board_round':
           return `<div class="hah-ws-section" data-section="board_round" draggable="true">
-            ${renderBoardRoundLog(boardRounds, state)}
+            ${renderPatientLog(patientLog, state)}
           </div>`;
         case 'mdm_pair':
           return `<div class="hah-ws-section hah-ws-section--mdm-pair" data-section="mdm_pair" draggable="true">
@@ -12391,7 +12488,10 @@ window.HAHBoard = window.HAHBoard || {};
     const showDnar = patient.dnar || acpData.dnacprStatus === 'yes';
     const showAcp  = patient.acp  || !!(acpData.dnacprStatus || acpData.tepStatus || acpData.jicMeds || acpData.tep || (acpData.notes && String(acpData.notes).trim()));
 
+    const syncState = state && state.ui && state.ui.syncState === 'update-available';
+    const syncBtn = `<button type="button" class="hah-pt-sync-btn${syncState ? ' has-update' : ''}" data-action="sync-json" title="${syncState ? 'JSON update available — press to reload' : 'Sync with shared JSON'}">${syncState ? 'Reload JSON' : 'Sync JSON'}</button>`;
     const rightFlags = [
+      syncBtn,
       showAcp  ? `<span class="hah-pt-flag is-acp">ACP</span>`  : '',
       showDnar ? `<span class="hah-pt-flag is-dnar">DNAR</span>` : ''
     ].filter(Boolean).join('');
@@ -12453,34 +12553,37 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-status-strip">${statusItems.map((item) => `<div class="hah-status-cell"><div class="hah-obs-label">${c.escapeHtml(item.label)}</div><div class="hah-status-val">${c.escapeHtml(item.value)}</div></div>`).join('')}</div>`;
   }
 
-  function renderBoardRoundLog(entries, state) {
+  function renderPatientLog(entries, state) {
     const showOlder = !!(state && state.patient && state.patient.logShowOlder);
     const header = `<div class="hah-log-head">
       <div class="hah-log-dot" style="background:#378ADD"></div>
-      <span class="hah-log-title">Board round log</span>
+      <span class="hah-log-title">Patient log</span>
       <span class="hah-log-count">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}</span>
     </div>`;
     if (!entries.length) {
-      return `<div class="hah-log-card">${header}<div class="hah-log-empty">No board round entries yet. Use the composer to add today's entry.</div></div>`;
+      return `<div class="hah-log-card">${header}<div class="hah-log-empty">No patient log entries yet. Use the composer or mobile app to add a clinical review.</div></div>`;
     }
 
     const latest  = entries[0];
     const earlier = entries.slice(1);
-    const latestHtml = renderBoardRoundEntry(latest, true);
+    const latestHtml = renderPatientLogEntry(latest, true);
     const earlierHtml = earlier.length ? `
       <div class="hah-log-earlier${showOlder ? ' is-open' : ''}">
         <button type="button" class="hah-log-earlier-toggle" data-patient-action="toggle-log-older">
           <span class="hah-mdm-chevron-sm${showOlder ? ' is-open' : ''}">▸</span>
           ${showOlder ? 'Hide' : 'Show'} older (${earlier.length})
         </button>
-        ${showOlder ? `<div class="hah-log-earlier-list">${earlier.map((e) => renderBoardRoundEntry(e, false)).join('')}</div>` : ''}
+        ${showOlder ? `<div class="hah-log-earlier-list">${earlier.map((e) => renderPatientLogEntry(e, false)).join('')}</div>` : ''}
       </div>` : '';
 
     return `<div class="hah-log-card">${header}<div class="hah-log-entries">${latestHtml}</div>${earlierHtml}</div>`;
   }
 
-  function renderBoardRoundEntry(enc, isLatest) {
+  function renderPatientLogEntry(enc, isLatest) {
     const f = enc.fields || {};
+    const type = enc.type || 'board_round';
+    const isMobile = type === 'mobile_clinical_review';
+    const typeLabel = isMobile ? 'Mobile clinical review' : 'Board round';
     // Preserve the original issue text format exactly as entered, including
     // sub-bullets (lines starting with "-"), numbering, and blank lines.
     const rawIssues = String(f.issueRaw || f.issues || '').trim();
@@ -12488,28 +12591,45 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<div class="hah-log-issues-text">${rawIssues.split('\n').map((l) => `<div>${c.escapeHtml(l) || '&nbsp;'}</div>`).join('')}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
     const edd = f.dischargeDate ? formatEDD(f.dischargeDate, f.dischargeReady) : '';
-    const progressBody = f.progress
-      ? `<div class="hah-log-field-body">${c.escapeHtml(f.progress)}</div>`
+    const currently = String(f.currently || f.progress || '').trim();
+    const progressBody = currently
+      ? `<div class="hah-log-field-body">${c.escapeHtml(currently)}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
+    const examination = String(f.examination || '').trim();
+    const examinationBody = examination
+      ? `<div class="hah-log-field-body">${c.escapeHtml(examination)}</div>`
+      : '';
+    const bloods = String(f.bloodsIx || f.bloods || '').trim();
+    const bloodsBody = bloods
+      ? `<div class="hah-log-field-body">${c.escapeHtml(bloods)}</div>`
+      : '';
     const planText = [f.plan || '', edd ? 'EDD: ' + edd : ''].filter(Boolean).join('\n');
     const planBody = planText
       ? `<div class="hah-log-field-body">${c.escapeHtml(planText)}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
-    const cols = [
+    const cols = isMobile ? [
+      `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
+      `<div class="hah-log-field"><div class="hah-log-field-label">Currently</div>${progressBody}</div>`,
+      examination ? `<div class="hah-log-field"><div class="hah-log-field-label">Examination</div>${examinationBody}</div>` : '',
+      bloods ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods / Ix</div>${bloodsBody}</div>` : '',
+      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
+    ].filter(Boolean) : [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div>${progressBody}</div>`,
+      bloods ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods / Ix</div>${bloodsBody}</div>` : '',
       `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
-    ];
-    return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}">
+    ].filter(Boolean);
+    return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}${isMobile ? ' is-mobile-review' : ''}">
       <div class="hah-log-entry-bar">
         <span class="hah-log-entry-date${isLatest ? ' is-today' : ''}">${formatEntryDate(enc.timestamp)}</span>
+        <span class="hah-log-entry-type">${c.escapeHtml(typeLabel)}</span>
         <span class="hah-log-author">${c.escapeHtml(enc.author || '')}</span>
-        <button type="button" class="hah-log-edit" data-patient-action="edit-encounter"
-          data-encounter-id="${c.escapeHtml(enc.id)}" title="Edit entry">Edit</button>
+        ${isMobile ? '' : `<button type="button" class="hah-log-edit" data-patient-action="edit-encounter"
+          data-encounter-id="${c.escapeHtml(enc.id)}" title="Edit entry">Edit</button>`}
         <button type="button" class="hah-log-delete" data-patient-action="delete-encounter"
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
-      <div class="hah-log-entry-grid">${cols.join('')}</div>
+      <div class="hah-log-entry-grid${isMobile ? ' is-mobile-review' : ''}">${cols.join('')}</div>
     </div>`;
   }
 
@@ -13303,7 +13423,7 @@ window.HAHBoard = window.HAHBoard || {};
     const isLocked     = !!scopedComposer.locked;
     const editingId    = scopedComposer.editId || null;
     const editingEnc   = editingId ? (getPatientEncounterRows(vm.patient) || []).find((e) => e.id === editingId) : null;
-    const lastRound    = getLastBoardRoundEntry(vm.patient);
+    const lastRound    = getLastBoardTemplateEntry(vm.patient);
     const boardSel     = loadBoardSelectionToday();
     const heading      = getComposerHeading(composerType, isLocked, editingEnc);
     const typeTabs     = ENCOUNTER_TYPES.map((t) => {
@@ -13361,11 +13481,13 @@ window.HAHBoard = window.HAHBoard || {};
         ? 'entry'
         : (isToday ? 'Today' : dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
       if (type === 'board_round') return `Editing board round · ${dateLabel}`;
+      if (type === 'mobile_clinical_review') return `Editing mobile review · ${dateLabel}`;
       if (type === 'micro_mdm')   return `Editing Micro MDM · ${dateLabel}`;
       if (type === 'resp_mdm')    return `Editing Resp MDM · ${dateLabel}`;
       return `Editing note · ${dateLabel}`;
     }
     if (type === 'board_round') return "Today's board round";
+    if (type === 'mobile_clinical_review') return "Today's mobile review";
     if (type === 'micro_mdm')   return "Today's Micro MDM";
     if (type === 'resp_mdm')    return "Today's Resp MDM";
     return "Today's other note";
@@ -15847,6 +15969,7 @@ window.HAHBoard = window.HAHBoard || {};
 
   let rootEl = null;
   let unsub = null;
+  let jsonUpdatePollTimer = null;
 
   function initDesktopShell() {
     rootEl = document.getElementById('desktop-root');
@@ -15865,6 +15988,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (window.HAHBoard.update && typeof window.HAHBoard.update.init === 'function') {
       window.HAHBoard.update.init();
     }
+    startJsonUpdatePoller();
   }
 
   function renderShell() {
@@ -15872,13 +15996,6 @@ window.HAHBoard = window.HAHBoard || {};
       <div class="hah-desktop-app" id="hahDesktopApp">
         <header class="hah-header" id="hahHeader">
           <div class="hah-header-group">
-            <button class="hah-drawer-toggle" id="hahDrawerToggle" aria-label="Toggle navigation" type="button">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
             <div class="hah-brand-wrap">
               <div class="hah-brand">H@H Board</div>
               <div class="hah-brand-kicker" id="hahEnvironmentLabel">MDM / boardround workspace</div>
@@ -15898,7 +16015,7 @@ window.HAHBoard = window.HAHBoard || {};
           <div class="hah-header-group">
             <button class="hah-pill-btn" data-action="open-board" type="button">Board</button>
             <button class="hah-pill-btn" data-action="toggle-boardround" type="button" id="hahBoardroundBtn">Boardround</button>
-            <button class="hah-pill-btn is-status" data-action="open-settings" type="button" id="hahSyncPill">Ready</button>
+            <button class="hah-pill-btn is-status" data-action="sync-json" type="button" id="hahSyncPill" title="Sync with shared JSON">Ready</button>
           </div>
         </header>
 
@@ -15946,7 +16063,6 @@ window.HAHBoard = window.HAHBoard || {};
         <main class="hah-main-pane" id="hahMainPane"></main>
         <div class="hah-resize-handle" id="hahResizeRight" data-resize="right"></div>
         <aside class="hah-right-pane" id="hahRightPane"></aside>
-        <div class="hah-drawer-backdrop" id="hahDrawerBackdrop"></div>
       </div>
     `;
   }
@@ -15954,32 +16070,13 @@ window.HAHBoard = window.HAHBoard || {};
   function bindShellEvents() {
     rootEl.addEventListener('click', function (event) {
       const state = store.getState();
-
-      // Drawer toggle (iPad mode)
-      if (event.target.closest('#hahDrawerToggle')) {
-        rootEl.classList.toggle('is-left-drawer-open');
-        return;
-      }
-      // Backdrop click closes drawer
-      if (event.target.id === 'hahDrawerBackdrop') {
-        rootEl.classList.remove('is-left-drawer-open');
-        return;
-      }
-
       const screenHandled = delegateScreenClick(event, state);
-      if (screenHandled) {
-        // Auto-close drawer when a left-pane action navigates somewhere
-        if (event.target.closest('#hahLeftPane')) {
-          rootEl.classList.remove('is-left-drawer-open');
-        }
-        return;
-      }
+      if (screenHandled) return;
 
       const navTarget = event.target.closest('[data-nav]');
       if (navTarget) {
         const view = navTarget.getAttribute('data-nav');
         router.navigate({ view });
-        rootEl.classList.remove('is-left-drawer-open');
         return;
       }
 
@@ -15992,6 +16089,10 @@ window.HAHBoard = window.HAHBoard || {};
       }
       if (action === 'open-settings') {
         router.navigate({ view: 'settings' });
+        return;
+      }
+      if (action === 'sync-json') {
+        performSharedJsonSync(state);
         return;
       }
       if (action === 'toggle-boardround') {
@@ -16070,6 +16171,43 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
+  async function performSharedJsonSync(stateSnapshot) {
+    const shared = window.HAHBoard.sharedJsonStore;
+    if (!shared || typeof shared.loadPatientDataset !== 'function') {
+      window.alert('Shared JSON store module is not loaded.');
+      return;
+    }
+    const startedAt = new Date();
+    try {
+      store.setState({ ui: { syncState: 'syncing' } });
+      await shared.loadPatientDataset();
+      if (shared && typeof shared.loadTaskDataset === 'function') {
+        try { await shared.loadTaskDataset(); } catch (_) {}
+      }
+      const time = startedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      store.setState({ ui: { syncState: 'JSON synced ' + time } });
+    } catch (err) {
+      console.error('[H@H JSON store]', err);
+      store.setState({ ui: { syncState: 'error' } });
+      window.alert(err && err.message ? err.message : 'Shared JSON sync failed.');
+    }
+  }
+
+  function startJsonUpdatePoller() {
+    if (jsonUpdatePollTimer) return;
+    jsonUpdatePollTimer = window.setInterval(async function () {
+      try {
+        const shared = window.HAHBoard.sharedJsonStore;
+        if (!shared || typeof shared.checkForRemoteUpdates !== 'function') return;
+        const snap = store.getState ? store.getState() : {};
+        const route = snap.route || {};
+        if (route.view !== 'board' && route.view !== 'patient') return;
+        const patientId = route.view === 'patient' ? (route.entityId || snap.selectedPatientId || '') : '';
+        await shared.checkForRemoteUpdates(patientId || null);
+      } catch (_) {}
+    }, 60000);
+  }
+
   async function handleSharedJsonStoreAction(action) {
     const shared = window.HAHBoard.sharedJsonStore;
     if (!shared) {
@@ -16124,7 +16262,14 @@ window.HAHBoard = window.HAHBoard || {};
 
   function updateHeader(state) {
     const syncPill = rootEl.querySelector('#hahSyncPill');
-    if (syncPill) syncPill.textContent = normaliseSyncLabel(state.ui.syncState);
+    if (syncPill) {
+      const rawState = state.ui && state.ui.syncState;
+      syncPill.textContent = normaliseSyncLabel(rawState);
+      syncPill.classList.toggle('is-update', rawState === 'update-available');
+      syncPill.classList.toggle('is-syncing', rawState === 'syncing');
+      syncPill.classList.toggle('is-error', rawState === 'error');
+      syncPill.title = rawState === 'update-available' ? 'JSON update available — press to reload' : 'Sync with shared JSON';
+    }
     const boardroundBtn = rootEl.querySelector('#hahBoardroundBtn');
     if (boardroundBtn) boardroundBtn.classList.toggle('is-active', !!state.boardroundMode);
     const env = rootEl.querySelector('#hahEnvironmentLabel');
@@ -16193,7 +16338,6 @@ window.HAHBoard = window.HAHBoard || {};
     function startDrag(e, side) {
       e.preventDefault();
       const handle   = e.currentTarget;
-      const pointerId = e.pointerId;
       const startX   = e.clientX;
       const startVal = parseInt(
         getComputedStyle(document.documentElement)
@@ -16202,10 +16346,8 @@ window.HAHBoard = window.HAHBoard || {};
       handle.classList.add('is-dragging');
       window.HAHBoard.__resizingPanes = true;
       rootEl.classList.add('is-resizing-panes');
-      try { handle.setPointerCapture(pointerId); } catch (_) {}
 
       function onMove(e) {
-        if (e.pointerId !== pointerId) return;
         const dx = e.clientX - startX;
         const min = side === 'left' ? 180 : 280;
         const max = side === 'left' ? 520 : 900;
@@ -16216,13 +16358,10 @@ window.HAHBoard = window.HAHBoard || {};
         );
       }
 
-      function onUp(e) {
-        if (e.pointerId !== pointerId) return;
+      function onUp() {
         handle.classList.remove('is-dragging');
-        try { handle.releasePointerCapture(pointerId); } catch (_) {}
-        handle.removeEventListener('pointermove',   onMove);
-        handle.removeEventListener('pointerup',     onUp);
-        handle.removeEventListener('pointercancel', onUp);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
         const lw = getComputedStyle(document.documentElement).getPropertyValue('--desk-left-w').trim();
         const rw = getComputedStyle(document.documentElement).getPropertyValue('--desk-right-w').trim();
         try {
@@ -16234,15 +16373,14 @@ window.HAHBoard = window.HAHBoard || {};
         window.dispatchEvent(new CustomEvent('hah:panes-resized'));
       }
 
-      handle.addEventListener('pointermove',   onMove);
-      handle.addEventListener('pointerup',     onUp);
-      handle.addEventListener('pointercancel', onUp);
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
     }
 
     const lh = rootEl.querySelector('#hahResizeLeft');
     const rh = rootEl.querySelector('#hahResizeRight');
-    if (lh) lh.addEventListener('pointerdown', (e) => startDrag(e, 'left'));
-    if (rh) rh.addEventListener('pointerdown', (e) => startDrag(e, 'right'));
+    if (lh) lh.addEventListener('mousedown', (e) => startDrag(e, 'left'));
+    if (rh) rh.addEventListener('mousedown', (e) => startDrag(e, 'right'));
   }
 
   function renderLeftPane(state) {
