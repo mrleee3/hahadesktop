@@ -6283,6 +6283,14 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   <div id="desktop-root"></div>
 
   <script>
+window.__HAH_BOARD_BUILD__ = {
+  filename: 'hospital_at_home_board_v0_8_084_release.html',
+  source: 'hospital_at_home_board_v0_8_084_source.zip',
+  builtAt: '2026-04-27T19:48:45.196026',
+  entry: 'desktop.html'
+};
+</script>
+  <script>
 /* inlined: js/20-desktop-store.js */
 (function () {
   window.HAHBoard = window.HAHBoard || {};
@@ -6488,8 +6496,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = 'hospital_at_home_board_v0_8_075_release.html';
-  const SOURCE_FILENAME = 'hospital_at_home_board_v0_8_075_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_084_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_084_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -13856,6 +13864,7 @@ window.HAHBoard = window.HAHBoard || {};
       ['Unassigned', 'unassigned', 'unassigned'],
       ['Discharge blockers', 'discharge-blockers', 'discharge-blockers'],
       ['Boardround actions', 'boardround-actions', 'boardround-actions'],
+      ['Completed', 'completed', 'completed'],
       ['Review tasks', 'review-due', 'review-due'],
       ['High priority', 'high-priority', 'high-priority']
     ].map(([label, key, countKey]) => renderViewRow(label, key, vm.viewCounts[countKey] || 0, key === savedView)).join('');
@@ -13877,6 +13886,7 @@ window.HAHBoard = window.HAHBoard || {};
     const selectedId = vm.selectedTask && vm.selectedTask.id;
     const teamRows = vm.rows.filter(isManualTask);
     const suggestedRows = vm.rows.filter((task) => !isManualTask(task));
+    const completedRows = Array.isArray(vm.completedRows) ? vm.completedRows : [];
 
     if (!vm.rows.length) {
       return `
@@ -14293,6 +14303,7 @@ window.HAHBoard = window.HAHBoard || {};
           filters: viewKey === 'patient-focus' ? state.tasks.filters || {} : { patientId: null }
         }
       });
+      if (router && typeof router.goToTasks === 'function') router.goToTasks(viewKey);
       return true;
     }
 
@@ -15703,14 +15714,6 @@ window.HAHBoard = window.HAHBoard || {};
   window.HAHBoard.desktopShell = { init: initDesktopShell };
 })();
 
-</script>
-<script>
-window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_082_release.html',
-  source: 'hospital_at_home_board_v0_8_082_source.zip',
-  builtAt: '2026-04-25T06:59:04.021643',
-  entry: 'desktop.html'
-};
 </script>
 </body>
 </html>
