@@ -6347,9 +6347,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_086_release.html',
-  source: 'hospital_at_home_board_v0_8_086_source.zip',
-  builtAt: '2026-04-27T20:19:13.039240',
+  filename: 'hospital_at_home_board_v0_8_087_release.html',
+  source: 'hospital_at_home_board_v0_8_087_source.zip',
+  builtAt: '2026-04-27T20:33:54.360970',
   entry: 'desktop.html'
 };
 </script>
@@ -6559,8 +6559,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_086_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_086_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_087_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_087_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8036,6 +8036,7 @@ window.HAHBoard = window.HAHBoard || {};
     source: '',
     service: null,
     rows: [],
+    archivedRows: [],
     lastError: ''
   };
 
@@ -8717,6 +8718,43 @@ window.HAHBoard = window.HAHBoard || {};
     return true;
   }
 
+  async function restoreArchivedPatientRecord(patientId) {
+    if (!patientId) throw new Error('Cannot restore patient without an id.');
+    const id = String(patientId);
+    let serviceDoc = await loadService();
+    const active = Array.from(new Set(getActivePatientIds(serviceDoc).concat([id])));
+    const archived = getArchivedPatientIds(serviceDoc).filter(function (x) { return String(x) !== id; });
+    serviceDoc = setActivePatientIds(serviceDoc, active);
+    serviceDoc = setArchivedPatientIds(serviceDoc, archived);
+    await saveService(serviceDoc);
+
+    try {
+      let patient = await loadPatient(id);
+      if (patient && patient.id) {
+        patient.operational = Object.assign({}, patient.operational || {}, {
+          archivedAt: '',
+          archivedBy: '',
+          boardStatus: 'Not discussed'
+        });
+        await savePatient(patient);
+      }
+    } catch (_) {}
+
+    try {
+      await appendAudit({
+        type: 'patient-restored',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Restored archived patient ${id}`
+      });
+    } catch (_) {}
+    await loadPatientDataset();
+    state.lastOperation = `Restored JSON patient record`;
+    state.lastError = '';
+    saveState();
+    return true;
+  }
+
   async function patchPatientRecord(patientId, patch) {
     if (!patientId) throw new Error('Cannot patch patient without an id.');
     const id = String(patientId);
@@ -9125,7 +9163,9 @@ window.HAHBoard = window.HAHBoard || {};
     try {
       const serviceDoc = await loadService();
       const ids = getActivePatientIds(serviceDoc);
+      const archivedIds = getArchivedPatientIds(serviceDoc);
       const rows = [];
+      const archivedRows = [];
       for (const id of ids) {
         try {
           const patient = await loadPatient(id);
@@ -9134,11 +9174,20 @@ window.HAHBoard = window.HAHBoard || {};
           console.warn('[H@H JSON store] Could not load patient', id, err);
         }
       }
+      for (const id of archivedIds) {
+        try {
+          const patient = await loadPatient(id);
+          if (patient && patient.id) archivedRows.push(mapJsonPatientToLegacyRaw(patient));
+        } catch (err) {
+          console.warn('[H@H JSON store] Could not load archived patient', id, err);
+        }
+      }
       patientCache = {
         loadedAt: nowIso(),
         source: 'json',
         service: serviceDoc,
         rows,
+        archivedRows,
         lastError: ''
       };
       try { await loadTaskDataset(); } catch (_) {}
@@ -9238,6 +9287,7 @@ window.HAHBoard = window.HAHBoard || {};
     createPatientRecord,
     updatePatientCore,
     archivePatientRecord,
+    restoreArchivedPatientRecord,
     loadTasks,
     saveTasks,
     loadTaskDataset,
@@ -15807,6 +15857,16 @@ window.HAHBoard = window.HAHBoard || {};
         const id = actionTarget.getAttribute('data-discharge-id');
         if (id) window.HAHBoard.ops.restorePatient(id);
       }
+      if (action === 'settings-restore-json-patient') {
+        const id = actionTarget.getAttribute('data-patient-id');
+        const shared = window.HAHBoard.sharedJsonStore;
+        if (id && shared && typeof shared.restoreArchivedPatientRecord === 'function') {
+          shared.restoreArchivedPatientRecord(id).catch(function (err) {
+            console.error('[H@H JSON store]', err);
+            window.alert(err && err.message ? err.message : 'Could not restore JSON patient.');
+          });
+        }
+      }
     });
 
     rootEl.addEventListener('change', function (event) {
@@ -16238,11 +16298,35 @@ window.HAHBoard = window.HAHBoard || {};
         <section class="hah-card">
           <div class="hah-card-inner">
             <div class="hah-card-title">Discharged patients</div>
-            <div class="hah-muted" style="margin-top:6px;font-size:13px;">Recycle bin — discharged patients can be restored to the active board or cleared permanently.</div>
+            <div class="hah-muted" style="margin-top:6px;font-size:13px;">Recycle bin — JSON archived patients are kept in OneDrive and can be restored to the active board.</div>
             <div class="hah-settings-actions" style="margin-top:12px;">
-              <button type="button" class="hah-inline-pill" data-action="settings-clear-discharged">Clear all discharged</button>
+              ${(ops && typeof ops.getDischargedPatients === 'function' && (ops.getDischargedPatients() || []).length)
+                ? '<button type="button" class="hah-inline-pill" data-action="settings-clear-discharged">Clear old local discharged</button>'
+                : ''}
+              <button type="button" class="hah-inline-pill" data-action="settings-json-load-patients">Refresh JSON discharged</button>
             </div>
+
             <div class="hah-settings-list" style="margin-top:16px;">
+              <div class="hah-settings-list-title" style="margin-bottom:8px;">OneDrive JSON archived</div>
+              ${jsonPatientCache && Array.isArray(jsonPatientCache.archivedRows) && jsonPatientCache.archivedRows.length
+                ? jsonPatientCache.archivedRows.map((row) => {
+                    const raw = row.sourcePatient && row.sourcePatient.jsonRecord ? row.sourcePatient.jsonRecord : {};
+                    const op = raw.operational || {};
+                    const when = op.archivedAt ? new Date(op.archivedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+                    const meta = [row.pathway || '', row.location || '', row.referralSource ? 'from ' + row.referralSource : ''].filter(Boolean).join(' · ');
+                    return `<div class="hah-settings-list-item hah-discharged-row">
+                      <div style="flex:1;min-width:0;">
+                        <div class="hah-settings-list-title">${escapeHtml(row.name || row.id)}</div>
+                        <div class="hah-settings-list-sub">${escapeHtml(meta ? meta + ' · ' : '')}Archived ${escapeHtml(when)} · ${escapeHtml(op.archivedBy || 'Board user')}</div>
+                      </div>
+                      <button type="button" class="hah-inline-pill" data-action="settings-restore-json-patient" data-patient-id="${escapeHtml(row.id)}">Restore</button>
+                    </div>`;
+                  }).join('')
+                : `<div class="hah-muted">No JSON archived patients loaded.</div>`}
+            </div>
+
+            <div class="hah-settings-list" style="margin-top:16px;">
+              <div class="hah-settings-list-title" style="margin-bottom:8px;">Old local discharged</div>
               ${(ops && typeof ops.getDischargedPatients === 'function' ? ops.getDischargedPatients() : []).length
                 ? ops.getDischargedPatients().map((row) => {
                     const when = row.dischargedAt ? new Date(row.dischargedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -16256,7 +16340,7 @@ window.HAHBoard = window.HAHBoard || {};
                       <button type="button" class="hah-inline-pill" data-action="settings-restore-patient" data-discharge-id="${escapeHtml(row.id)}">Restore</button>
                     </div>`;
                   }).join('')
-                : `<div class="hah-muted">No discharged patients.</div>`}
+                : `<div class="hah-muted">No old local discharged patients.</div>`}
             </div>
           </div>
         </section>
