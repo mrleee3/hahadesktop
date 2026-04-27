@@ -243,6 +243,9 @@ html, body {
   position: relative;
   transition: background 120ms ease;
   z-index: 20;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .hah-resize-handle[data-resize="left"]  { grid-area: handle-l; }
@@ -456,6 +459,86 @@ html, body {
     --desk-left-w: 224px;
     --desk-right-w: 440px;
   }
+}
+
+/* iPad / smaller laptop — left pane becomes a slide-in drawer */
+@media (max-width: 1180px) {
+  .hah-desktop-app {
+    grid-template-columns: var(--desk-nav-w) 0 0 minmax(0, 1fr) 6px var(--desk-right-w);
+  }
+  .hah-resize-handle#hahResizeLeft,
+  .hah-left-pane {
+    display: none;
+  }
+
+  /* When the drawer is toggled open, the left pane appears as a fixed overlay */
+  .hah-desktop-app.is-left-drawer-open .hah-left-pane {
+    display: block;
+    position: fixed;
+    top: var(--desk-header-h);
+    left: var(--desk-nav-w);
+    bottom: 0;
+    width: 320px;
+    max-width: calc(100vw - var(--desk-nav-w) - 32px);
+    z-index: 220;
+    background: linear-gradient(180deg, #f6f8fc, #eef2f9);
+    border-right: 1px solid var(--desk-border);
+    box-shadow: 4px 0 24px rgba(15,23,42,0.12);
+    overflow-y: auto;
+    padding: 14px;
+    animation: hah-drawer-in 220ms ease-out;
+  }
+
+  .hah-desktop-app.is-left-drawer-open .hah-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--desk-header-h) 0 0 var(--desk-nav-w);
+    background: rgba(15,23,42,0.32);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 210;
+    animation: hah-drawer-fade 220ms ease-out;
+  }
+
+  .hah-drawer-backdrop { display: none; }
+
+  /* Show the drawer toggle in the header on small screens */
+  .hah-drawer-toggle { display: inline-flex !important; }
+}
+
+@keyframes hah-drawer-in {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes hah-drawer-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Drawer toggle button — hidden on desktop, visible on iPad via media query */
+.hah-drawer-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: background 140ms ease;
+}
+
+.hah-drawer-toggle:hover {
+  background: rgba(255,255,255,0.24);
+}
+
+.hah-drawer-toggle:active {
+  transform: scale(0.95);
 }
 
 
@@ -6414,9 +6497,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_088_release.html',
-  source: 'hospital_at_home_board_v0_8_088_source.zip',
-  builtAt: '2026-04-27T20:46:32.058431',
+  filename: 'hospital_at_home_board_v0_8_089_release.html',
+  source: 'hospital_at_home_board_v0_8_089_source.zip',
+  builtAt: '2026-04-27T21:26:38.350493',
   entry: 'desktop.html'
 };
 </script>
@@ -6626,8 +6709,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_088_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_088_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_089_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_089_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -15789,6 +15872,13 @@ window.HAHBoard = window.HAHBoard || {};
       <div class="hah-desktop-app" id="hahDesktopApp">
         <header class="hah-header" id="hahHeader">
           <div class="hah-header-group">
+            <button class="hah-drawer-toggle" id="hahDrawerToggle" aria-label="Toggle navigation" type="button">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
             <div class="hah-brand-wrap">
               <div class="hah-brand">H@H Board</div>
               <div class="hah-brand-kicker" id="hahEnvironmentLabel">MDM / boardround workspace</div>
@@ -15856,6 +15946,7 @@ window.HAHBoard = window.HAHBoard || {};
         <main class="hah-main-pane" id="hahMainPane"></main>
         <div class="hah-resize-handle" id="hahResizeRight" data-resize="right"></div>
         <aside class="hah-right-pane" id="hahRightPane"></aside>
+        <div class="hah-drawer-backdrop" id="hahDrawerBackdrop"></div>
       </div>
     `;
   }
@@ -15863,13 +15954,32 @@ window.HAHBoard = window.HAHBoard || {};
   function bindShellEvents() {
     rootEl.addEventListener('click', function (event) {
       const state = store.getState();
+
+      // Drawer toggle (iPad mode)
+      if (event.target.closest('#hahDrawerToggle')) {
+        rootEl.classList.toggle('is-left-drawer-open');
+        return;
+      }
+      // Backdrop click closes drawer
+      if (event.target.id === 'hahDrawerBackdrop') {
+        rootEl.classList.remove('is-left-drawer-open');
+        return;
+      }
+
       const screenHandled = delegateScreenClick(event, state);
-      if (screenHandled) return;
+      if (screenHandled) {
+        // Auto-close drawer when a left-pane action navigates somewhere
+        if (event.target.closest('#hahLeftPane')) {
+          rootEl.classList.remove('is-left-drawer-open');
+        }
+        return;
+      }
 
       const navTarget = event.target.closest('[data-nav]');
       if (navTarget) {
         const view = navTarget.getAttribute('data-nav');
         router.navigate({ view });
+        rootEl.classList.remove('is-left-drawer-open');
         return;
       }
 
@@ -16083,6 +16193,7 @@ window.HAHBoard = window.HAHBoard || {};
     function startDrag(e, side) {
       e.preventDefault();
       const handle   = e.currentTarget;
+      const pointerId = e.pointerId;
       const startX   = e.clientX;
       const startVal = parseInt(
         getComputedStyle(document.documentElement)
@@ -16091,8 +16202,10 @@ window.HAHBoard = window.HAHBoard || {};
       handle.classList.add('is-dragging');
       window.HAHBoard.__resizingPanes = true;
       rootEl.classList.add('is-resizing-panes');
+      try { handle.setPointerCapture(pointerId); } catch (_) {}
 
       function onMove(e) {
+        if (e.pointerId !== pointerId) return;
         const dx = e.clientX - startX;
         const min = side === 'left' ? 180 : 280;
         const max = side === 'left' ? 520 : 900;
@@ -16103,10 +16216,13 @@ window.HAHBoard = window.HAHBoard || {};
         );
       }
 
-      function onUp() {
+      function onUp(e) {
+        if (e.pointerId !== pointerId) return;
         handle.classList.remove('is-dragging');
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
+        try { handle.releasePointerCapture(pointerId); } catch (_) {}
+        handle.removeEventListener('pointermove',   onMove);
+        handle.removeEventListener('pointerup',     onUp);
+        handle.removeEventListener('pointercancel', onUp);
         const lw = getComputedStyle(document.documentElement).getPropertyValue('--desk-left-w').trim();
         const rw = getComputedStyle(document.documentElement).getPropertyValue('--desk-right-w').trim();
         try {
@@ -16118,14 +16234,15 @@ window.HAHBoard = window.HAHBoard || {};
         window.dispatchEvent(new CustomEvent('hah:panes-resized'));
       }
 
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup',   onUp);
+      handle.addEventListener('pointermove',   onMove);
+      handle.addEventListener('pointerup',     onUp);
+      handle.addEventListener('pointercancel', onUp);
     }
 
     const lh = rootEl.querySelector('#hahResizeLeft');
     const rh = rootEl.querySelector('#hahResizeRight');
-    if (lh) lh.addEventListener('mousedown', (e) => startDrag(e, 'left'));
-    if (rh) rh.addEventListener('mousedown', (e) => startDrag(e, 'right'));
+    if (lh) lh.addEventListener('pointerdown', (e) => startDrag(e, 'left'));
+    if (rh) rh.addEventListener('pointerdown', (e) => startDrag(e, 'right'));
   }
 
   function renderLeftPane(state) {
