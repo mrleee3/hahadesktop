@@ -591,6 +591,73 @@ html, body {
   line-height: 1.35;
 }
 
+
+/* ─── JSON status refinement ─────────────────────────────────────────── */
+.hah-json-status-card {
+  border: 1px solid rgba(25,45,72,0.075);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.62));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.hah-json-status-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--desk-text);
+}
+
+.hah-json-status-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--desk-text-muted);
+}
+
+.hah-json-status-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.hah-json-status-counts span {
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(47,111,237,0.14);
+  background: rgba(47,111,237,0.075);
+  color: rgba(36,92,210,1);
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hah-json-operation {
+  border: 1px solid rgba(17,152,108,0.14);
+  background: rgba(17,152,108,0.075);
+  color: rgb(12,105,76);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+@media (max-width: 1440px) {
+  .hah-json-status-card {
+    flex-direction: column;
+  }
+  .hah-json-status-counts {
+    justify-content: flex-start;
+  }
+}
+
 </style>
   <style>
 /* inlined: css/desktop-board.css */
@@ -6347,9 +6414,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_087_release.html',
-  source: 'hospital_at_home_board_v0_8_087_source.zip',
-  builtAt: '2026-04-27T20:33:54.360970',
+  filename: 'hospital_at_home_board_v0_8_088_release.html',
+  source: 'hospital_at_home_board_v0_8_088_source.zip',
+  builtAt: '2026-04-27T20:46:32.058431',
   entry: 'desktop.html'
 };
 </script>
@@ -6559,8 +6626,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_087_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_087_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_088_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_088_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -8675,7 +8742,7 @@ window.HAHBoard = window.HAHBoard || {};
       });
     } catch (_) {}
     await loadPatientDataset();
-    state.lastOperation = `Updated JSON patient details`;
+    state.lastOperation = `Updated JSON patient details and reloaded the caseload`;
     state.lastError = '';
     saveState();
     return patient;
@@ -8712,7 +8779,7 @@ window.HAHBoard = window.HAHBoard || {};
       });
     } catch (_) {}
     await loadPatientDataset();
-    state.lastOperation = `Archived JSON patient record`;
+    state.lastOperation = `Archived JSON patient record and removed it from the active board`;
     state.lastError = '';
     saveState();
     return true;
@@ -8749,7 +8816,7 @@ window.HAHBoard = window.HAHBoard || {};
       });
     } catch (_) {}
     await loadPatientDataset();
-    state.lastOperation = `Restored JSON patient record`;
+    state.lastOperation = `Restored JSON patient record to the active board`;
     state.lastError = '';
     saveState();
     return true;
@@ -9193,8 +9260,8 @@ window.HAHBoard = window.HAHBoard || {};
       try { await loadTaskDataset(); } catch (_) {}
       state.remoteReady = true;
       state.lastOperation = rows.length
-        ? `Loaded ${rows.length} JSON patient record(s) and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s)`
-        : `JSON store loaded; no active patient records yet. ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s) loaded.`;
+        ? `Loaded ${rows.length} active JSON patient(s), ${archivedRows.length} archived patient(s), and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s)`
+        : `JSON store loaded; no active patient records. ${archivedRows.length} archived patient(s) and ${taskCache.tasks && taskCache.tasks.length ? taskCache.tasks.length : 0} JSON task(s) loaded.`;
       state.lastError = '';
       savePatientCache();
       saveState();
@@ -16204,6 +16271,11 @@ window.HAHBoard = window.HAHBoard || {};
     const jsonState = jsonInfo ? jsonInfo.state : null;
     const jsonPatientCache = jsonInfo && jsonInfo.patientCache ? jsonInfo.patientCache : null;
     const jsonTaskCache = jsonInfo && jsonInfo.taskCache ? jsonInfo.taskCache : null;
+    const jsonPatientCount = jsonPatientCache && Array.isArray(jsonPatientCache.rows) ? jsonPatientCache.rows.length : 0;
+    const jsonArchivedCount = jsonPatientCache && Array.isArray(jsonPatientCache.archivedRows) ? jsonPatientCache.archivedRows.length : 0;
+    const jsonTaskCount = jsonTaskCache && Array.isArray(jsonTaskCache.tasks) ? jsonTaskCache.tasks.length : 0;
+    const jsonLoadedAt = jsonPatientCache && jsonPatientCache.loadedAt ? new Date(jsonPatientCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+    const jsonMode = jsonPatientCount ? 'OneDrive JSON active' : (jsonInfo && jsonInfo.state && jsonInfo.state.remoteReady ? 'JSON ready, no active patients loaded' : 'Local/demo fallback');
     const jsonFiles = jsonInfo ? jsonInfo.filePlan : [];
     return `
       <div class="hah-surface-placeholder hah-settings-surface">
@@ -16248,33 +16320,49 @@ window.HAHBoard = window.HAHBoard || {};
             <div class="hah-section-head" style="margin-bottom:12px;">
               <div>
                 <div class="hah-card-title">Shared patient JSON store</div>
-                <div class="hah-card-subtitle">Backend foundation for mobile + desktop to share one JSON-backed patient database on OneDrive.</div>
+                <div class="hah-card-subtitle">OneDrive-backed caseload, patient timeline, team tasks and archive.</div>
               </div>
               <span class="hah-badge ${jsonInfo && jsonInfo.remoteReady ? 'is-good' : (jsonInfo && jsonState && jsonState.lastError ? 'is-danger' : 'is-neutral')}">${escapeHtml(jsonInfo ? jsonInfo.status : 'Not loaded')}</span>
             </div>
+
+            <div class="hah-json-status-card">
+              <div>
+                <div class="hah-json-status-title">${escapeHtml(jsonMode)}</div>
+                <div class="hah-json-status-sub">${escapeHtml(jsonState && jsonState.account ? (jsonState.account.name || jsonState.account.username) : 'Not signed in')} · ${escapeHtml(jsonInfo ? jsonInfo.folderPath : 'H@H Board Data')}</div>
+              </div>
+              <div class="hah-json-status-counts">
+                <span>${escapeHtml(jsonPatientCount)} active</span>
+                <span>${escapeHtml(jsonArchivedCount)} archived</span>
+                <span>${escapeHtml(jsonTaskCount)} tasks</span>
+              </div>
+            </div>
+
             <div class="hah-settings-grid" style="margin-top:16px;">
               <div class="hah-settings-stat"><div class="hah-kv-label">Client ID</div><div class="hah-kv-value" style="word-break:break-all;font-size:11px;">${escapeHtml(jsonSettings && jsonSettings.clientId ? jsonSettings.clientId : 'Not set')}</div></div>
-              <div class="hah-settings-stat"><div class="hah-kv-label">OneDrive folder</div><div class="hah-kv-value">${escapeHtml(jsonInfo ? jsonInfo.folderPath : 'H@H Board Data')}</div></div>
-              <div class="hah-settings-stat"><div class="hah-kv-label">Account</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.account ? (jsonState.account.name || jsonState.account.username) : 'Not signed in')}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Patient source</div><div class="hah-kv-value">${escapeHtml(jsonMode)}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Last JSON load</div><div class="hah-kv-value">${escapeHtml(jsonLoadedAt)}</div></div>
               <div class="hah-settings-stat"><div class="hah-kv-label">Last test</div><div class="hah-kv-value">${escapeHtml(jsonState && jsonState.lastTestAt ? new Date(jsonState.lastTestAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')}</div></div>
-              <div class="hah-settings-stat"><div class="hah-kv-label">Patient source</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows && jsonPatientCache.rows.length ? 'OneDrive JSON' : 'Local/demo fallback')}</div></div>
-              <div class="hah-settings-stat"><div class="hah-kv-label">JSON patients loaded</div><div class="hah-kv-value">${escapeHtml(jsonPatientCache && jsonPatientCache.rows ? String(jsonPatientCache.rows.length) : '0')}${jsonPatientCache && jsonPatientCache.loadedAt ? ' · ' + escapeHtml(new Date(jsonPatientCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</div></div>
-              <div class="hah-settings-stat"><div class="hah-kv-label">JSON tasks loaded</div><div class="hah-kv-value">${escapeHtml(jsonTaskCache && jsonTaskCache.tasks ? String(jsonTaskCache.tasks.length) : '0')}${jsonTaskCache && jsonTaskCache.loadedAt ? ' · ' + escapeHtml(new Date(jsonTaskCache.loadedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Active JSON patients</div><div class="hah-kv-value">${escapeHtml(jsonPatientCount)}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">Archived JSON patients</div><div class="hah-kv-value">${escapeHtml(jsonArchivedCount)}</div></div>
+              <div class="hah-settings-stat"><div class="hah-kv-label">JSON tasks</div><div class="hah-kv-value">${escapeHtml(jsonTaskCount)}</div></div>
             </div>
+
             ${jsonState && jsonState.lastError ? '<div class="hah-settings-error" style="margin-top:12px;">' + escapeHtml(jsonState.lastError) + '</div>' : ''}
-            ${jsonState && jsonState.lastOperation ? '<div class="hah-muted" style="margin-top:12px;font-size:13px;">' + escapeHtml(jsonState.lastOperation) + '</div>' : ''}
+            ${jsonState && jsonState.lastOperation ? '<div class="hah-json-operation" style="margin-top:12px;">' + escapeHtml(jsonState.lastOperation) + '</div>' : ''}
+
             <div class="hah-settings-actions" style="margin-top:16px;">
               <button type="button" class="hah-inline-pill" data-action="settings-json-client">Set client ID</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-folder">Set data folder</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-signin">Sign in Microsoft</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-init">Initialise store</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-test">Test read/write</button>
-              <button type="button" class="hah-inline-pill" data-action="settings-json-create-test-patient">Create test patient</button>
-              <button type="button" class="hah-inline-pill" data-action="settings-json-load-patients">Load JSON patients/tasks</button>
+              <button type="button" class="hah-inline-pill is-primary" data-action="settings-json-load-patients">Load JSON patients/tasks</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-load-tasks">Load JSON tasks only</button>
+              <button type="button" class="hah-inline-pill" data-action="settings-json-create-test-patient">Create test patient</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-clear-patient-cache">Use local fallback</button>
               <button type="button" class="hah-inline-pill" data-action="settings-json-download-schema">Download starter schema</button>
             </div>
+
             <div class="hah-settings-list" style="margin-top:16px;">
               ${(jsonFiles || []).map(function(file) { return '<div class="hah-settings-list-item"><div class="hah-settings-list-title">' + escapeHtml(file) + '</div><div class="hah-settings-list-sub">' + (String(file).endsWith('/') ? 'Folder' : 'JSON document') + '</div></div>'; }).join('')}
             </div>
