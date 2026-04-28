@@ -4933,10 +4933,6 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   width: min(520px, calc(100vw - 32px));
 }
 
-
-/* ─── Mobile clinical review compact metadata ───────────────────────── */
-.hah-log-mobile-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:2px}.hah-log-mobile-meta span{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:999px;background:rgba(47,111,237,.065);border:1px solid rgba(47,111,237,.12);color:rgba(37,80,160,.95);font-size:10.5px;font-weight:700;line-height:1.2}
-
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -6518,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_090_json_mapping_release.html',
-  source: 'hospital_at_home_board_v0_8_090_json_mapping_source.zip',
-  builtAt: '2026-04-27T22:50:54.304689',
+  filename: 'hospital_at_home_board_v0_8_091_json_cards_release.html',
+  source: 'hospital_at_home_board_v0_8_091_json_cards_source.zip',
+  builtAt: '2026-04-27T23:03:02.922362',
   entry: 'desktop.html'
 };
 </script>
@@ -6730,8 +6726,8 @@ window.__HAH_BOARD_BUILD__ = {
 window.HAHBoard = window.HAHBoard || {};
 
 (function () {
-  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_088_release.html';
-  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_088_source.zip';
+  const BUILD_FILENAME  = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.filename) || 'hospital_at_home_board_v0_8_091_json_cards_release.html';
+  const SOURCE_FILENAME = (window.__HAH_BOARD_BUILD__ && window.__HAH_BOARD_BUILD__.source) || 'hospital_at_home_board_v0_8_091_json_cards_source.zip';
   const BUILD_ID = ((BUILD_FILENAME.match(/(v\d+(?:_\d+)*)/i) || [])[1]) || BUILD_FILENAME.replace(/\.html?$/i, '');
 
   const COMMIT_SHA_KEY  = 'hah_board_commit_sha';
@@ -9190,9 +9186,6 @@ window.HAHBoard = window.HAHBoard || {};
     const note = entry.note || {};
     if (note.issues) patient.clinical.summary = note.issues;
     if (note.bloodsIx) patient.clinical.bloodsSummary = note.bloodsIx;
-    if (note.progress) patient.clinical.currently = note.progress;
-    if (note.examination) patient.clinical.examination = note.examination;
-    if (note.plan) patient.clinical.plan = note.plan;
 
     patient.operational = Object.assign({}, patient.operational || {});
     const dr = deriveJsonDischargeReadiness(entry.fields || {});
@@ -9246,21 +9239,72 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function mapJsonPatientToLegacyRaw(patient) {
-    const identity = patient.identity || {}, serviceBlock = patient.service || {}, alerts = patient.alerts || {}, clinical = patient.clinical || {}, operational = patient.operational || {};
+    const identity = patient.identity || {};
+    const serviceBlock = patient.service || {};
+    const alerts = patient.alerts || {};
+    const clinical = patient.clinical || {};
+    const operational = patient.operational || {};
     const latest = latestTimelineEntry(patient, isBoardStyleTimelineEntry) || latestTimelineEntry(patient);
-    const note = timelineNoteFromEncounter(latest || {});
-    const fields = latest && latest.fields ? latest.fields : {};
-    const latestObs = fields.obs && typeof fields.obs === 'object' ? fields.obs : {};
-    const obs = Object.assign({}, clinical.obs && typeof clinical.obs === 'object' ? clinical.obs : {}, latestObs);
-    const acp = clinical.acp && typeof clinical.acp === 'object' ? clinical.acp : {};
-    const meds = Array.isArray(clinical.medications) ? clinical.medications : (Array.isArray(fields.medications) ? fields.medications : []);
-    const ivs = Array.isArray(clinical.ivTherapies) ? clinical.ivTherapies : (Array.isArray(fields.ivTherapies) ? fields.ivTherapies : []);
-    const issueLines = Array.isArray(clinical.persistentIssues) ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n') : '';
+    const note = latest && latest.note ? latest.note : {};
+    const issueLines = Array.isArray(clinical.persistentIssues)
+      ? clinical.persistentIssues.map(function (x) { return typeof x === 'string' ? x : (x && (x.title || x.text || x.label)) || ''; }).filter(Boolean).join('\n')
+      : '';
     const summary = clinical.summary || note.issues || issueLines || serviceBlock.pathway || '';
-    const dnacprYes = !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes';
-    const acpPresent = !!alerts.acp || String(acp.tepStatus || '').toLowerCase() === 'present' || !!String(acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes || '').trim();
-    const escalation = alerts.escalation || acp.ceilingOfCare || acp.tep || '';
-    return {id:patient.id,name:identity.name||patient.name||patient.id,age:identity.age||'',sex:identity.sex||'',location:serviceBlock.location||'',pathway:serviceBlock.pathway||'',referralSource:serviceBlock.referredFrom||'',doa:serviceBlock.admittedDate||'',priority:operational.priority||'',boardStatus:operational.boardStatus||'Not discussed',dischargeReadiness:operational.dischargeReadiness||'',dnar:dnacprYes,acp:acpPresent,alerts:{dnar:dnacprYes,acp:acpPresent,escalation},escalation,summary,listDetails:[summary,dnacprYes?'DNAR':'',acpPresent?'ACP':'',escalation].filter(Boolean).join('\n'),form:Object.assign({},obs,{issues:note.issues||issueLines||'',currently:note.progress||clinical.currently||'',examination:note.examination||clinical.examination||'',plan:note.plan||clinical.plan||'',bloods:note.bloodsIx||clinical.bloodsSummary||'',forDischargeSummary:operational.dischargeReadiness||'',obs,medEntries:meds,ivEntries:ivs,medsGiven:meds.length>0,ivGiven:ivs.length>0,pmh:clinical.pmh||'',socialHistory:clinical.socialHistory||''}),updatedAt:(patient.meta&&patient.meta.updatedAt)||patient.updatedAt||'',importedAt:(latest&&(latest.timestamp||latest.updatedAt))||(patient.meta&&patient.meta.updatedAt)||patient.updatedAt||'',jsonRecord:patient};
+    const obs = clinical.obs && typeof clinical.obs === 'object' ? clinical.obs : {};
+    const acp = clinical.acp && typeof clinical.acp === 'object' ? clinical.acp : {};
+    const flatObs = {
+      temp: obs.temp || obs.temperature || '',
+      bp: obs.bp || obs.bloodPressure || '',
+      hr: obs.hr || obs.heartRate || '',
+      spo2: obs.spo2 || obs.spO2 || obs.sats || '',
+      rr: obs.rr || obs.respRate || obs.respiratoryRate || '',
+      bm: obs.bm || obs.bloodGlucose || obs.glucose || '',
+      weight: obs.weight || obs.wt || '',
+      oxygen: obs.oxygen || '',
+      oxygenFlow: obs.oxygenFlow || obs.o2 || obs.o2Flow || '',
+      scoreMode: obs.scoreMode || obs.score || ''
+    };
+    return {
+      id: patient.id,
+      name: identity.name || patient.name || patient.id,
+      age: identity.age || '',
+      sex: identity.sex || '',
+      location: serviceBlock.location || '',
+      pathway: serviceBlock.pathway || '',
+      referralSource: serviceBlock.referredFrom || '',
+      doa: serviceBlock.admittedDate || '',
+      priority: operational.priority || '',
+      boardStatus: operational.boardStatus || 'Not discussed',
+      dischargeReadiness: operational.dischargeReadiness || '',
+      dnar: !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes',
+      acp: !!alerts.acp || !!(acp.dnacprStatus || acp.tepStatus || acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes),
+      escalation: alerts.escalation || '',
+      summary,
+      listDetails: [summary, alerts.dnar ? 'DNAR' : '', alerts.acp ? 'ACP' : '', alerts.escalation || ''].filter(Boolean).join('\n'),
+      form: {
+        issues: note.issues || issueLines || '',
+        currently: note.progress || '',
+        examination: note.examination || '',
+        plan: note.plan || '',
+        bloods: note.bloodsIx || clinical.bloodsSummary || '',
+        forDischargeSummary: operational.dischargeReadiness || '',
+        temp: flatObs.temp,
+        bp: flatObs.bp,
+        hr: flatObs.hr,
+        spo2: flatObs.spo2,
+        rr: flatObs.rr,
+        bm: flatObs.bm,
+        weight: flatObs.weight,
+        oxygen: flatObs.oxygen,
+        oxygenFlow: flatObs.oxygenFlow,
+        scoreMode: flatObs.scoreMode,
+        obs,
+        acp,
+        medEntries: Array.isArray(clinical.medications) ? clinical.medications : [],
+        ivEntries: Array.isArray(clinical.ivTherapies) ? clinical.ivTherapies : []
+      },
+      jsonRecord: patient
+    };
   }
 
   async function createTestPatient() {
@@ -9817,17 +9861,42 @@ window.HAHBoard = window.HAHBoard || {};
     return truncateText(first, 90);
   }
 
+  function getObsValue(form, key) {
+    const obs = form && form.obs && typeof form.obs === 'object' ? form.obs : {};
+    const aliases = {
+      temp: ['temp', 'temperature'],
+      bp: ['bp', 'bloodPressure'],
+      hr: ['hr', 'heartRate'],
+      spo2: ['spo2', 'spO2', 'sats'],
+      rr: ['rr', 'respRate', 'respiratoryRate'],
+      bm: ['bm', 'bloodGlucose', 'glucose'],
+      weight: ['weight', 'wt'],
+      oxygenFlow: ['oxygenFlow', 'o2', 'o2Flow'],
+      scoreMode: ['scoreMode', 'score']
+    };
+    if (form && form[key] != null && String(form[key]).trim()) return form[key];
+    const list = aliases[key] || [key];
+    for (let i = 0; i < list.length; i += 1) {
+      const v = obs[list[i]];
+      if (v != null && String(v).trim()) return v;
+    }
+    return '';
+  }
+
   function buildObsSummary(raw) {
     const form = raw.form || {};
     const parts = [];
-    if (form.temp) parts.push(`T ${String(form.temp).trim()}`);
-    if (form.bp) parts.push(`BP ${String(form.bp).trim()}`);
-    if (form.hr) parts.push(`HR ${String(form.hr).trim()}`);
-    if (form.spo2) {
-      const oxygenFlow = String(form.oxygenFlow || '').trim();
-      parts.push(`SpO₂ ${String(form.spo2).trim()}%${oxygenFlow ? ` on ${oxygenFlow}` : ' RA'}`);
-    }
-    if (form.rr) parts.push(`RR ${String(form.rr).trim()}`);
+    const temp = getObsValue(form, 'temp');
+    const bp = getObsValue(form, 'bp');
+    const hr = getObsValue(form, 'hr');
+    const spo2 = getObsValue(form, 'spo2');
+    const oxygenFlow = String(getObsValue(form, 'oxygenFlow') || '').trim();
+    const rr = getObsValue(form, 'rr');
+    if (temp) parts.push(`T ${String(temp).trim()}`);
+    if (bp) parts.push(`BP ${String(bp).trim()}`);
+    if (hr) parts.push(`HR ${String(hr).trim()}`);
+    if (spo2) parts.push(`SpO₂ ${String(spo2).trim()}%${oxygenFlow ? ` on ${oxygenFlow}` : ' RA'}`);
+    if (rr) parts.push(`RR ${String(rr).trim()}`);
     if (parts.length) return truncateText(parts.join(' · '), 96);
 
     const listDetails = String(raw.listDetails || '').replace(/^Obs:\s*/i, '').trim();
@@ -10064,16 +10133,27 @@ window.HAHBoard = window.HAHBoard || {};
 
   function buildObsItems(raw, summary) {
     const form = raw.form || {};
-    return [
-      { label: 'Temp', value: form.temp || '—' },
-      { label: 'BP', value: form.bp || '—' },
-      { label: 'HR', value: form.hr || '—' },
-      { label: 'SpO₂', value: form.spo2 ? `${form.spo2}%${form.oxygenFlow ? ` on ${form.oxygenFlow}` : ' RA'}` : '—' },
-      { label: 'RR', value: form.rr || '—' },
-      { label: 'BM', value: form.bm || '—' },
-      { label: 'Weight', value: form.weight ? `${form.weight}kg` : '—' },
-      { label: 'Scores', value: form.scoreMode || summary.currentStatus || '—' }
+    const temp = getObsValue(form, 'temp');
+    const bp = getObsValue(form, 'bp');
+    const hr = getObsValue(form, 'hr');
+    const spo2 = getObsValue(form, 'spo2');
+    const oxygenFlow = getObsValue(form, 'oxygenFlow');
+    const rr = getObsValue(form, 'rr');
+    const bm = getObsValue(form, 'bm');
+    const weight = getObsValue(form, 'weight');
+    const scoreMode = getObsValue(form, 'scoreMode');
+    const hasVitals = !!(temp || bp || hr || spo2 || rr || bm || weight);
+    const items = [
+      { label: 'Temp', value: temp || '—' },
+      { label: 'BP', value: bp || '—' },
+      { label: 'HR', value: hr || '—' },
+      { label: 'SpO₂', value: spo2 ? `${spo2}%${oxygenFlow ? ` on ${oxygenFlow}` : ' RA'}` : '—' },
+      { label: 'RR', value: rr || '—' },
+      { label: 'BM', value: bm || '—' },
+      { label: 'Weight', value: weight ? `${weight}kg` : '—' }
     ];
+    if (scoreMode || !hasVitals) items.push({ label: 'Scores', value: scoreMode || summary.currentStatus || '—' });
+    return items;
   }
 
   function parseBloodSamples(text) {
@@ -12000,8 +12080,21 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function acpPatchForJson(acp) {
-    const row = acp || {};const ceiling=String(row.ceilingOfCare||row.tep||'').trim();const notes=String(row.notes||row.acpNotes||'').trim();const ucp=String(row.tepStatus||'').trim();const hasAcp=ucp==='present'||!!ceiling||!!notes||!!row.jicMeds||!!row.tep;const escalationParts=[];if(ceiling)escalationParts.push(ceiling);if(ucp)escalationParts.push('UCP '+ucp.replace(/_/g,' '));
-    return {alerts:{dnar:row.dnacprStatus==='yes',acp:hasAcp,escalation:escalationParts.filter(Boolean).join(' · ')},clinical:{acp:Object.assign({},row,{ceilingOfCare:ceiling,tep:ceiling,notes,acpNotes:notes,tepStatus:ucp})}};
+    const row = acp || {};
+    const hasAcp = !!(row.dnacprStatus || row.tepStatus || row.jicMeds || row.tep || (row.notes && String(row.notes).trim()));
+    const escalationParts = [];
+    if (row.tep) escalationParts.push(String(row.tep).trim());
+    if (row.tepStatus) escalationParts.push('UCP ' + String(row.tepStatus).replace(/_/g, ' '));
+    return {
+      alerts: {
+        dnar: row.dnacprStatus === 'yes',
+        acp: hasAcp,
+        escalation: escalationParts.filter(Boolean).join(' · ')
+      },
+      clinical: {
+        acp: Object.assign({}, row)
+      }
+    };
   }
 
   function getJsonAcpForPatient(patientSummary) {
@@ -12012,10 +12105,31 @@ window.HAHBoard = window.HAHBoard || {};
       : {};
   }
 
+  function normaliseAcpState(row) {
+    const acp = Object.assign({}, row || {});
+    function boolVal(value) {
+      const text = String(value == null ? '' : value).trim().toLowerCase();
+      if (text === 'true' || text === 'yes' || text === '1') return true;
+      if (text === 'false' || text === 'no' || text === '0' || text === '') return false;
+      return !!value;
+    }
+    if (acp.dnacprFormSeen != null) acp.dnacprFormSeen = boolVal(acp.dnacprFormSeen);
+    if (!acp.tep && acp.ceilingOfCare) acp.tep = acp.ceilingOfCare;
+    if (!acp.notes && acp.acpNotes) acp.notes = acp.acpNotes;
+    return acp;
+  }
+
   function getAcpStateForVm(vm) {
+    const jsonAcp = normaliseAcpState(getJsonAcpForPatient(vm.patient));
+    const hasJsonAcp = !!Object.keys(jsonAcp).some(function (key) {
+      const value = jsonAcp[key];
+      return value != null && String(value).trim() !== '';
+    });
+    const raw = vm && vm.patient && vm.patient.sourcePatient ? vm.patient.sourcePatient : {};
+    if (raw && raw.jsonRecord && hasJsonAcp) return jsonAcp;
     const ps = ops ? ops.getPatientState(vm.patient.id) : {};
-    const localAcp = ps && ps.acp && typeof ps.acp === 'object' ? ps.acp : {};
-    return Object.keys(localAcp).length ? localAcp : getJsonAcpForPatient(vm.patient);
+    const localAcp = ps && ps.acp && typeof ps.acp === 'object' ? normaliseAcpState(ps.acp) : {};
+    return Object.keys(localAcp).length ? localAcp : jsonAcp;
   }
 
   function todayIso()    { return new Date().toISOString().split('T')[0]; }
@@ -12547,10 +12661,6 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-log-card">${header}<div class="hah-log-entries">${latestHtml}</div>${earlierHtml}</div>`;
   }
 
-
-  function compactObsText(obs) {const o=obs&&typeof obs==='object'?obs:{};const parts=[];if(o.temp)parts.push('T '+o.temp);if(o.bp)parts.push('BP '+o.bp);if(o.hr)parts.push('HR '+o.hr);if(o.spo2)parts.push('SpO₂ '+o.spo2+'%'+(o.oxygenFlow?' on '+o.oxygenFlow:(String(o.oxygen||'')==='2'?' on O₂':' RA')));if(o.rr)parts.push('RR '+o.rr);if(o.weight)parts.push('Wt '+o.weight+'kg');if(o.bm)parts.push('BM '+o.bm);return parts.join(' · ');}
-  function compactAcpText(acp) {const a=acp&&typeof acp==='object'?acp:{};const parts=[];if(a.dnacprStatus)parts.push('DNACPR '+(a.dnacprStatus==='yes'?'yes':a.dnacprStatus));if(a.tepStatus)parts.push('UCP '+String(a.tepStatus).replace(/_/g,' '));const tep=a.tep||a.ceilingOfCare||'';if(tep)parts.push('TEP '+tep);return parts.join(' · ');}
-
   function renderPatientLogEntry(enc, isLatest) {
     const f = enc.fields || {};
     const type = enc.type || 'board_round';
@@ -12579,7 +12689,6 @@ window.HAHBoard = window.HAHBoard || {};
     const planBody = planText
       ? `<div class="hah-log-field-body">${c.escapeHtml(planText)}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
-    const metaBits=[];const obsText=compactObsText(f.obs);const acpText=compactAcpText(f.acp);const medsN=Array.isArray(f.medications)?f.medications.length:0;const ivN=Array.isArray(f.ivTherapies)?f.ivTherapies.length:0;if(isMobile&&obsText)metaBits.push('Obs: '+obsText);if(isMobile&&acpText)metaBits.push('ACP: '+acpText);if(isMobile&&medsN)metaBits.push('Meds: '+medsN);if(isMobile&&ivN)metaBits.push('IV: '+ivN);const metaHtml=isMobile&&metaBits.length?`<div class="hah-log-mobile-meta">${metaBits.map((m)=>`<span>${c.escapeHtml(m)}</span>`).join('')}</div>`:'';
     const cols = isMobile ? [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Currently</div>${progressBody}</div>`,
@@ -12603,7 +12712,6 @@ window.HAHBoard = window.HAHBoard || {};
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
       <div class="hah-log-entry-grid${isMobile ? ' is-mobile-review' : ''}">${cols.join('')}</div>
-      ${metaHtml}
     </div>`;
   }
 
@@ -12681,9 +12789,8 @@ window.HAHBoard = window.HAHBoard || {};
     const acp    = getAcpStateForVm(vm);
     const dnacpr = acp.dnacprStatus || '';
     const ucp    = acp.tepStatus    || '';
-    const tep    = acp.tep || acp.ceilingOfCare || '';
+    const tep    = acp.tep          || '';
     const jic    = acp.jicMeds      || '';
-    const acpNotesText = acp.notes || acp.acpNotes || '';
 
     const dnacprText = dnacpr === 'yes' ? 'Yes' + (acp.dnacprFormSeen ? ' · Form seen' : '')
                       : dnacpr === 'no' ? 'No'
@@ -12692,7 +12799,7 @@ window.HAHBoard = window.HAHBoard || {};
     const jicText    = jic === 'in_property'  ? 'In property'
                      : jic === 'in_process'   ? 'In process'
                      : jic === 'not_prescribed' ? 'Not prescribed' : '';
-    const hasData    = dnacpr || ucp || tep || jic || (acpNotesText && String(acpNotesText).trim());
+    const hasData    = dnacpr || ucp || tep || jic || (acp.notes && String(acp.notes).trim());
 
     function row(label, value, extraClass) {
       if (!value) return '';
@@ -13112,14 +13219,14 @@ window.HAHBoard = window.HAHBoard || {};
     const encounters = getPatientEncounterRows(vm.patient);
     const composerMap = {};
     encounters
-      .filter((e) => (e.type === 'board_round' || e.type === 'mobile_clinical_review') && e.fields && String(e.fields.bloods || e.fields.bloodsIx || '').trim())
+      .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
       .forEach((e) => {
         const dt = new Date(e.timestamp);
         const encDateStr = isNaN(dt.getTime()) ? null
           : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         const encounterDate = encDateStr === todayStr ? 'Today' : (encDateStr || null);
 
-        String(e.fields.bloods || e.fields.bloodsIx || '').split(/\n+/).forEach((rawLine) => {
+        String(e.fields.bloods).split(/\n+/).forEach((rawLine) => {
           let line = rawLine.trim();
           if (!line) return;
           let date = encounterDate;
