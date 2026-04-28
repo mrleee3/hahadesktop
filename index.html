@@ -6514,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_091_json_cards_release.html',
-  source: 'hospital_at_home_board_v0_8_091_json_cards_source.zip',
-  builtAt: '2026-04-27T23:03:02.922362',
+  filename: 'hospital_at_home_board_v0_8_093_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_093_websocket_source.zip',
+  builtAt: '2026-04-28T21:36:02.478930',
   entry: 'desktop.html'
 };
 </script>
@@ -13203,11 +13203,12 @@ window.HAHBoard = window.HAHBoard || {};
         });
       });
 
-    // 2. Desktop composer: board_round encounters with fields.bloods (free text)
-    // Each line may start with a date: "18/04: CRP 78" or "18 Apr CRP 78" or just "CRP 78"
+    // 2. Timeline encounters: board round + mobile clinical review entries with fields.bloods (free text)
+    // Each line may start with a date: "18/04: CRP 78", "18 Apr: CRP 78", "18 Apr|CRP 78" or just "CRP 78"
     const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
     const DATE_LINE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
     const DATE_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
+    const DATE_PIPE_RE = /^([^|\n]{1,32})\|\s*/i;
 
     function formatEmbeddedDate(d, m, y) {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -13216,34 +13217,55 @@ window.HAHBoard = window.HAHBoard || {};
       return date === todayStr ? 'Today' : date;
     }
 
+    function normaliseBloodDateLabel(raw) {
+      const text = String(raw || '').trim();
+      if (!text) return '';
+      if (/^today$/i.test(text)) return 'Today';
+      let m = text.match(/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?$/);
+      if (m) return formatEmbeddedDate(m[1], m[2], m[3]);
+      m = text.match(/^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*$/i);
+      if (m) {
+        const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+        if (mo) return formatEmbeddedDate(m[1], mo, null);
+      }
+      return text === todayStr ? 'Today' : text;
+    }
+
     const encounters = getPatientEncounterRows(vm.patient);
     const composerMap = {};
     encounters
-      .filter((e) => e.type === 'board_round' && e.fields && String(e.fields.bloods || '').trim())
+      .filter((e) => (e.type === 'board_round' || e.type === 'mobile_clinical_review') && e.fields && String(e.fields.bloods || e.fields.bloodsIx || '').trim())
       .forEach((e) => {
         const dt = new Date(e.timestamp);
         const encDateStr = isNaN(dt.getTime()) ? null
           : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         const encounterDate = encDateStr === todayStr ? 'Today' : (encDateStr || null);
 
-        String(e.fields.bloods).split(/\n+/).forEach((rawLine) => {
+        String(e.fields.bloods || e.fields.bloodsIx || '').split(/\n+/).forEach((rawLine) => {
           let line = rawLine.trim();
           if (!line) return;
           let date = encounterDate;
 
-          // Try extracting date prefix: DD/MM or DD/MM/YY(YY)
+          // Try extracting date prefix: DD/MM:, DD Mon:, or mobile pipe format (e.g. 18 Apr|CRP 78)
           let m;
-          m = line.match(DATE_LINE_RE);
+          m = line.match(DATE_PIPE_RE);
           if (m) {
-            date = formatEmbeddedDate(m[1], m[2], m[3]);
+            const parsedLabel = normaliseBloodDateLabel(m[1]);
+            if (parsedLabel) date = parsedLabel;
             line = line.slice(m[0].length).trim();
           } else {
-            m = line.match(DATE_TEXT_RE);
+            m = line.match(DATE_LINE_RE);
             if (m) {
-              const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
-              if (mo) {
-                date = formatEmbeddedDate(m[1], mo, null);
-                line = line.slice(m[0].length).trim();
+              date = formatEmbeddedDate(m[1], m[2], m[3]);
+              line = line.slice(m[0].length).trim();
+            } else {
+              m = line.match(DATE_TEXT_RE);
+              if (m) {
+                const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+                if (mo) {
+                  date = formatEmbeddedDate(m[1], mo, null);
+                  line = line.slice(m[0].length).trim();
+                }
               }
             }
           }
@@ -16869,6 +16891,240 @@ window.HAHBoard = window.HAHBoard || {};
   else initDesktopShell();
 
   window.HAHBoard.desktopShell = { init: initDesktopShell };
+})();
+
+</script>
+  <script>
+/* inlined: js/30-websocket-sync.js */
+// 30-websocket-sync.js
+// Real-time sync for HaH Board desktop.
+// Hooks into window.HAHBoard.sharedJsonStore writes and broadcasts change
+// notifications to other connected clients via the Azure WebSocket relay.
+// On receive, triggers a re-pull from OneDrive using the existing public API.
+//
+// OneDrive remains the source of truth — this module only carries deltas.
+
+(function () {
+  'use strict';
+
+  // ─── CONFIG ────────────────────────────────────────────────────────────────
+  const WS_URL = 'wss://hah-sync-mrleee3-hpaje8aca7dgd4fw.westeurope-01.azurewebsites.net/sync';
+  const RECONNECT_BASE_MS = 1000;
+  const RECONNECT_MAX_MS = 30000;
+  const REFRESH_DEBOUNCE_MS = 800;
+  const DEVICE_TAG = 'desktop';
+
+  // Allow disabling via localStorage if it ever misbehaves
+  if (localStorage.getItem('hah_wssync_disabled') === '1') {
+    console.log('[WSSync] Disabled via localStorage flag');
+    return;
+  }
+
+  // ─── WEBSOCKET CONNECTION ──────────────────────────────────────────────────
+  let socket = null;
+  let reconnectAttempt = 0;
+  let reconnectTimer = null;
+  let intentionalClose = false;
+  let clientId = null;
+  const listeners = new Set();
+  const sendQueue = [];
+
+  function connect() {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+    intentionalClose = false;
+    try {
+      socket = new WebSocket(WS_URL);
+    } catch (e) {
+      console.error('[WSSync] construct failed:', e);
+      scheduleReconnect();
+      return;
+    }
+    socket.addEventListener('open', () => {
+      console.log('[WSSync] connected');
+      reconnectAttempt = 0;
+      while (sendQueue.length && socket.readyState === WebSocket.OPEN) socket.send(sendQueue.shift());
+      window.dispatchEvent(new CustomEvent('wssync:connected'));
+    });
+    socket.addEventListener('message', (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch (_) { return; }
+      if (msg.type === 'welcome') { clientId = msg.clientId; console.log('[WSSync] client id:', clientId); return; }
+      if (msg.type === 'ack') return;
+      if (msg.type === 'error') { console.warn('[WSSync] server error:', msg.message); return; }
+      listeners.forEach(fn => { try { fn(msg); } catch (e) { console.error('[WSSync] listener threw:', e); } });
+      window.dispatchEvent(new CustomEvent('wssync:message', { detail: msg }));
+    });
+    socket.addEventListener('close', () => {
+      window.dispatchEvent(new CustomEvent('wssync:disconnected'));
+      if (!intentionalClose) scheduleReconnect();
+    });
+    socket.addEventListener('error', () => { /* close will fire next */ });
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, reconnectAttempt), RECONNECT_MAX_MS);
+    reconnectAttempt++;
+    console.log(`[WSSync] reconnect in ${delay}ms (attempt ${reconnectAttempt})`);
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect(); }, delay);
+  }
+
+  function send(type, payload) {
+    const msg = JSON.stringify({ type, payload, device: DEVICE_TAG, ts: Date.now() });
+    if (socket && socket.readyState === WebSocket.OPEN) socket.send(msg);
+    else { sendQueue.push(msg); if (!socket || socket.readyState === WebSocket.CLOSED) connect(); }
+  }
+
+  function on(handler) { listeners.add(handler); return () => listeners.delete(handler); }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (!socket || socket.readyState !== WebSocket.OPEN)) {
+      console.log('[WSSync] visible again, reconnecting');
+      connect();
+    }
+  });
+  window.addEventListener('online', () => { if (!socket || socket.readyState !== WebSocket.OPEN) connect(); });
+
+  window.WSSync = {
+    connect, send, on,
+    isConnected: () => !!(socket && socket.readyState === WebSocket.OPEN),
+    getClientId: () => clientId,
+    disconnect: () => { intentionalClose = true; if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; } if (socket) socket.close(); }
+  };
+
+  // ─── INSTRUMENTATION ───────────────────────────────────────────────────────
+  // Wrap sharedJsonStore write methods. A nesting guard ensures only the
+  // outermost call broadcasts (createPatientRecord internally calls
+  // savePatient + saveService + appendAudit; we want one broadcast per
+  // logical user action, not one per file write).
+  let nestingDepth = 0;
+
+  // (returnValue, originalArgs) -> [type, payload]
+  const WRAPPERS = {
+    createPatientRecord:           (r)            => ['patient.changed', { patientId: String((r && r.id) || '') }],
+    updatePatientCore:             (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    patchPatientRecord:            (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    archivePatientRecord:          (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'archive' }],
+    restoreArchivedPatientRecord:  (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'restore' }],
+    upsertPatientTimelineEntry:    (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    savePatient:                   (_, [doc])     => ['patient.changed', { patientId: String((doc && doc.id) || '') }],
+    saveService:                   ()             => ['service.changed', {}],
+    saveTasks:                     ()             => ['tasks.changed', {}],
+    upsertTaskRecord:              ()             => ['tasks.changed', {}],
+    patchTaskRecord:               ()             => ['tasks.changed', {}],
+    saveRound:                     (_, [date])    => ['round.changed', { date: String(date || '') }],
+  };
+
+  function wrapMethod(obj, name) {
+    const original = obj[name];
+    if (typeof original !== 'function' || original.__wssync) return;
+    const after = WRAPPERS[name];
+    obj[name] = async function () {
+      const args = Array.from(arguments);
+      nestingDepth++;
+      try {
+        const result = await original.apply(this, args);
+        if (nestingDepth === 1 && after) {
+          try {
+            const [type, payload] = after(result, args);
+            if (type) send(type, payload || {});
+          } catch (e) { console.warn('[WSSync] hook error:', name, e); }
+        }
+        return result;
+      } finally {
+        nestingDepth--;
+      }
+    };
+    obj[name].__wssync = true;
+  }
+
+  function instrument() {
+    const store = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+    if (!store) {
+      // Try again shortly — store loads after this script
+      setTimeout(instrument, 200);
+      return;
+    }
+    if (store.__wssync_instrumented) return;
+    Object.keys(WRAPPERS).forEach(name => wrapMethod(store, name));
+    store.__wssync_instrumented = true;
+    console.log('[WSSync] instrumented sharedJsonStore methods');
+  }
+
+  // ─── RECEIVER ──────────────────────────────────────────────────────────────
+  // Coalesce multiple incoming messages within REFRESH_DEBOUNCE_MS into
+  // one refresh, so rapid bursts of edits on the other device don't cause
+  // rapid-fire reloads here.
+  let refreshTimer = null;
+  let pending = { patient: false, tasks: false };
+
+  function scheduleRefresh(flags) {
+    if (flags.patient) pending.patient = true;
+    if (flags.tasks) pending.tasks = true;
+    if (refreshTimer) return;
+    refreshTimer = setTimeout(doRefresh, REFRESH_DEBOUNCE_MS);
+  }
+
+  async function doRefresh() {
+    refreshTimer = null;
+    const flags = { ...pending };
+    pending = { patient: false, tasks: false };
+    const store = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+    if (!store) return;
+    try {
+      if (flags.patient && typeof store.loadPatientDataset === 'function') {
+        await store.loadPatientDataset();
+      }
+      if (flags.tasks && typeof store.loadTaskDataset === 'function') {
+        await store.loadTaskDataset();
+      }
+      // Nudge the desktop store to re-render. Setting state with no change
+      // still triggers subscribers; pick a benign field.
+      try {
+        const s = window.HAHBoard && window.HAHBoard.store;
+        if (s && typeof s.setState === 'function') {
+          s.setState({ ui: { lastWsRefreshAt: Date.now() } });
+        }
+      } catch (_) {}
+      console.log('[WSSync] refreshed', flags);
+    } catch (e) {
+      console.warn('[WSSync] refresh failed:', e);
+    }
+  }
+
+  on((msg) => {
+    if (!msg || !msg.type) return;
+    switch (msg.type) {
+      case 'patient.changed':
+      case 'service.changed':
+      case 'round.changed':
+        scheduleRefresh({ patient: true });
+        break;
+      case 'tasks.changed':
+        scheduleRefresh({ tasks: true });
+        break;
+      default:
+        // Unknown type — ignore
+        break;
+    }
+  });
+
+  // On reconnect after a disconnect, do a one-shot full refresh to catch up
+  // on anything missed while we were offline.
+  window.addEventListener('wssync:connected', () => {
+    // Skip the very first connect — initial app load already pulls fresh data
+    if (window.WSSync.__initialConnectDone) {
+      console.log('[WSSync] reconnected — running catchup refresh');
+      scheduleRefresh({ patient: true, tasks: true });
+    }
+    window.WSSync.__initialConnectDone = true;
+  });
+
+  // ─── BOOT ──────────────────────────────────────────────────────────────────
+  instrument();
+  connect();
+
+  console.log('[WSSync] desktop module loaded');
 })();
 
 </script>
