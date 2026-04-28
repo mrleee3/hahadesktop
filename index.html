@@ -6514,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_093_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_093_websocket_source.zip',
-  builtAt: '2026-04-28T21:36:02.478930',
+  filename: 'hospital_at_home_board_v0_8_094_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_094_websocket_source.zip',
+  builtAt: '2026-04-28T21:52:32.525487',
   entry: 'desktop.html'
 };
 </script>
@@ -16911,7 +16911,7 @@ window.HAHBoard = window.HAHBoard || {};
   const WS_URL = 'wss://hah-sync-mrleee3-hpaje8aca7dgd4fw.westeurope-01.azurewebsites.net/sync';
   const RECONNECT_BASE_MS = 1000;
   const RECONNECT_MAX_MS = 30000;
-  const REFRESH_DEBOUNCE_MS = 800;
+  const REFRESH_DEBOUNCE_MS = 200;
   const DEVICE_TAG = 'desktop';
 
   // Allow disabling via localStorage if it ever misbehaves
@@ -16993,26 +16993,27 @@ window.HAHBoard = window.HAHBoard || {};
   };
 
   // ─── INSTRUMENTATION ───────────────────────────────────────────────────────
-  // Wrap sharedJsonStore write methods. A nesting guard ensures only the
-  // outermost call broadcasts (createPatientRecord internally calls
-  // savePatient + saveService + appendAudit; we want one broadcast per
-  // logical user action, not one per file write).
-  let nestingDepth = 0;
+  // We hook the LOWEST-LEVEL write methods (savePatient, saveService,
+  // saveTasks, saveRound) rather than the high-level ones. This is important
+  // for latency: createPatientRecord on this app runs roughly:
+  //
+  //   loadService -> savePatient -> saveService -> appendAudit -> loadPatientDataset
+  //
+  // and the loadPatientDataset at the end can take 5-8s as it sequentially
+  // reads every patient file. By broadcasting after savePatient completes
+  // (rather than after createPatientRecord returns), the other device
+  // starts its refresh ~5-8s sooner.
+  //
+  // No nesting guard is used — each low-level write is one logical change to
+  // OneDrive and gets one broadcast. Multiple broadcasts within ~200ms get
+  // coalesced into one refresh on the receiving side anyway.
 
   // (returnValue, originalArgs) -> [type, payload]
   const WRAPPERS = {
-    createPatientRecord:           (r)            => ['patient.changed', { patientId: String((r && r.id) || '') }],
-    updatePatientCore:             (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
-    patchPatientRecord:            (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
-    archivePatientRecord:          (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'archive' }],
-    restoreArchivedPatientRecord:  (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'restore' }],
-    upsertPatientTimelineEntry:    (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
-    savePatient:                   (_, [doc])     => ['patient.changed', { patientId: String((doc && doc.id) || '') }],
-    saveService:                   ()             => ['service.changed', {}],
-    saveTasks:                     ()             => ['tasks.changed', {}],
-    upsertTaskRecord:              ()             => ['tasks.changed', {}],
-    patchTaskRecord:               ()             => ['tasks.changed', {}],
-    saveRound:                     (_, [date])    => ['round.changed', { date: String(date || '') }],
+    savePatient:  (_, [doc])  => ['patient.changed', { patientId: String((doc && doc.id) || '') }],
+    saveService:  ()          => ['service.changed', {}],
+    saveTasks:    ()          => ['tasks.changed', {}],
+    saveRound:    (_, [date]) => ['round.changed', { date: String(date || '') }],
   };
 
   function wrapMethod(obj, name) {
@@ -17021,19 +17022,14 @@ window.HAHBoard = window.HAHBoard || {};
     const after = WRAPPERS[name];
     obj[name] = async function () {
       const args = Array.from(arguments);
-      nestingDepth++;
-      try {
-        const result = await original.apply(this, args);
-        if (nestingDepth === 1 && after) {
-          try {
-            const [type, payload] = after(result, args);
-            if (type) send(type, payload || {});
-          } catch (e) { console.warn('[WSSync] hook error:', name, e); }
-        }
-        return result;
-      } finally {
-        nestingDepth--;
+      const result = await original.apply(this, args);
+      if (after) {
+        try {
+          const [type, payload] = after(result, args);
+          if (type) send(type, payload || {});
+        } catch (e) { console.warn('[WSSync] hook error:', name, e); }
       }
+      return result;
     };
     obj[name].__wssync = true;
   }
