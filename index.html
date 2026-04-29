@@ -6514,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_097_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_097_websocket_source.zip',
-  builtAt: '2026-04-29T07:10:28.191564',
+  filename: 'hospital_at_home_board_v0_8_098_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_098_websocket_source.zip',
+  builtAt: '2026-04-29T20:24:52.730746',
   entry: 'desktop.html'
 };
 </script>
@@ -16997,27 +16997,39 @@ window.HAHBoard = window.HAHBoard || {};
   };
 
   // ─── INSTRUMENTATION ───────────────────────────────────────────────────────
-  // We hook the LOWEST-LEVEL write methods (savePatient, saveService,
-  // saveTasks, saveRound) rather than the high-level ones. This is important
-  // for latency: createPatientRecord on this app runs roughly:
+  // We wrap high-level public methods on window.HAHBoard.sharedJsonStore.
+  // Why high-level rather than the lower-level savePatient/saveService:
+  // the store is implemented as an IIFE, and createPatientRecord etc. call
+  // savePatient through the closure's local lexical binding. Replacing the
+  // public-facing window.HAHBoard.sharedJsonStore.savePatient property does
+  // NOT intercept those internal calls — closures capture the original
+  // bindings at definition time. So we wrap the methods the UI actually
+  // calls (createPatientRecord, updatePatientCore, etc.) on the public
+  // namespace, where every caller goes through the property lookup.
   //
-  //   loadService -> savePatient -> saveService -> appendAudit -> loadPatientDataset
+  // Trade-off: broadcasts fire AFTER createPatientRecord's full sequence,
+  // including the trailing loadPatientDataset reload (~3-4s on parallel
+  // fetch). Receivers' debounce window coalesces multiple events from one
+  // user action into a single refresh, so this isn't visibly slower than
+  // wrapping each low-level write would have been.
   //
-  // and the loadPatientDataset at the end can take 5-8s as it sequentially
-  // reads every patient file. By broadcasting after savePatient completes
-  // (rather than after createPatientRecord returns), the other device
-  // starts its refresh ~5-8s sooner.
-  //
-  // No nesting guard is used — each low-level write is one logical change to
-  // OneDrive and gets one broadcast. Multiple broadcasts within ~200ms get
-  // coalesced into one refresh on the receiving side anyway.
+  // A nesting guard prevents one logical user action from broadcasting
+  // multiple times (e.g. archivePatientRecord internally calls
+  // updatePatientCore in some flows).
+  let nestingDepth = 0;
 
   // (returnValue, originalArgs) -> [type, payload]
   const WRAPPERS = {
-    savePatient:  (_, [doc])  => ['patient.changed', { patientId: String((doc && doc.id) || '') }],
-    saveService:  ()          => ['service.changed', {}],
-    saveTasks:    ()          => ['tasks.changed', {}],
-    saveRound:    (_, [date]) => ['round.changed', { date: String(date || '') }],
+    createPatientRecord:           (r)            => ['patient.changed', { patientId: String((r && r.id) || '') }],
+    updatePatientCore:             (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    patchPatientRecord:            (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    archivePatientRecord:          (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'archive' }],
+    restoreArchivedPatientRecord:  (_, [pid])     => ['service.changed', { patientId: String(pid || ''), action: 'restore' }],
+    upsertPatientTimelineEntry:    (_, [pid])     => ['patient.changed', { patientId: String(pid || '') }],
+    saveTasks:                     ()             => ['tasks.changed', {}],
+    upsertTaskRecord:              ()             => ['tasks.changed', {}],
+    patchTaskRecord:               ()             => ['tasks.changed', {}],
+    saveRound:                     (_, [date])    => ['round.changed', { date: String(date || '') }],
   };
 
   function wrapMethod(obj, name) {
@@ -17026,14 +17038,22 @@ window.HAHBoard = window.HAHBoard || {};
     const after = WRAPPERS[name];
     obj[name] = async function () {
       const args = Array.from(arguments);
-      const result = await original.apply(this, args);
-      if (after) {
-        try {
-          const [type, payload] = after(result, args);
-          if (type) send(type, payload || {});
-        } catch (e) { console.warn('[WSSync] hook error:', name, e); }
+      nestingDepth++;
+      try {
+        const result = await original.apply(this, args);
+        if (nestingDepth === 1 && after) {
+          try {
+            const [type, payload] = after(result, args);
+            if (type) {
+              send(type, payload || {});
+              console.log('[WSSync] broadcast', name, '->', type);
+            }
+          } catch (e) { console.warn('[WSSync] hook error:', name, e); }
+        }
+        return result;
+      } finally {
+        nestingDepth--;
       }
-      return result;
     };
     obj[name].__wssync = true;
   }
