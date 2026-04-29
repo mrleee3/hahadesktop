@@ -6514,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_094_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_094_websocket_source.zip',
-  builtAt: '2026-04-28T21:52:32.525487',
+  filename: 'hospital_at_home_board_v0_8_097_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_097_websocket_source.zip',
+  builtAt: '2026-04-29T07:10:28.191564',
   entry: 'desktop.html'
 };
 </script>
@@ -9371,24 +9371,28 @@ window.HAHBoard = window.HAHBoard || {};
       const serviceDoc = await loadService();
       const ids = getActivePatientIds(serviceDoc);
       const archivedIds = getArchivedPatientIds(serviceDoc);
-      const rows = [];
-      const archivedRows = [];
-      for (const id of ids) {
+
+      // Parallel load: every active and archived patient file at once.
+      // The previous sequential for-of loop took ~300ms per file × N patients,
+      // which dominated the time of writes that triggered a reload (e.g.
+      // createPatientRecord ended with a loadPatientDataset call). With ~5
+      // patients this drops a 1.5s sequential scan to ~300ms parallel.
+      async function loadOne(id, label) {
         try {
           const patient = await loadPatient(id);
-          if (patient && patient.id) rows.push(mapJsonPatientToLegacyRaw(patient));
+          return (patient && patient.id) ? patient : null;
         } catch (err) {
-          console.warn('[H@H JSON store] Could not load patient', id, err);
+          console.warn('[H@H JSON store] Could not load ' + label, id, err);
+          return null;
         }
       }
-      for (const id of archivedIds) {
-        try {
-          const patient = await loadPatient(id);
-          if (patient && patient.id) archivedRows.push(mapJsonPatientToLegacyRaw(patient));
-        } catch (err) {
-          console.warn('[H@H JSON store] Could not load archived patient', id, err);
-        }
-      }
+      const [activeLoaded, archivedLoaded] = await Promise.all([
+        Promise.all(ids.map(id => loadOne(id, 'patient'))),
+        Promise.all(archivedIds.map(id => loadOne(id, 'archived patient')))
+      ]);
+      const rows = activeLoaded.filter(p => p).map(p => mapJsonPatientToLegacyRaw(p));
+      const archivedRows = archivedLoaded.filter(p => p).map(p => mapJsonPatientToLegacyRaw(p));
+
       patientCache = {
         loadedAt: nowIso(),
         source: 'json',
@@ -17121,6 +17125,319 @@ window.HAHBoard = window.HAHBoard || {};
   connect();
 
   console.log('[WSSync] desktop module loaded');
+})();
+
+</script>
+  <script>
+/* inlined: js/31-wssync-debug-panel.js */
+// 21-wssync-debug-panel.js  (mobile)
+// 31-wssync-debug-panel.js  (desktop — same code, different filename)
+//
+// Small floating debug panel for the WebSocket sync layer.
+// Shows live connection status and a rolling log of events.
+// Tap to expand/collapse. Long-press to clear log.
+//
+// Hidden by default. To show:
+//   localStorage.setItem('hah_wssync_debug', '1');
+// or call: WSSyncDebug.show()
+//
+// To hide:
+//   localStorage.removeItem('hah_wssync_debug');
+// or call: WSSyncDebug.hide()
+
+(function () {
+  'use strict';
+
+  const MAX_LOG_ENTRIES = 30;
+  const SHOW_KEY = 'hah_wssync_debug';
+
+  let isVisible = false;
+  let isExpanded = false;
+  let logEntries = [];
+  let panelEl = null;
+  let summaryEl = null;
+  let listEl = null;
+  let lastConnectAt = 0;
+
+  function isShowEnabled() {
+    try { return localStorage.getItem(SHOW_KEY) === '1'; } catch (_) { return false; }
+  }
+
+  function fmtTime(ts) {
+    const d = new Date(ts);
+    return d.toTimeString().slice(0, 8);
+  }
+
+  function fmtElapsed(ms) {
+    if (ms < 1000) return ms + 'ms';
+    if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+    if (ms < 3600000) return Math.round(ms / 60000) + 'm';
+    return Math.round(ms / 3600000) + 'h';
+  }
+
+  function getStateLabel() {
+    const ws = window.WSSync;
+    if (!ws) return 'no module';
+    if (ws.isConnected && ws.isConnected()) return 'connected';
+    return 'disconnected';
+  }
+
+  function getStateColor() {
+    return getStateLabel() === 'connected' ? '#10b981' : '#ef4444';
+  }
+
+  function ensurePanel() {
+    if (panelEl) return panelEl;
+    panelEl = document.createElement('div');
+    panelEl.id = 'wssyncDebugPanel';
+
+    // Restore last position if we have one, otherwise default to bottom-left
+    let pos = null;
+    try { pos = JSON.parse(localStorage.getItem('hah_wssync_debug_pos') || 'null'); } catch (_) {}
+
+    const baseStyle = [
+      'position:fixed',
+      'z-index:99999',
+      'font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif',
+      'font-size:11px',
+      'line-height:1.3',
+      'background:rgba(17,24,39,0.92)',
+      'color:#f3f4f6',
+      'border-radius:8px',
+      'box-shadow:0 4px 14px rgba(0,0,0,0.4)',
+      'backdrop-filter:saturate(140%) blur(8px)',
+      '-webkit-backdrop-filter:saturate(140%) blur(8px)',
+      'border:1px solid rgba(255,255,255,0.08)',
+      'overflow:hidden',
+      'max-width:calc(100vw - 16px)',
+      'user-select:none',
+      '-webkit-user-select:none',
+      'touch-action:none'
+    ].join(';');
+
+    panelEl.style.cssText = baseStyle;
+    if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+      panelEl.style.left = pos.x + 'px';
+      panelEl.style.top = pos.y + 'px';
+    } else {
+      panelEl.style.left = '8px';
+      panelEl.style.bottom = 'calc(8px + env(safe-area-inset-bottom, 0px))';
+    }
+
+    summaryEl = document.createElement('div');
+    summaryEl.style.cssText = 'padding:6px 10px;display:flex;align-items:center;gap:6px;white-space:nowrap;cursor:grab';
+    panelEl.appendChild(summaryEl);
+
+    listEl = document.createElement('div');
+    listEl.style.cssText = 'padding:0 10px 8px;border-top:1px solid rgba(255,255,255,0.08);max-height:240px;overflow:auto;display:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px';
+    panelEl.appendChild(listEl);
+
+    // ─── Drag + tap + long-press all on the summary bar ─────────────────────
+    let pressTimer = null;
+    let dragging = false;
+    let didDrag = false;
+    let startX = 0, startY = 0;
+    let originLeft = 0, originTop = 0;
+    const DRAG_THRESHOLD_PX = 6;
+    const LONG_PRESS_MS = 800;
+
+    function clampToViewport(x, y, w, h) {
+      const maxX = Math.max(0, window.innerWidth - w);
+      const maxY = Math.max(0, window.innerHeight - h);
+      return { x: Math.max(0, Math.min(x, maxX)), y: Math.max(0, Math.min(y, maxY)) };
+    }
+
+    summaryEl.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      summaryEl.setPointerCapture && summaryEl.setPointerCapture(e.pointerId);
+      dragging = true;
+      didDrag = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = panelEl.getBoundingClientRect();
+      originLeft = rect.left;
+      originTop = rect.top;
+      // Switch to top/left positioning so we can move freely
+      panelEl.style.bottom = 'auto';
+      panelEl.style.right = 'auto';
+      panelEl.style.left = originLeft + 'px';
+      panelEl.style.top = originTop + 'px';
+      summaryEl.style.cursor = 'grabbing';
+      pressTimer = setTimeout(() => {
+        if (!didDrag) {
+          logEntries = [];
+          addLog('debug', 'log cleared');
+          renderList();
+        }
+        pressTimer = null;
+      }, LONG_PRESS_MS);
+    });
+
+    summaryEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+        didDrag = true;
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      }
+      if (didDrag) {
+        const rect = panelEl.getBoundingClientRect();
+        const next = clampToViewport(originLeft + dx, originTop + dy, rect.width, rect.height);
+        panelEl.style.left = next.x + 'px';
+        panelEl.style.top = next.y + 'px';
+      }
+    });
+
+    function endPointer(e) {
+      if (!dragging) return;
+      try { summaryEl.releasePointerCapture && summaryEl.releasePointerCapture(e.pointerId); } catch (_) {}
+      dragging = false;
+      summaryEl.style.cursor = 'grab';
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      if (didDrag) {
+        // Save new position
+        const rect = panelEl.getBoundingClientRect();
+        try { localStorage.setItem('hah_wssync_debug_pos', JSON.stringify({ x: rect.left, y: rect.top })); } catch (_) {}
+      } else {
+        // No drag → treat as tap
+        toggleExpanded();
+      }
+    }
+    summaryEl.addEventListener('pointerup', endPointer);
+    summaryEl.addEventListener('pointercancel', endPointer);
+
+    // Keep panel in viewport if window resizes / device rotates
+    window.addEventListener('resize', () => {
+      const rect = panelEl.getBoundingClientRect();
+      const next = clampToViewport(rect.left, rect.top, rect.width, rect.height);
+      if (next.x !== rect.left || next.y !== rect.top) {
+        panelEl.style.left = next.x + 'px';
+        panelEl.style.top = next.y + 'px';
+      }
+    });
+
+    document.body.appendChild(panelEl);
+    return panelEl;
+  }
+
+  function toggleExpanded() {
+    isExpanded = !isExpanded;
+    if (listEl) listEl.style.display = isExpanded ? 'block' : 'none';
+    renderSummary();
+  }
+
+  function renderSummary() {
+    if (!summaryEl) return;
+    const state = getStateLabel();
+    const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${getStateColor()};display:inline-block;flex:0 0 auto"></span>`;
+    const since = lastConnectAt ? ` · ${fmtElapsed(Date.now() - lastConnectAt)}` : '';
+    const last = logEntries.length ? ` · ${logEntries[logEntries.length - 1].label}` : '';
+    const arrow = `<span style="opacity:.6;margin-left:4px">${isExpanded ? '▾' : '▸'}</span>`;
+    summaryEl.innerHTML = `${dot}<span>WS ${state}${since}${last}</span>${arrow}`;
+  }
+
+  function renderList() {
+    if (!listEl) return;
+    if (!logEntries.length) {
+      listEl.innerHTML = '<div style="opacity:.5;padding:8px 0">No events yet.</div>';
+      return;
+    }
+    const rows = logEntries.slice().reverse().map(e => {
+      const colour = e.level === 'error' ? '#fca5a5' : e.level === 'warn' ? '#fcd34d' : e.level === 'event' ? '#86efac' : '#d1d5db';
+      return `<div style="padding:3px 0;color:${colour};border-bottom:1px dashed rgba(255,255,255,.05)"><span style="opacity:.6">${fmtTime(e.ts)}</span> ${escapeHtml(e.label)}</div>`;
+    }).join('');
+    listEl.innerHTML = rows;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  function addLog(level, label) {
+    logEntries.push({ ts: Date.now(), level, label });
+    while (logEntries.length > MAX_LOG_ENTRIES) logEntries.shift();
+    if (isVisible) {
+      renderSummary();
+      if (isExpanded) renderList();
+    }
+  }
+
+  function show() {
+    isVisible = true;
+    ensurePanel();
+    panelEl.style.display = 'block';
+    renderSummary();
+    renderList();
+  }
+
+  function hide() {
+    isVisible = false;
+    if (panelEl) panelEl.style.display = 'none';
+  }
+
+  // ─── Wire up to WSSync events ──────────────────────────────────────────────
+  function attach() {
+    window.addEventListener('wssync:connected', () => {
+      lastConnectAt = Date.now();
+      addLog('event', 'WS connected');
+    });
+    window.addEventListener('wssync:disconnected', () => {
+      addLog('warn', 'WS disconnected');
+    });
+    window.addEventListener('wssync:message', (e) => {
+      const m = e && e.detail;
+      if (!m) return;
+      if (m.type === 'patient.changed') addLog('event', `← ${m._from || '?'} ${m.type} ${m.payload && m.payload.patientId ? '(' + String(m.payload.patientId).slice(0, 12) + ')' : ''}`);
+      else addLog('event', `← ${m._from || '?'} ${m.type}`);
+    });
+
+    // Hook console for refresh outcomes — match the existing log strings the
+    // sync module emits, so we don't have to touch that module to wire signals.
+    const origLog = console.log.bind(console);
+    const origWarn = console.warn.bind(console);
+    console.log = function () {
+      try {
+        const first = arguments[0];
+        if (typeof first === 'string' && first.indexOf('[WSSync]') === 0) {
+          addLog('info', first.replace('[WSSync] ', ''));
+        }
+      } catch (_) {}
+      return origLog.apply(console, arguments);
+    };
+    console.warn = function () {
+      try {
+        const first = arguments[0];
+        if (typeof first === 'string' && first.indexOf('[WSSync]') === 0) {
+          addLog('warn', first.replace('[WSSync] ', ''));
+        }
+      } catch (_) {}
+      return origWarn.apply(console, arguments);
+    };
+
+    // Re-render summary periodically to keep "connected · 12s" fresh
+    setInterval(() => { if (isVisible) renderSummary(); }, 1000);
+  }
+
+  // ─── Public API ────────────────────────────────────────────────────────────
+  window.WSSyncDebug = {
+    show: () => { try { localStorage.setItem(SHOW_KEY, '1'); } catch (_) {} show(); },
+    hide: () => { try { localStorage.removeItem(SHOW_KEY); } catch (_) {} hide(); },
+    toggle: () => { isVisible ? window.WSSyncDebug.hide() : window.WSSyncDebug.show(); },
+    log: (label) => addLog('info', label),
+    isVisible: () => isVisible
+  };
+
+  // Auto-show if flag is set
+  function init() {
+    attach();
+    if (isShowEnabled()) show();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 
 </script>
