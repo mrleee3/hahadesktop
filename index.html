@@ -795,6 +795,23 @@ html, body {
   letter-spacing: 0.01em;
 }
 
+.hah-ws-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex: 0 0 auto;
+  transition: background-color .25s ease, box-shadow .25s ease;
+}
+body.hah-ws-connected .hah-ws-dot {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.18);
+}
+body.hah-ws-connecting .hah-ws-dot {
+  background: #f59e0b;
+}
+
 .hah-board-listcard-count {
   font-size: 11px;
   font-weight: 600;
@@ -6514,9 +6531,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_101_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_101_websocket_source.zip',
-  builtAt: '2026-04-29T20:50:21.010723',
+  filename: 'hospital_at_home_board_v0_8_102_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_102_websocket_source.zip',
+  builtAt: '2026-04-29T21:01:10.312516',
   entry: 'desktop.html'
 };
 </script>
@@ -11189,6 +11206,7 @@ window.HAHBoard = window.HAHBoard || {};
     const head = `<div class="hah-board-listcard-head">
       <div class="hah-board-listcard-title-row">
         <span class="hah-board-listcard-title">Patient list</span>
+        <span class="hah-ws-dot" aria-hidden="true"></span>
         <div class="hah-board-listcard-actions">
           <div class="hah-board-sort-wrap">
             <button type="button" class="hah-board-sort-iconbtn${sortMenuOpen ? ' is-open' : ''}"
@@ -17143,6 +17161,23 @@ window.HAHBoard = window.HAHBoard || {};
   // ─── BOOT ──────────────────────────────────────────────────────────────────
   instrument();
   connect();
+
+  // ─── STATUS DOT ───────────────────────────────────────────────────────────
+  // The dot itself lives in the board template (rendered by 25-desktop-board.js)
+  // with class .hah-ws-dot. We don't touch the dot directly. Instead we toggle
+  // classes on <body>: hah-ws-connected | hah-ws-connecting. CSS handles the
+  // rest. This means the board can re-render as often as it likes — the dot
+  // re-appears already styled correctly by CSS, with no JS DOM observation
+  // and no chance of interfering with other layout code.
+  function setBodyWsClass(state) {
+    const body = document.body;
+    if (!body) return;
+    body.classList.toggle('hah-ws-connected',  state === 'connected');
+    body.classList.toggle('hah-ws-connecting', state === 'connecting');
+  }
+  setBodyWsClass('connecting');
+  window.addEventListener('wssync:connected',    () => setBodyWsClass('connected'));
+  window.addEventListener('wssync:disconnected', () => setBodyWsClass('connecting'));
 
   console.log('[WSSync] desktop module loaded');
 })();
