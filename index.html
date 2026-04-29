@@ -6514,9 +6514,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_099_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_099_websocket_source.zip',
-  builtAt: '2026-04-29T20:32:52.649159',
+  filename: 'hospital_at_home_board_v0_8_100_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_100_websocket_source.zip',
+  builtAt: '2026-04-29T20:40:43.568541',
   entry: 'desktop.html'
 };
 </script>
@@ -11188,10 +11188,8 @@ window.HAHBoard = window.HAHBoard || {};
 
     const head = `<div class="hah-board-listcard-head">
       <div class="hah-board-listcard-title-row">
-        <span class="hah-board-listcard-title" style="display:inline-flex;align-items:center;gap:8px">
-          <span>Patient list</span>
-          <span id="wsStatusDot" role="button" tabindex="0" aria-label="Live sync status" title="Live sync status" style="display:none;width:9px;height:9px;border-radius:50%;background:#9ca3af;cursor:pointer;flex:0 0 auto;transition:background-color .25s ease,box-shadow .25s ease"></span>
-        </span>
+        <span class="hah-board-listcard-title">Patient list</span>
+        <span id="wsStatusDot" role="button" tabindex="0" aria-label="Live sync status" title="Live sync status" style="display:none;width:9px;height:9px;border-radius:50%;background:#9ca3af;cursor:pointer;flex:0 0 auto;margin-left:2px;transition:background-color .25s ease,box-shadow .25s ease"></span>
         <div class="hah-board-listcard-actions">
           <div class="hah-board-sort-wrap">
             <button type="button" class="hah-board-sort-iconbtn${sortMenuOpen ? ' is-open' : ''}"
@@ -17188,26 +17186,27 @@ window.HAHBoard = window.HAHBoard || {};
   window.addEventListener('wssync:connected', () => setDotState('connected'));
   window.addEventListener('wssync:disconnected', () => setDotState('disconnected'));
 
-  // Re-apply styling whenever the board re-renders (which removes/recreates the
-  // dot element). Watching the document body is broad but cheap — only the
-  // attribute/childList check fires when relevant DOM changes happen.
-  function startDotObserver() {
-    if (!document.body) {
-      // body may not exist yet on early script parse
-      window.addEventListener('DOMContentLoaded', startDotObserver, { once: true });
-      return;
-    }
-    const obs = new MutationObserver(() => {
-      const dot = document.getElementById('wsStatusDot');
-      if (dot && (!dot.style.background || dot.style.display === 'none')) {
-        applyDotStyle();
-      }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
-    // Also try immediately
+  // Re-apply styling when needed. The board re-renders frequently (state
+  // changes wipe and rebuild the patient list card), which removes our dot
+  // element. We can't use a broad body-wide MutationObserver — that fires
+  // on every DOM change and can interfere with other layout observers
+  // (e.g. the patient page's ResizeObserver that handles compact-mode nav
+  // re-parenting). Instead, listen to known render-completion signals and
+  // fall back to a low-frequency periodic check.
+  function tryApply() {
+    const dot = document.getElementById('wsStatusDot');
+    if (dot && dot.style.display === 'none') applyDotStyle();
+  }
+  window.addEventListener('hah:panes-resized', tryApply);
+  // Also re-check periodically — cheap, runs once per second, only does
+  // anything if the dot is missing or unstyled.
+  setInterval(tryApply, 1000);
+  // Initial apply on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyDotStyle);
+  } else {
     applyDotStyle();
   }
-  startDotObserver();
 
   console.log('[WSSync] desktop module loaded');
 })();
