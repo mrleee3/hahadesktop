@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_103_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_103_websocket_source.zip',
-  builtAt: '2026-04-29T21:06:24.486363',
+  filename: 'hospital_at_home_board_v0_8_104_timeline_race_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_104_timeline_race_fix_source.zip',
+  builtAt: '2026-05-02T15:45:47.228611',
   entry: 'desktop.html'
 };
 </script>
@@ -12075,10 +12075,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function persistEncounterToJson(patientSummary, encounter) {
     const raw = patientSummary && patientSummary.sourcePatient ? patientSummary.sourcePatient : {};
-    if (!raw || !raw.jsonRecord) return;
+    if (!raw || !raw.jsonRecord) return Promise.resolve();
     const api = window.HAHBoard.sharedJsonStore;
-    if (!api || typeof api.upsertPatientTimelineEntry !== 'function') return;
-    api.upsertPatientTimelineEntry(patientSummary.id, encounter)
+    if (!api || typeof api.upsertPatientTimelineEntry !== 'function') return Promise.resolve();
+    return api.upsertPatientTimelineEntry(patientSummary.id, encounter)
       .then(function () {
         store.setState({ patient: { _jsonSavedAt: Date.now() } });
       })
@@ -12090,8 +12090,8 @@ window.HAHBoard = window.HAHBoard || {};
   }
   function persistPatientPatchToJson(patientId, patch) {
     const api = window.HAHBoard.sharedJsonStore;
-    if (!api || typeof api.patchPatientRecord !== 'function') return;
-    api.patchPatientRecord(String(patientId || ''), patch || {})
+    if (!api || typeof api.patchPatientRecord !== 'function') return Promise.resolve();
+    return api.patchPatientRecord(String(patientId || ''), patch || {})
       .then(function () {
         store.setState({ patient: { _jsonPatientSavedAt: Date.now() } });
       })
@@ -14571,10 +14571,29 @@ window.HAHBoard = window.HAHBoard || {};
           savedEncounter = created || null;
           savedId = created ? created.id : null;
         }
-        if (savedEncounter) persistEncounterToJson(vm.patient, savedEncounter);
+        // Serialize JSON writes so the discharge-readiness patch loads
+        // patient data AFTER the timeline upsert has saved. Previously both
+        // writes ran concurrently and used last-write-wins on the same
+        // patient JSON file, so a discharge patch loaded before the timeline
+        // upsert finished would clobber the new timeline entry on save.
+        // Resulting symptom: board round entry created on desktop, JSON
+        // version bumps twice, but timeline ends up empty — entry never
+        // visible to the mobile companion or other clients.
+        const timelinePromise = savedEncounter
+          ? persistEncounterToJson(vm.patient, savedEncounter)
+          : Promise.resolve();
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
-          if (dr) { ops.setDischargeReadiness(vm.patient.id, dr); persistPatientPatchToJson(vm.patient.id, { operational: { dischargeReadiness: dr } }); }
+          if (dr) {
+            ops.setDischargeReadiness(vm.patient.id, dr);
+            // Wait for timeline write to land before patching operational,
+            // so the patch sees the timeline entry in its loaded snapshot.
+            timelinePromise
+              .catch(function () {})
+              .then(function () {
+                persistPatientPatchToJson(vm.patient.id, { operational: { dischargeReadiness: dr } });
+              });
+          }
           // If round active, mark this patient as Discussed and try to auto-advance
           if (typeof ops.getActiveRound === 'function' && ops.getActiveRound()) {
             ops.markPatientDiscussed(vm.patient.id);
