@@ -3321,8 +3321,31 @@ body.hah-ws-connecting .hah-ws-dot {
 .hah-desktop-app.hah-patient-compact .hah-left-pane > .hah-stack {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 14px 12px 14px;
+}
+
+/* Make the patient list card the only scrolling region in compact mode,
+   so the caseload card stays visible at top and patient rows scroll. */
+.hah-desktop-app.hah-patient-compact .hah-patient-list-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.hah-desktop-app.hah-patient-compact .hah-patient-list-card .hah-list-head,
+.hah-desktop-app.hah-patient-compact .hah-patient-list-card .hah-list-filter-banner {
+  flex: 0 0 auto;
+}
+
+.hah-desktop-app.hah-patient-compact .hah-patient-list-card .hah-patient-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hah-desktop-app.hah-patient-compact .hah-left-pane .hah-card-inner {
@@ -6531,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_102_websocket_release.html',
-  source: 'hospital_at_home_board_v0_8_102_websocket_source.zip',
-  builtAt: '2026-04-29T21:01:10.312516',
+  filename: 'hospital_at_home_board_v0_8_103_websocket_release.html',
+  source: 'hospital_at_home_board_v0_8_103_websocket_source.zip',
+  builtAt: '2026-04-29T21:06:24.486363',
   entry: 'desktop.html'
 };
 </script>
@@ -11206,7 +11229,6 @@ window.HAHBoard = window.HAHBoard || {};
     const head = `<div class="hah-board-listcard-head">
       <div class="hah-board-listcard-title-row">
         <span class="hah-board-listcard-title">Patient list</span>
-        <span class="hah-ws-dot" aria-hidden="true"></span>
         <div class="hah-board-listcard-actions">
           <div class="hah-board-sort-wrap">
             <button type="button" class="hah-board-sort-iconbtn${sortMenuOpen ? ' is-open' : ''}"
@@ -12219,6 +12241,7 @@ window.HAHBoard = window.HAHBoard || {};
     const listHead = `
       <div class="hah-list-head">
         <span class="hah-list-title">Patient list</span>
+        <span class="hah-ws-dot" aria-hidden="true"></span>
         <div class="hah-list-sort-wrap">
           <button type="button" class="hah-list-sort-btn${sortMenuOpen ? ' is-open' : ''}"
             data-patient-action="toggle-sort-menu" title="Sort: ${c.escapeHtml(sortLabel)}">
