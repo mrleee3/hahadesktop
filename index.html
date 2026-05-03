@@ -4406,6 +4406,24 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   white-space: nowrap;
   letter-spacing: 0.04em;
 }
+/* When the flag is a <button> (pressable to open ACP modal) we need to
+   undo browser button defaults — the .hah-pt-flag rule above sets visual
+   styling that the button user-agent CSS would otherwise override
+   (background, font-family, padding). Cursor + tiny press feedback
+   communicate interactivity without changing the resting appearance. */
+button.hah-pt-flag {
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: transform 80ms ease, filter 120ms ease;
+}
+button.hah-pt-flag:hover {
+  filter: brightness(0.95);
+}
+button.hah-pt-flag:active {
+  transform: scale(0.97);
+}
 
 .hah-pt-flag.is-dnar {
   background: #fbf2f8;
@@ -6613,9 +6631,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_130_discharge_derived_release.html',
-  source: 'hospital_at_home_board_v0_8_130_discharge_derived_source.zip',
-  builtAt: '2026-05-03T21:20:26.913253',
+  filename: 'hospital_at_home_board_v0_8_133_tep_chip_release.html',
+  source: 'hospital_at_home_board_v0_8_133_tep_chip_source.zip',
+  builtAt: '2026-05-03T21:43:00.994882',
   entry: 'desktop.html'
 };
 </script>
@@ -9756,9 +9774,14 @@ window.HAHBoard = window.HAHBoard || {};
     try {
       const loadedAt = Date.parse(patientCache && patientCache.loadedAt || 0) || 0;
       if (!loadedAt) {
+        // Quiet path — record the check timestamp but don't refresh the
+        // shell for a state we already had (no cache yet). Direct localStorage
+        // write avoids saveState's refreshShell side effect.
+        const prevAvailable = state.updateAvailable;
         state.updateAvailable = false;
         state.lastUpdateCheckAt = nowIso();
-        saveState();
+        try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (_) {}
+        if (prevAvailable !== false) refreshShell('JSON store');
         return { available: false, count: 0, reason: 'No JSON cache loaded yet' };
       }
       const ids = [];
@@ -9779,6 +9802,12 @@ window.HAHBoard = window.HAHBoard || {};
           if (stamp && stamp > loadedAt + 5000) changed += 1;
         } catch (_) {}
       }
+      // Decide whether the UI needs to re-render. Only the change in
+      // updateAvailable, or a meaningfully newer remote stamp, are
+      // user-visible. The lastUpdateCheckAt timestamp moves on every poll
+      // and isn't displayed anywhere — no need to refresh the shell for it.
+      const prevAvailable = state.updateAvailable;
+      const prevRemoteAt = state.lastRemoteUpdateAt;
       state.updateAvailable = changed > 0;
       state.lastUpdateCheckAt = nowIso();
       state.lastRemoteUpdateAt = latestRemote ? new Date(latestRemote).toISOString() : '';
@@ -9786,7 +9815,15 @@ window.HAHBoard = window.HAHBoard || {};
         ? `JSON update available (${changed} changed file${changed === 1 ? '' : 's'})`
         : 'No JSON updates found';
       state.lastError = '';
-      saveState();
+      // Persist state quietly (direct write, no refreshShell side effect).
+      try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (_) {}
+      // Only refresh the shell if something user-visible actually changed.
+      // Without this gate the 60s poll triggered a full re-render every
+      // minute, visibly resetting the composer mid-typing and bumping
+      // anything else not explicitly preserved across renders.
+      const userVisibleChange = (prevAvailable !== state.updateAvailable)
+        || (prevRemoteAt !== state.lastRemoteUpdateAt && state.updateAvailable);
+      if (userVisibleChange) refreshShell('JSON store');
       return { available: changed > 0, count: changed, latestRemoteAt: state.lastRemoteUpdateAt };
     } catch (err) {
       recordError(err);
@@ -12959,14 +12996,20 @@ window.HAHBoard = window.HAHBoard || {};
     const ps      = ops ? ops.getPatientState(patient.id) : {};
     const acpData = ps.acp || {};
     const showDnar = patient.dnar || acpData.dnacprStatus === 'yes';
-    const showAcp  = patient.acp  || !!(acpData.dnacprStatus || acpData.tepStatus || acpData.jicMeds || acpData.tep || (acpData.notes && String(acpData.notes).trim()));
+    // The "TEP" chip surfaces the Treatment Escalation Plan (the
+    // ceiling-of-care free-text). The underlying field is currently named
+    // tep / ceilingOfCare; tepStatus is actually a UCP-document marker
+    // (Universal Care Plan present/absent) — the rename to ucpStatus is
+    // deferred to ROADMAP. Until then, the chip's clinical meaning is
+    // "is there a TEP filled in?" — i.e. ceilingOfCare/tep has content.
+    const tepText = String(acpData.tep || acpData.ceilingOfCare || '').trim();
+    const showTep = !!tepText;
 
-    const syncState = state && state.ui && state.ui.syncState === 'update-available';
-    const syncBtn = `<button type="button" class="hah-pt-sync-btn${syncState ? ' has-update' : ''}" data-action="sync-json" title="${syncState ? 'JSON update available — press to reload' : 'Sync with shared JSON'}">${syncState ? 'Reload JSON' : 'Sync JSON'}</button>`;
+    // Both chips open the ACP modal when pressed (matches the Edit button
+    // already on the ACP card; saves the user from scrolling to find it).
     const rightFlags = [
-      syncBtn,
-      showAcp  ? `<span class="hah-pt-flag is-acp">ACP</span>`  : '',
-      showDnar ? `<span class="hah-pt-flag is-dnar">DNAR</span>` : ''
+      showTep  ? `<button type="button" class="hah-pt-flag is-acp" data-patient-action="open-acp-modal" title="Open ACP — TEP: ${c.escapeHtml(tepText)}">TEP</button>`  : '',
+      showDnar ? `<button type="button" class="hah-pt-flag is-dnar" data-patient-action="open-acp-modal" title="Open ACP — DNACPR documented">DNAR</button>` : ''
     ].filter(Boolean).join('');
 
     return `<div class="hah-pt-header-bar">
@@ -13101,7 +13144,12 @@ window.HAHBoard = window.HAHBoard || {};
     ].filter(Boolean) : [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div>${progressBody}</div>`,
-      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
+      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`,
+      // Board round entries also carry forDischargeSummary in their fields
+      // (set by composer-done). Surface it here for the same reason as
+      // mobile entries — the user committed it, the log should show what
+      // was committed.
+      forDischargeSummary ? `<div class="hah-log-field"><div class="hah-log-field-label">For discharge summary</div>${forDischargeBody}</div>` : ''
     ].filter(Boolean);
     return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}${isMobile ? ' is-mobile-review' : ''}">
       <div class="hah-log-entry-bar">
