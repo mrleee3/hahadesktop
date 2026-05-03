@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_108_dc_summary_propagate_release.html',
-  source: 'hospital_at_home_board_v0_8_108_dc_summary_propagate_source.zip',
-  builtAt: '2026-05-03T07:48:51.641016',
+  filename: 'hospital_at_home_board_v0_8_109_log_fixes_release.html',
+  source: 'hospital_at_home_board_v0_8_109_log_fixes_source.zip',
+  builtAt: '2026-05-03T08:14:25.279040',
   entry: 'desktop.html'
 };
 </script>
@@ -9255,6 +9255,36 @@ window.HAHBoard = window.HAHBoard || {};
     return entry;
   }
 
+  // Remove a timeline entry by id from a patient's JSON record. Returns true
+  // if an entry was found and removed, false otherwise. Used by both apps to
+  // delete encounters that live on the JSON timeline (e.g. mobile clinical
+  // reviews, board rounds). Without this, a delete-encounter action on
+  // desktop would only mutate local state and the entry would re-appear on
+  // next dataset reload.
+  async function removePatientTimelineEntry(patientId, entryId) {
+    if (!patientId) throw new Error('Cannot remove timeline entry without a patient id.');
+    if (!entryId) return false;
+    const id = String(patientId);
+    const ent = String(entryId);
+    let patient = await loadPatient(id);
+    if (!patient || !patient.id) return false;
+    const before = Array.isArray(patient.timeline) ? patient.timeline : [];
+    const after = before.filter(function (row) { return String(row && row.id) !== ent; });
+    if (after.length === before.length) return false;
+    patient.timeline = after;
+    await savePatient(patient);
+    try {
+      await appendAudit({
+        type: 'patient-timeline-removed',
+        entityType: 'patient',
+        entityId: id,
+        summary: `Removed timeline entry ${ent} for ${id}`
+      });
+    } catch (_) {}
+    try { await loadPatientDataset(); } catch (_) {}
+    return true;
+  }
+
   function getActivePatientIds(serviceDoc) {
     const serviceBlock = serviceDoc && serviceDoc.service ? serviceDoc.service : {};
     const patientsBlock = serviceDoc && serviceDoc.patients ? serviceDoc.patients : {};
@@ -9638,6 +9668,7 @@ window.HAHBoard = window.HAHBoard || {};
     saveRound,
     appendAudit,
     upsertPatientTimelineEntry,
+    removePatientTimelineEntry,
     makePatientSchema,
     getFilePlan
   };
@@ -12777,12 +12808,20 @@ window.HAHBoard = window.HAHBoard || {};
     const planBody = planText
       ? `<div class="hah-log-field-body">${c.escapeHtml(planText)}</div>`
       : '<span class="hah-log-empty-inline">—</span>';
+    // Mobile clinical review entries carry the patient's "For discharge summary"
+    // text snapshotted at save time. Surface it as its own field so it's
+    // visible on the entry alongside issues/currently/plan.
+    const forDischargeSummary = String(f.forDischargeSummary || '').trim();
+    const forDischargeBody = forDischargeSummary
+      ? `<div class="hah-log-field-body">${c.escapeHtml(forDischargeSummary)}</div>`
+      : '';
     const cols = isMobile ? [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Currently</div>${progressBody}</div>`,
       examination ? `<div class="hah-log-field"><div class="hah-log-field-label">Examination</div>${examinationBody}</div>` : '',
       bloods ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods / Ix</div>${bloodsBody}</div>` : '',
-      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
+      `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`,
+      forDischargeSummary ? `<div class="hah-log-field"><div class="hah-log-field-label">For discharge summary</div>${forDischargeBody}</div>` : ''
     ].filter(Boolean) : [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div>${progressBody}</div>`,
@@ -14767,7 +14806,23 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'delete-encounter' && ops) {
       const encId = target.getAttribute('data-encounter-id');
       if (!encId) return false;
-      if (window.confirm('Delete this entry?')) ops.deleteEncounter(encId);
+      if (window.confirm('Delete this entry?')) {
+        // Encounters can live in two places: local ops state (state.encounters
+        // — desktop-created) and the patient's JSON timeline (mobile clinical
+        // reviews, persisted board rounds). Try both — local first because
+        // it's synchronous, then JSON for entries that live there. Without
+        // the JSON delete, mobile entries would re-appear on next dataset
+        // reload because they're never removed from the source of truth.
+        ops.deleteEncounter(encId);
+        if (vm && vm.patient) {
+          const api = window.HAHBoard.sharedJsonStore;
+          if (api && typeof api.removePatientTimelineEntry === 'function') {
+            api.removePatientTimelineEntry(vm.patient.id, encId).catch(function (err) {
+              console.warn('[H@H JSON store] Could not remove timeline entry', err);
+            });
+          }
+        }
+      }
       return true;
     }
 
