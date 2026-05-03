@@ -6589,9 +6589,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_126_flatpickr_clear_release.html',
-  source: 'hospital_at_home_board_v0_8_126_flatpickr_clear_source.zip',
-  builtAt: '2026-05-03T20:15:46.281886',
+  filename: 'hospital_at_home_board_v0_8_127_date_default_and_scroll_release.html',
+  source: 'hospital_at_home_board_v0_8_127_date_default_and_scroll_source.zip',
+  builtAt: '2026-05-03T20:23:29.631579',
   entry: 'desktop.html'
 };
 </script>
@@ -14091,7 +14091,8 @@ window.HAHBoard = window.HAHBoard || {};
             <button type="button" class="hah-dchip hah-dchip-ready" id="cform-ready-chip" data-discharge-quick="ready">Ready</button>
             <input type="date" id="cform-discharge-date" class="hah-date-input"
               placeholder="Select date"
-              min="${todayIso()}" value="${c.escapeHtml(prevDate)}">
+              min="${todayIso()}"
+              data-pulled-date="${c.escapeHtml(prevDate)}">
           </div>
         </div>
         <div class="hah-cform-field">
@@ -14375,6 +14376,23 @@ window.HAHBoard = window.HAHBoard || {};
           saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
         }
       });
+
+      // Apply initial date AFTER flatpickr is alive: prefer the draft's value
+      // (which may be empty if the user just cleared), then fall back to the
+      // pulled date from the last round (stored as data attribute, not as a
+      // value="..." in the HTML — see the input markup above for why).
+      // This is the single source-of-truth point for the initial date,
+      // replacing the previous fight between value="${prevDate}" (HTML
+      // default) and restoreFields' set('cform-discharge-date', '') call.
+      const draftForDate = draft && draft.fields ? draft.fields : null;
+      const draftHasDateField = draftForDate && Object.prototype.hasOwnProperty.call(draftForDate, 'dischargeDate');
+      const pulledDate = dischargeDateInput.getAttribute('data-pulled-date') || '';
+      const initialDate = draftHasDateField ? String(draftForDate.dischargeDate || '') : pulledDate;
+      if (initialDate) {
+        fp.setDate(initialDate, false);
+      } else {
+        fp.clear();
+      }
     }
 
     if (dischargeDateInput && !fp) {
@@ -17051,6 +17069,16 @@ window.HAHBoard = window.HAHBoard || {};
       app.insertBefore(nav, leftPane);
     }
 
+    // Capture scroll positions BEFORE wiping innerHTML so the user doesn't
+    // jump back to the top whenever something triggers a re-render (e.g.
+    // tapping Clear or Undo in the right-pane composer, or any state
+    // change that bubbles a render). Restore right after re-render.
+    const scrollState = {
+      left: leftPane.scrollTop,
+      main: mainPane.scrollTop,
+      right: rightPane.scrollTop
+    };
+
     leftPane.innerHTML  = renderLeftPane(state);
     mainPane.innerHTML  = renderMainPane(state);
     rightPane.innerHTML = renderRightPane(state);
@@ -17066,6 +17094,12 @@ window.HAHBoard = window.HAHBoard || {};
     } else {
       window.dispatchEvent(new CustomEvent('hah:panes-resized'));
     }
+    // Restore scroll. Browsers reset scrollTop to 0 when innerHTML is
+    // replaced; this puts it back. We do this AFTER applyPatientLayout
+    // because layout reparenting could affect available scroll height.
+    leftPane.scrollTop = scrollState.left;
+    mainPane.scrollTop = scrollState.main;
+    rightPane.scrollTop = scrollState.right;
   }
 
   function bindResizeHandles() {
