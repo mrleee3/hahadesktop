@@ -6584,9 +6584,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_119_clear_undo_release.html',
-  source: 'hospital_at_home_board_v0_8_119_clear_undo_source.zip',
-  builtAt: '2026-05-03T16:34:11.436618',
+  filename: 'hospital_at_home_board_v0_8_120_bloods_parse_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_120_bloods_parse_fix_source.zip',
+  builtAt: '2026-05-03T19:03:34.736503',
   entry: 'desktop.html'
 };
 </script>
@@ -13505,25 +13505,9 @@ window.HAHBoard = window.HAHBoard || {};
     // Build date→vals maps from both sources
     const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-    // 1. Mobile app: pipe-delimited "15 Apr|CRP 45 Na 138 ..."
-    const mobileMap = {};
-    (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
-      .slice(0, 5).forEach((line) => {
-        const parts = line.split('|').map((p) => p.trim());
-        const dateRaw = parts[0] || '';
-        const date = dateRaw.replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
-        const dateLabel = date === todayStr ? 'Today' : date;
-        if (!date) return;
-        if (!mobileMap[dateLabel]) mobileMap[dateLabel] = {};
-        const rest = parts.slice(1).join(' ');
-        BLOOD_DB.forEach(({ key, re }) => {
-          const m = rest.match(re);
-          if (m) mobileMap[dateLabel][key] = parseFloat(m[1]);
-        });
-      });
-
-    // 2. Timeline encounters: board round + mobile clinical review entries with fields.bloods (free text)
-    // Each line may start with a date: "18/04: CRP 78", "18 Apr: CRP 78", "18 Apr|CRP 78" or just "CRP 78"
+    // Date-extraction patterns shared by both the mobile bloods parser
+    // (below) and the timeline encounter parser (further down). Defined
+    // here so both can use them and stay consistent.
     const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
     const DATE_LINE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
     const DATE_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
@@ -13549,6 +13533,60 @@ window.HAHBoard = window.HAHBoard || {};
       }
       return text === todayStr ? 'Today' : text;
     }
+
+    // 1. Mobile app: lines may be in any of these formats:
+    //   "15 Apr|CRP 45 Na 138 ..."          (pipe-delimited, original)
+    //   "01/05: Cr 156"                     (slash date with colon)
+    //   "01 May: Cr 156"                    (text date with colon)
+    //   "Cr 156"                            (no date at all — assumed today)
+    // Previously the parser assumed pipe-delimited and treated the whole
+    // line as a date label when no pipe was present, producing nonsense
+    // column headers like "01/05: Cr 156" or "03:05: cr 100".
+    const mobileMap = {};
+    (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
+      .slice(0, 5).forEach((line) => {
+        let dateLabel = 'Today';
+        let rest = line;
+        // Try pipe format first (preserves original behaviour)
+        const pipeMatch = line.match(/^([^|\n]{1,32})\|\s*/);
+        if (pipeMatch) {
+          const dateRaw = pipeMatch[1].trim();
+          // Strip trailing HH:MM if present (e.g. "15 Apr 09:30")
+          const dateClean = dateRaw.replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
+          dateLabel = dateClean === todayStr ? 'Today' : dateClean;
+          rest = line.slice(pipeMatch[0].length).trim();
+        } else {
+          // No pipe — try date-prefix patterns
+          let m = line.match(DATE_LINE_RE);
+          if (m) {
+            dateLabel = formatEmbeddedDate(m[1], m[2], m[3]);
+            rest = line.slice(m[0].length).trim();
+          } else {
+            m = line.match(DATE_TEXT_RE);
+            if (m) {
+              const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+              if (mo) {
+                dateLabel = formatEmbeddedDate(m[1], mo, null);
+                rest = line.slice(m[0].length).trim();
+              }
+            }
+            // No date prefix at all — assume Today (already the default)
+          }
+        }
+
+        if (!dateLabel || !rest) return;
+        if (!mobileMap[dateLabel]) mobileMap[dateLabel] = {};
+        BLOOD_DB.forEach(({ key, re }) => {
+          const m = rest.match(re);
+          if (m) mobileMap[dateLabel][key] = parseFloat(m[1]);
+        });
+      });
+
+    // 2. Timeline encounters: board round + mobile clinical review entries with fields.bloods (free text)
+    // Each line may start with a date: "18/04: CRP 78", "18 Apr: CRP 78", "18 Apr|CRP 78" or just "CRP 78"
+    // (Date-extraction helpers MONTHS, DATE_LINE_RE, DATE_TEXT_RE, DATE_PIPE_RE,
+    //  formatEmbeddedDate, normaliseBloodDateLabel are defined above in the
+    //  mobile bloods parser block and are in scope here.)
 
     const encounters = getPatientEncounterRows(vm.patient);
     const composerMap = {};
