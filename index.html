@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_109_log_fixes_release.html',
-  source: 'hospital_at_home_board_v0_8_109_log_fixes_source.zip',
-  builtAt: '2026-05-03T08:14:25.279040',
+  filename: 'hospital_at_home_board_v0_8_110_dc_summary_pull_release.html',
+  source: 'hospital_at_home_board_v0_8_110_dc_summary_pull_source.zip',
+  builtAt: '2026-05-03T08:23:42.866234',
   entry: 'desktop.html'
 };
 </script>
@@ -13783,6 +13783,15 @@ window.HAHBoard = window.HAHBoard || {};
         : fallbackIssues;
       const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
       const prevDate   = lastF ? (lastF.dischargeDate || '') : '';
+      // Discharge summary: source the last entry's snapshot (board round or
+      // mobile clinical review). This pulls into the composer the same way
+      // Issues and Plan do. The patient-level operational.forDischargeSummary
+      // and the last entry's fields.forDischargeSummary should match in a
+      // healthy state — we use the entry's snapshot here for consistency
+      // with the other pulled fields (same data shape, same source).
+      // Fall back to the patient field if no entry has the snapshot yet.
+      const pulledDischargeSummary = (lastF && String(lastF.forDischargeSummary || '').trim())
+        || String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
 
       return `
         <div class="hah-cform-field">
@@ -13824,8 +13833,9 @@ window.HAHBoard = window.HAHBoard || {};
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">For discharge summary</label>
-          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-discharge-summary" rows="3"
-            placeholder="Notes that will feed into the eventual discharge summary…">${c.escapeHtml(vm.patient.forDischargeSummary || '')}</textarea>
+          <textarea class="hah-cform-textarea hah-autoexpand${pulledDischargeSummary ? ' is-pulled' : ''}" id="cform-discharge-summary" rows="3"
+            data-pulled-value="${c.escapeHtml(pulledDischargeSummary)}"
+            placeholder="Notes that will feed into the eventual discharge summary…">${c.escapeHtml(pulledDischargeSummary)}</textarea>
         </div>`;
     }
 
@@ -14707,10 +14717,16 @@ window.HAHBoard = window.HAHBoard || {};
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
           // Flush any pending discharge-summary textarea content so a fast
           // "type then Done" sequence doesn't drop the user's typing under
-          // the 1.4s autosave debounce.
+          // the 1.4s autosave debounce. Compare against the textarea's
+          // initially-rendered (pulled) value so we only patch when the
+          // user actually edited the field — this prevents overwriting a
+          // fresh patient-level value with a stale entry snapshot if those
+          // happen to differ (e.g. mobile updated the patient field after
+          // the last desktop round was saved).
           const dcLiveEl = document.getElementById('cform-discharge-summary');
           const dcLiveText = dcLiveEl ? String(dcLiveEl.value || '') : null;
-          const dcChanged = dcLiveText !== null && dcLiveText !== String(vm.patient.forDischargeSummary || '');
+          const dcPulled = dcLiveEl ? String(dcLiveEl.dataset.pulledValue || '') : '';
+          const dcChanged = dcLiveText !== null && dcLiveText !== dcPulled;
           const operationalPatch = {};
           if (dr) operationalPatch.dischargeReadiness = dr;
           if (dcChanged) operationalPatch.forDischargeSummary = dcLiveText;
