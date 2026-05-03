@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_114_fast_writes_release.html',
-  source: 'hospital_at_home_board_v0_8_114_fast_writes_source.zip',
-  builtAt: '2026-05-03T14:02:40.431121',
+  filename: 'hospital_at_home_board_v0_8_118_delete_toast_release.html',
+  source: 'hospital_at_home_board_v0_8_118_delete_toast_source.zip',
+  builtAt: '2026-05-03T16:20:26.815262',
   entry: 'desktop.html'
 };
 </script>
@@ -8265,6 +8265,20 @@ window.HAHBoard = window.HAHBoard || {};
 </script>
   <script>
 /* inlined: js/31-shared-json-store.js */
+// ─── JSON STORE CONTRACT ─────────────────────────────────────────────────────
+// This module reads and writes the shared OneDrive JSON store that desktop and
+// mobile both consume. The shape and semantics of every field, and which app
+// owns each one, are documented in `JSON_SCHEMA.md` inside `hah_docs.zip` —
+// the docs ship as their own artefact, separate from this app's source zip.
+//
+// Any field add, rename, or value-space change MUST update the schema doc
+// before shipping a code change in either app. The schema doc is the only
+// thing keeping desktop and mobile's interpretations of the JSON consistent.
+// Drift here is the bug class this documentation exists to prevent.
+//
+// Every code change in this file should also produce an entry in
+// `CHANGELOG-desktop.md` (in hah_docs.zip) for the version that ships.
+// ─────────────────────────────────────────────────────────────────────────────
 (function () {
   window.HAHBoard = window.HAHBoard || {};
 
@@ -12138,6 +12152,37 @@ window.HAHBoard = window.HAHBoard || {};
   ];
   const BOARD_SELECTION_PREFIX = 'hah_board_selection:';
 
+  // Encounter ids whose JSON-side deletion is in flight. Used to hide those
+  // entries from the merged encounter list during the network round trip,
+  // so deletes feel as instant as creates. Without this, the local
+  // state.encounters delete is synchronous (so the locally-created entries
+  // disappear instantly) but the JSON-sourced timeline entries linger
+  // visually until the JSON delete + cache patch completes ~600ms later.
+  // Filling this gap brings delete latency in line with create latency.
+  const pendingDeleteIds = new Set();
+
+  // Categorise a JSON-store error into a short user-facing reason. Errors
+  // from the Graph API come through `graphFetch` with `err.status` for
+  // HTTP-level failures; network errors typically arrive as TypeError
+  // ("Failed to fetch") with no status. The browser's online state is a
+  // useful tiebreaker when there's no other signal.
+  // Returns a short reason fragment intended to be slotted into a toast.
+  function describeJsonStoreError(err) {
+    if (!err) return 'unknown error';
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return 'you appear offline';
+    }
+    const status = err && err.status;
+    if (status === 401 || status === 403) return 'session expired, refresh to sign in';
+    if (status === 404) return 'item not found on OneDrive';
+    if (status === 409 || status === 412) return 'conflicting change from another device';
+    if (status === 429) return 'OneDrive rate-limited, try again shortly';
+    if (typeof status === 'number' && status >= 500 && status < 600) return 'OneDrive server error';
+    const msg = String((err && err.message) || '');
+    if (/failed to fetch|networkerror|network request failed/i.test(msg)) return 'OneDrive unreachable';
+    return 'OneDrive write failed';
+  }
+
   function saveDraft(patientId, type, fields) {
     try { localStorage.setItem(DRAFT_PREFIX + patientId + ':' + type, JSON.stringify({ fields, at: Date.now() })); } catch (_) {}
   }
@@ -12230,6 +12275,11 @@ window.HAHBoard = window.HAHBoard || {};
       if (!row) return;
       const key = String(row.id || '');
       if (!key) return;
+      // Hide any encounter whose deletion is in flight on the JSON side.
+      // The local ops.deleteEncounter has already removed it from
+      // state.encounters, but jsonRows still contains it until the network
+      // round trip completes. Suppressing it here makes the UI feel instant.
+      if (pendingDeleteIds.has(key)) return;
       map.set(key, Object.assign({}, map.get(key) || {}, row));
     });
     return Array.from(map.values())
@@ -14957,12 +15007,43 @@ window.HAHBoard = window.HAHBoard || {};
         // the JSON delete, mobile entries would re-appear on next dataset
         // reload because they're never removed from the source of truth.
         ops.deleteEncounter(encId);
+        // Mark JSON deletion as pending so the entry disappears from the
+        // merged encounter list immediately, before the network round trip.
+        // Without this, mobile-sourced entries linger visually for ~600ms
+        // until removePatientTimelineEntry's loadPatient + savePatient +
+        // cache patch completes. The optimistic hide makes delete feel
+        // as instant as create.
+        pendingDeleteIds.add(String(encId));
+        // Force a re-render right now so the suppression takes effect
+        // before the user gets bored.
+        store.setState({ ui: { revision: Date.now() } });
         if (vm && vm.patient) {
           const api = window.HAHBoard.sharedJsonStore;
           if (api && typeof api.removePatientTimelineEntry === 'function') {
-            api.removePatientTimelineEntry(vm.patient.id, encId).catch(function (err) {
-              console.warn('[H@H JSON store] Could not remove timeline entry', err);
-            });
+            api.removePatientTimelineEntry(vm.patient.id, encId)
+              .then(function () {
+                // JSON delete succeeded — the cache has been patched, the
+                // entry is genuinely gone. Drop it from pending and let the
+                // normal merge logic do its thing on the next render.
+                pendingDeleteIds.delete(String(encId));
+              })
+              .catch(function (err) {
+                // Network or store failure — revert the optimistic hide
+                // so the user sees the entry come back. They'll know the
+                // delete didn't take.
+                pendingDeleteIds.delete(String(encId));
+                store.setState({ ui: { revision: Date.now() } });
+                console.warn('[H@H JSON store] Could not remove timeline entry', err);
+                const pane = document.querySelector('#hahRightPane');
+                if (pane && typeof showToast === 'function') {
+                  const reason = describeJsonStoreError(err);
+                  showToast(pane, 'Could not delete · ' + reason + ' · entry restored');
+                }
+              });
+          } else {
+            // No JSON store available (local-only patient). Nothing to
+            // suppress beyond the local delete that already happened.
+            pendingDeleteIds.delete(String(encId));
           }
         }
       }
