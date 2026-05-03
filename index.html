@@ -5439,29 +5439,29 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 }
 
 /* Undo state for the composer Clear button. After tapping Clear, the
-   button morphs into "Undo" with a thin progress bar across the bottom
-   draining over the undo window (default 8s). When the bar empties, the
-   button reverts to its standard Clear appearance and the snapshot is
-   discarded. The progress bar is driven by a CSS animation so the JS
-   only has to add/remove the class. */
+   button morphs into "Undo" with the entire button background draining
+   right-to-left over the undo window (default 8s). The drain IS the
+   timer — when it empties, the button reverts to its standard Clear
+   appearance and the snapshot is discarded. The drain is a positioned
+   ::after element behind the text, animated by CSS so the JS only has
+   to add/remove the class. */
 .hah-inline-pill.is-undo {
-  background: rgba(47,111,237,0.10);
+  background: rgba(255,255,255,0.78);
   border-color: rgba(47,111,237,0.30);
   color: rgba(36,92,210,1);
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 .hah-inline-pill.is-undo::after {
   content: '';
   position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 2px;
-  width: 100%;
-  background: rgba(47,111,237,0.65);
+  inset: 0;
+  background: rgba(47,111,237,0.20);
   transform-origin: left center;
   animation: hah-undo-drain 8000ms linear forwards;
   pointer-events: none;
+  z-index: -1;
 }
 @keyframes hah-undo-drain {
   from { transform: scaleX(1); }
@@ -6584,9 +6584,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_120_bloods_parse_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_120_bloods_parse_fix_source.zip',
-  builtAt: '2026-05-03T19:03:34.736503',
+  filename: 'hospital_at_home_board_v0_8_121_undo_full_fill_release.html',
+  source: 'hospital_at_home_board_v0_8_121_undo_full_fill_source.zip',
+  builtAt: '2026-05-03T19:07:04.046411',
   entry: 'desktop.html'
 };
 </script>
