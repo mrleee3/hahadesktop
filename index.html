@@ -2594,7 +2594,7 @@ body.hah-ws-connecting .hah-ws-dot {
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.75);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
   transition: all 140ms ease;
@@ -2714,6 +2714,11 @@ body.hah-ws-connecting .hah-ws-dot {
   color: var(--desk-text);
   background: rgba(15,23,42,0.03);
 }
+.hah-cform-checkbox-row.is-locked {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
+}
 .hah-cform-checkbox {
   width: 15px;
   height: 15px;
@@ -2755,9 +2760,11 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-plan-presets-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--desk-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--desk-text-faint, rgba(15,23,42,0.45));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .hah-plan-presets-chips {
@@ -2772,7 +2779,7 @@ body.hah-ws-connecting .hah-ws-dot {
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.78);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
   transition: all 140ms ease;
@@ -3024,7 +3031,7 @@ body.hah-ws-connecting .hah-ws-dot {
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.75);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
   white-space: nowrap;
@@ -6710,9 +6717,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_142_composer_polish_release.html',
-  source: 'hospital_at_home_board_v0_8_142_composer_polish_source.zip',
-  builtAt: '2026-05-03T22:36:23.710302',
+  filename: 'hospital_at_home_board_v0_8_144_chip_label_refine_release.html',
+  source: 'hospital_at_home_board_v0_8_144_chip_label_refine_source.zip',
+  builtAt: '2026-05-03T22:49:36.599668',
   entry: 'desktop.html'
 };
 </script>
@@ -14472,9 +14479,9 @@ window.HAHBoard = window.HAHBoard || {};
           <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3"
             placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
           <div class="hah-plan-presets">
-            <div class="hah-plan-presets-label">Common plan actions</div>
+            <div class="hah-plan-presets-label">Common actions</div>
             <div class="hah-plan-presets-chips">
-              ${PLAN_PRESETS.map((preset) => `<button type="button" class="hah-plan-preset-chip" data-patient-action="insert-plan-preset" data-plan-preset-key="${c.escapeHtml(preset.key)}">${c.escapeHtml(preset.label)}</button>`).join('')}
+              ${PLAN_PRESETS.map((preset) => `<button type="button" class="hah-plan-preset-chip" data-patient-action="insert-plan-preset" data-plan-preset-key="${c.escapeHtml(preset.key)}" title="${c.escapeHtml(preset.text || preset.label)}">${c.escapeHtml(preset.label)}</button>`).join('')}
             </div>
           </div>
         </div>
@@ -14803,6 +14810,14 @@ window.HAHBoard = window.HAHBoard || {};
       if (dateInput) { dateInput.disabled = true; dateInput.classList.add('is-locked'); }
       pane.querySelectorAll('.hah-dchip').forEach((chip) => { chip.disabled = true; chip.classList.add('is-locked'); });
       pane.querySelectorAll('.hah-plan-preset-chip').forEach((chip) => { chip.disabled = true; chip.classList.add('is-locked'); });
+      // The "Include previous bloods" checkbox is part of the composer
+      // form — should be locked alongside the textareas and chips when
+      // the round has been committed. Disabling the input prevents
+      // toggling; the locked class on the wrapping label removes hover
+      // affordance and dims it visually to match the other locked
+      // controls.
+      pane.querySelectorAll('.hah-cform-checkbox').forEach((cb) => { cb.disabled = true; });
+      pane.querySelectorAll('.hah-cform-checkbox-row').forEach((row) => { row.classList.add('is-locked'); });
       refreshPreview(vm, type);
       bindCopyBtn(pane);
       return;
