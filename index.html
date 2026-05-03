@@ -2694,6 +2694,30 @@ body.hah-ws-connecting .hah-ws-dot {
   font-weight: 500;
 }
 
+/* Checkbox row beneath a composer textarea (e.g. "Include previous bloods").
+   Sits flush-left below its sibling field, no extra label box, deliberately
+   small so it reads as an option not a primary control. */
+.hah-cform-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.hah-cform-checkbox-row:hover {
+  color: var(--desk-text);
+}
+.hah-cform-checkbox {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--desk-accent, #2f6fed);
+}
+
 .hah-cform-textarea {
   width: 100%;
   padding: 7px 10px;
@@ -6589,9 +6613,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_127_date_default_and_scroll_release.html',
-  source: 'hospital_at_home_board_v0_8_127_date_default_and_scroll_source.zip',
-  builtAt: '2026-05-03T20:23:29.631579',
+  filename: 'hospital_at_home_board_v0_8_129_composer_unlock_on_delete_release.html',
+  source: 'hospital_at_home_board_v0_8_129_composer_unlock_on_delete_source.zip',
+  builtAt: '2026-05-03T21:08:21.943128',
   entry: 'desktop.html'
 };
 </script>
@@ -13023,13 +13047,16 @@ window.HAHBoard = window.HAHBoard || {};
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Currently</div>${progressBody}</div>`,
       examination ? `<div class="hah-log-field"><div class="hah-log-field-label">Examination</div>${examinationBody}</div>` : '',
-      bloods ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods / Ix</div>${bloodsBody}</div>` : '',
+      // Bloods column omitted intentionally — the bloods card on the right
+      // pane is the canonical view. The per-encounter bloods text still
+      // lives in the entry's fields.bloodsIx and feeds into the clinical
+      // note preview when the round is committed; we just don't show a
+      // duplicate column in the patient log here.
       `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`,
       forDischargeSummary ? `<div class="hah-log-field"><div class="hah-log-field-label">For discharge summary</div>${forDischargeBody}</div>` : ''
     ].filter(Boolean) : [
       `<div class="hah-log-field"><div class="hah-log-field-label">Issues</div>${issuesHtml}</div>`,
       `<div class="hah-log-field"><div class="hah-log-field-label">Progress</div>${progressBody}</div>`,
-      bloods ? `<div class="hah-log-field"><div class="hah-log-field-label">Bloods / Ix</div>${bloodsBody}</div>` : '',
       `<div class="hah-log-field"><div class="hah-log-field-label">Plan</div>${planBody}</div>`
     ].filter(Boolean);
     return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}${isMobile ? ' is-mobile-review' : ''}">
@@ -13508,6 +13535,154 @@ window.HAHBoard = window.HAHBoard || {};
     return BLOOD_DEFAULT_ORDER.slice();
   }
 
+  // Build the same date→values structure that the bloods card displays,
+  // for consumers that need the bloods data in structured form (e.g. the
+  // clinical note preview when "Include previous bloods" is on). Returns
+  // an array of {date, vals} sorted newest-first, top 5.
+  //
+  // This mirrors the data-build inside renderBloodsWidget. Long-term
+  // (see ROADMAP "Unify clinical note generator") both should call a
+  // single shared function that lives in either app's source. For now
+  // this is a tightly-scoped duplicate so the note preview can read the
+  // card's view without entangling with renderBloodsWidget's render code.
+  function getBloodsCardColumns(vm) {
+    const raw  = vm && vm.patient && vm.patient.sourcePatient || {};
+    const form = raw.form || {};
+    const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+    const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const DATE_LINE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
+    const DATE_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
+
+    function formatEmbeddedDate(d, m) {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const month = months[(+m) - 1] || '';
+      const date = d + ' ' + month;
+      return date === todayStr ? 'Today' : date;
+    }
+    function normaliseBloodDateLabel(rawText) {
+      let text = String(rawText || '').trim();
+      if (!text) return '';
+      text = text.replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, '').trim();
+      if (!text) return '';
+      if (/^today$/i.test(text)) return 'Today';
+      let m = text.match(/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?$/);
+      if (m) return formatEmbeddedDate(m[1], m[2]);
+      m = text.match(/^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*$/i);
+      if (m) {
+        const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+        if (mo) return formatEmbeddedDate(m[1], mo);
+      }
+      return text === todayStr ? 'Today' : text;
+    }
+
+    // 1. Mobile bloods textarea content
+    const mobileMap = {};
+    (String(form.bloods || '')).split(/\n+/).map((l) => l.trim()).filter(Boolean)
+      .slice(0, 5).forEach((line) => {
+        let dateLabel = 'Today';
+        let rest = line;
+        const pipeMatch = line.match(/^([^|\n]{1,32})\|\s*/);
+        if (pipeMatch) {
+          const dateClean = pipeMatch[1].trim().replace(/\s+\d{2}:\d{2}(:\d{2})?$/, '').trim();
+          dateLabel = dateClean === todayStr ? 'Today' : dateClean;
+          rest = line.slice(pipeMatch[0].length).trim();
+        } else {
+          let m = line.match(DATE_LINE_RE);
+          if (m) { dateLabel = formatEmbeddedDate(m[1], m[2]); rest = line.slice(m[0].length).trim(); }
+          else {
+            m = line.match(DATE_TEXT_RE);
+            if (m) {
+              const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+              if (mo) { dateLabel = formatEmbeddedDate(m[1], mo); rest = line.slice(m[0].length).trim(); }
+            }
+          }
+        }
+        if (!dateLabel || !rest) return;
+        if (!mobileMap[dateLabel]) mobileMap[dateLabel] = {};
+        BLOOD_DB.forEach(({ key, re }) => {
+          const m = rest.match(re);
+          if (m) mobileMap[dateLabel][key] = parseFloat(m[1]);
+        });
+      });
+
+    // 2. Timeline encounters
+    const encounters = (typeof getPatientEncounterRows === 'function')
+      ? (getPatientEncounterRows(vm.patient) || [])
+      : [];
+    const composerMap = {};
+    encounters
+      .filter((e) => (e.type === 'board_round' || e.type === 'mobile_clinical_review')
+        && e.fields && String(e.fields.bloods || e.fields.bloodsIx || '').trim())
+      .forEach((e) => {
+        const dt = new Date(e.timestamp);
+        const encDateStr = isNaN(dt.getTime()) ? null
+          : dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const encounterDate = encDateStr === todayStr ? 'Today' : (encDateStr || null);
+
+        String(e.fields.bloods || e.fields.bloodsIx || '').split(/\n+/).forEach((rawLine) => {
+          let line = rawLine.trim();
+          if (!line) return;
+          let date = encounterDate;
+
+          let m = line.match(/^([^|\n]{1,32})\|\s*/);
+          if (m) {
+            const parsedLabel = normaliseBloodDateLabel(m[1]);
+            if (parsedLabel) date = parsedLabel;
+            line = line.slice(m[0].length).trim();
+          } else {
+            m = line.match(DATE_LINE_RE);
+            if (m) { date = formatEmbeddedDate(m[1], m[2]); line = line.slice(m[0].length).trim(); }
+            else {
+              m = line.match(DATE_TEXT_RE);
+              if (m) {
+                const mo = MONTHS[(m[2] || '').toLowerCase().slice(0, 3)];
+                if (mo) { date = formatEmbeddedDate(m[1], mo); line = line.slice(m[0].length).trim(); }
+              }
+            }
+          }
+          if (!date || !line) return;
+          if (!composerMap[date]) composerMap[date] = {};
+          BLOOD_DB.forEach(({ key, re }) => {
+            const hit = line.match(re);
+            if (hit) composerMap[date][key] = parseFloat(hit[1]);
+          });
+          const remaining = line.replace(/\d{1,2}[\/\-\.]\d{1,2}/g, '');
+          const unknownRe = /\b([A-Za-z][A-Za-z0-9\-]*)\s+(\d+(?:\.\d+)?)/g;
+          let hit2;
+          while ((hit2 = unknownRe.exec(remaining)) !== null) {
+            const candidate = hit2[1];
+            const alreadyKnown = BLOOD_DB.some((a) => a.re.test(candidate + ' ' + hit2[2]));
+            if (!alreadyKnown) {
+              const uKey = '_u_' + candidate.toUpperCase();
+              if (!composerMap[date][uKey]) composerMap[date][uKey] = parseFloat(hit2[2]);
+            }
+          }
+        });
+      });
+
+    function parseDateForSort(label) {
+      if (label === 'Today') return Date.now();
+      const MMAP = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      const m = label.match(/^(\d{1,2})\s+([a-z]{3})/i);
+      if (m) {
+        const mo = MMAP[(m[2] || '').toLowerCase()];
+        if (mo !== undefined) {
+          const yr = new Date().getFullYear();
+          return new Date(yr, mo, +m[1]).getTime();
+        }
+      }
+      const t = new Date(label).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    const allDates = [...new Set([...Object.keys(composerMap), ...Object.keys(mobileMap)])]
+      .sort((a, b) => parseDateForSort(b) - parseDateForSort(a));
+    return allDates.slice(0, 5).map((date) => ({
+      date,
+      vals: Object.assign({}, mobileMap[date] || {}, composerMap[date] || {})
+    }));
+  }
+
   function renderBloodsWidget(vm, state) {
     const raw  = vm.patient.sourcePatient || {};
     const form = raw.form || {};
@@ -13533,7 +13708,14 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     function normaliseBloodDateLabel(raw) {
-      const text = String(raw || '').trim();
+      let text = String(raw || '').trim();
+      if (!text) return '';
+      // Strip trailing HH:MM or HH:MM:SS time suffix. Without this,
+      // "04/04 07:55" doesn't match the date regexes below and falls
+      // through to be returned verbatim — producing a duplicate column
+      // alongside "04/04" parsed from the mobileMap path. Both sources
+      // refer to the same date but generate different column keys.
+      text = text.replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, '').trim();
       if (!text) return '';
       if (/^today$/i.test(text)) return 'Today';
       let m = text.match(/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?$/);
@@ -13893,9 +14075,19 @@ window.HAHBoard = window.HAHBoard || {};
     if (!vm) return c.stack([c.card("Today's board round", c.emptyState('No patient selected', 'Open a patient from the board.'), { subtitle: "Select a patient to continue today’s note." })]);
     const composerType = (state.patient && state.patient.composerType) || 'board_round';
     const scopedComposer = getScopedComposerState(state, vm.patient.id);
-    const isLocked     = !!scopedComposer.locked;
-    const editingId    = scopedComposer.editId || null;
-    const editingEnc   = editingId ? (getPatientEncounterRows(vm.patient) || []).find((e) => e.id === editingId) : null;
+    let isLocked     = !!scopedComposer.locked;
+    let editingId    = scopedComposer.editId || null;
+    let editingEnc   = editingId ? (getPatientEncounterRows(vm.patient) || []).find((e) => e.id === editingId) : null;
+    // If editId points at an encounter that no longer exists in the merged
+    // encounter set (deleted locally, or deleted on another device and
+    // synced through), drop the lock state. Without this, the composer
+    // would keep showing "New note" / "Edit" buttons referencing nothing.
+    if (editingId && !editingEnc) {
+      patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
+      isLocked = false;
+      editingId = null;
+      editingEnc = null;
+    }
     const lastRound    = getLastBoardTemplateEntry(vm.patient);
     const boardSel     = loadBoardSelectionToday();
     const heading      = getComposerHeading(composerType, isLocked, editingEnc);
@@ -14071,6 +14263,10 @@ window.HAHBoard = window.HAHBoard || {};
           <label class="hah-cform-label">Bloods</label>
           <textarea class="hah-cform-textarea hah-autoexpand" id="cform-bloods" rows="2"
             placeholder="e.g. CRP 45  WBC 8.2  Cr 112  Na 138"></textarea>
+          <label class="hah-cform-checkbox-row">
+            <input type="checkbox" id="cform-include-prev-bloods" class="hah-cform-checkbox">
+            <span>Include previous bloods in note</span>
+          </label>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Plan</label>
@@ -14129,6 +14325,7 @@ window.HAHBoard = window.HAHBoard || {};
   function collectComposerFields(type) {
     function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
     function active(id) { const el = document.getElementById(id); return el ? el.dataset.active === 'true' : false; }
+    function checked(id) { const el = document.getElementById(id); return el ? !!el.checked : false; }
     if (type === 'board_round') return {
       issues: val('cform-issues'), progress: val('cform-progress'),
       bloods: val('cform-bloods'), plan: val('cform-plan'),
@@ -14138,6 +14335,11 @@ window.HAHBoard = window.HAHBoard || {};
       forDischargeSummary: val('cform-discharge-summary'),
       dischargeDate: val('cform-discharge-date'),
       dischargeReady: active('cform-ready-chip'),
+      // Per-round opt-in to include previous bloods (last 5 from the bloods
+      // card, deduped against today's textarea value if any) in the note
+      // preview. Default off; lives in the encounter draft like every
+      // other composer field.
+      includePrevBloods: checked('cform-include-prev-bloods'),
       dnar: active('cform-dnar'),
       acp:  active('cform-acp'),
       boardMembers: loadBoardSelectionToday().members,
@@ -14197,28 +14399,68 @@ window.HAHBoard = window.HAHBoard || {};
       lines.push('');
     }
     const newBloods = (fields.bloods || '').trim();
+    const includePrev = !!fields.includePrevBloods;
+
+    // Build the consolidated BLOODS section. Two sources:
+    //   1. The user's typed bloods textarea (fields.bloods) — always
+    //      included if present.
+    //   2. The bloods card's columns (last 5 dates) — included only when
+    //      "Include previous bloods" is ticked. Deduped against any dates
+    //      already covered by source (1).
+    // Both render under a single BLOODS heading, oldest first, in the
+    // format "DD/MM: analyte result analyte result" with no dots.
+
+    const todayLabel = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const BMONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+
+    function parseBloodsDateForSort(label) {
+      if (label === 'Today') return Date.now();
+      const m = label.match(/^(\d{1,2})\s+([a-z]{3})/i);
+      if (m) {
+        const mo = BMONTHS[(m[2] || '').toLowerCase()];
+        if (mo !== undefined) {
+          return new Date(new Date().getFullYear(), mo, +m[1]).getTime();
+        }
+      }
+      const t = new Date(label).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    function dateLabelToShort(label) {
+      // Convert "12 Apr" / "Today" → "DD/MM" form. Today gets the actual
+      // date so the note has a stable date reference rather than "Today"
+      // (which becomes wrong if the note is re-read later).
+      if (label === 'Today') {
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return dd + '/' + mm;
+      }
+      const m = label.match(/^(\d{1,2})\s+([a-z]{3})/i);
+      if (m) {
+        const mo = BMONTHS[(m[2] || '').toLowerCase()];
+        if (mo !== undefined) {
+          const dd = String(+m[1]).padStart(2, '0');
+          const mm = String(mo + 1).padStart(2, '0');
+          return dd + '/' + mm;
+        }
+      }
+      return label; // fall through unchanged
+    }
+
+    // 1. Parse typed bloods → entries[]
+    const B_DATE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
+    const B_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
+    const typedEntries = [];
     if (newBloods) {
-      lines.push('BLOODS');
-      // Parse lines, extracting date prefixes and formatting as [date]: analyte result
-      const BMONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-      const todayLabel = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      const B_DATE_RE = /^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?\s*[:]\s*/i;
-      const B_TEXT_RE = /^(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[:]\s*/i;
-
       const bloodLines = newBloods.split('\n').map((l) => l.trim()).filter(Boolean);
-      const encDate = todayLabel;
-      const bloodEntries = [];
-      let pendingDate = encDate;
-
+      let pendingDate = todayLabel;
       bloodLines.forEach((raw) => {
         let rest = raw;
         let dt = pendingDate;
-        let m;
-        m = rest.match(B_DATE_RE);
+        let m = rest.match(B_DATE_RE);
         if (m) {
-          const mo = +m[2] - 1;
           const mo_months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          dt = m[1] + ' ' + mo_months[mo];
+          dt = m[1] + ' ' + mo_months[+m[2] - 1];
           pendingDate = dt;
           rest = rest.slice(m[0].length).trim();
         } else {
@@ -14229,15 +14471,53 @@ window.HAHBoard = window.HAHBoard || {};
             if (mo2 !== undefined) { dt = m[1] + ' ' + mo_months[mo2]; pendingDate = dt; rest = rest.slice(m[0].length).trim(); }
           }
         }
-        if (rest) bloodEntries.push({ dt, rest });
+        if (rest) typedEntries.push({ dateLabel: dt, content: rest, source: 'typed' });
       });
+    }
 
-      // Sort oldest first, group by date
-      bloodEntries.sort((a, b) => {
-        const parse = (s) => { if (s === todayLabel) return Date.now(); const x = new Date(s + ' 2026').getTime(); return isNaN(x) ? 0 : x; };
-        return parse(a.dt) - parse(b.dt);
+    // 2. If checkbox ticked, get card columns. Filter out dates the typed
+    //    entries already cover (dedupe — typed wins).
+    const typedDates = new Set(typedEntries.map((e) => e.dateLabel));
+    const prevEntries = [];
+    if (includePrev && vm) {
+      try {
+        const cols = (typeof getBloodsCardColumns === 'function') ? getBloodsCardColumns(vm) : [];
+        const order = (typeof getBloodAnalyteOrder === 'function') ? getBloodAnalyteOrder() : [];
+        const labelByKey = Object.fromEntries(BLOOD_DB.map((a) => [a.key, a.label || a.key]));
+        const formatVal = (v) => (v % 1 === 0) ? String(v) : String(+(+v).toFixed(1));
+        cols.forEach((col) => {
+          if (typedDates.has(col.date)) return;
+          const parts = [];
+          // Render in saved order first
+          order.forEach((key) => {
+            const v = col.vals[key];
+            if (v === undefined || v === null || isNaN(v)) return;
+            const label = labelByKey[key] || key;
+            parts.push(label + ' ' + formatVal(v));
+          });
+          // Then any analytes not in the order list (including unrecognised _u_)
+          Object.keys(col.vals).forEach((key) => {
+            if (order.indexOf(key) >= 0) return;
+            const v = col.vals[key];
+            if (v === undefined || v === null || isNaN(v)) return;
+            const label = key.startsWith('_u_') ? key.slice(3) : (labelByKey[key] || key);
+            parts.push(label + ' ' + formatVal(v));
+          });
+          if (parts.length) {
+            prevEntries.push({ dateLabel: col.date, content: parts.join(' '), source: 'card' });
+          }
+        });
+      } catch (_) {}
+    }
+
+    // 3. Combine, sort oldest-first, render
+    const allBloodEntries = typedEntries.concat(prevEntries);
+    if (allBloodEntries.length) {
+      lines.push('BLOODS');
+      allBloodEntries.sort((a, b) => parseBloodsDateForSort(a.dateLabel) - parseBloodsDateForSort(b.dateLabel));
+      allBloodEntries.forEach((e) => {
+        lines.push(dateLabelToShort(e.dateLabel) + ': ' + e.content);
       });
-      bloodEntries.forEach(({ dt, rest }) => lines.push(dt + ': ' + rest));
       lines.push('');
     }
     if ((fields.plan || '').trim()) {
@@ -14355,6 +14635,21 @@ window.HAHBoard = window.HAHBoard || {};
         }, 1400);
       });
     });
+
+    // Include-previous-bloods checkbox: refresh the note preview
+    // immediately on change (so the user sees what gets included), then
+    // save the draft via the same path as field input.
+    const includePrevBloodsCb = pane.querySelector('#cform-include-prev-bloods');
+    if (includePrevBloodsCb) {
+      includePrevBloodsCb.addEventListener('change', () => {
+        refreshPreview(vm, type);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          saveDraft(vm.patient.id, type, collectComposerFields(type));
+          showAutosaveIndicator(pane);
+        }, 1400);
+      });
+    }
 
     const dischargeDateInput = pane.querySelector('#cform-discharge-date');
     const readyChip          = pane.querySelector('#cform-ready-chip');
@@ -14676,6 +14971,11 @@ window.HAHBoard = window.HAHBoard || {};
       el.dataset.active = active ? 'true' : 'false';
       el.classList.toggle('is-active', active);
     }
+    function setCheckbox(id, v) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.checked = v === true || v === 'true';
+    }
     if (type === 'board_round') {
       set('cform-issues', fields.issues, pulledIssues); set('cform-progress', fields.progress);
       set('cform-bloods', fields.bloods); set('cform-plan', fields.plan, pulledPlan);
@@ -14684,6 +14984,7 @@ window.HAHBoard = window.HAHBoard || {};
       setChip('cform-ready-chip', fields.dischargeReady);
       setChip('cform-dnar', fields.dnar);
       setChip('cform-acp', fields.acp);
+      setCheckbox('cform-include-prev-bloods', fields.includePrevBloods);
     }
     if (type === 'micro_mdm') { set('cform-question', fields.question); set('cform-recommendation', fields.recommendation); set('cform-followup', fields.followUp); }
     if (type === 'resp_mdm')  { set('cform-summary', fields.summary);   set('cform-recommendation', fields.recommendation); set('cform-action', fields.action); }
@@ -15222,6 +15523,18 @@ window.HAHBoard = window.HAHBoard || {};
       const encId = target.getAttribute('data-encounter-id');
       if (!encId) return false;
       if (window.confirm('Delete this entry?')) {
+        // If the composer was locked on (or editing) the entry being
+        // deleted, unlock it — otherwise the composer keeps showing
+        // "New note" / "Edit" buttons referencing an entry that no
+        // longer exists, and editId becomes a dangling reference.
+        // Render-time fallback below also handles the cross-device case
+        // (entry deleted on another desktop session or via mobile).
+        if (vm && vm.patient) {
+          const scopedComposer = getScopedComposerState(state, vm.patient.id);
+          if (scopedComposer && String(scopedComposer.editId || '') === String(encId)) {
+            patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
+          }
+        }
         // Encounters can live in two places: local ops state (state.encounters
         // — desktop-created) and the patient's JSON timeline (mobile clinical
         // reviews, persisted board rounds). Try both — local first because
