@@ -5459,7 +5459,12 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   inset: 0;
   background: rgba(47,111,237,0.20);
   transform-origin: left center;
+  /* --hah-undo-elapsed is set inline on the host element when an existing
+     undo timer is being re-rendered, so the bar picks up at the correct
+     position rather than restarting at full. Defaults to 0ms (animation
+     starts from the beginning). */
   animation: hah-undo-drain 8000ms linear forwards;
+  animation-delay: calc(var(--hah-undo-elapsed, 0ms) * -1);
   pointer-events: none;
   z-index: -1;
 }
@@ -6584,9 +6589,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_123_clear_undo_race_release.html',
-  source: 'hospital_at_home_board_v0_8_123_clear_undo_race_source.zip',
-  builtAt: '2026-05-03T19:23:24.203612',
+  filename: 'hospital_at_home_board_v0_8_124_undo_continuity_release.html',
+  source: 'hospital_at_home_board_v0_8_124_undo_continuity_source.zip',
+  builtAt: '2026-05-03T19:30:03.410079',
   entry: 'desktop.html'
 };
 </script>
@@ -13917,8 +13922,11 @@ window.HAHBoard = window.HAHBoard || {};
     const clearBtnAction = isLocked ? 'composer-new' : (undoActive ? 'composer-undo' : 'composer-clear');
     const clearBtnLabel = isLocked ? 'New note' : (undoActive ? 'Undo' : 'Clear');
     // Negative animation-delay seeks the running animation forward by that
-    // amount — picks up where the original timer is.
-    const clearBtnStyle = undoActive ? ` style="animation-delay:-${undoElapsedMs}ms"` : '';
+    // amount — picks up where the original timer is. We pass it as a CSS
+    // custom property because the animation lives on the ::after
+    // pseudo-element, and inline `animation-delay` on the host element
+    // doesn't cascade to pseudo-elements; CSS custom properties do.
+    const clearBtnStyle = undoActive ? ` style="--hah-undo-elapsed:${undoElapsedMs}ms"` : '';
 
     return c.stack([
       c.card(heading, `
