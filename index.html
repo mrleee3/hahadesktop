@@ -6613,9 +6613,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_129_composer_unlock_on_delete_release.html',
-  source: 'hospital_at_home_board_v0_8_129_composer_unlock_on_delete_source.zip',
-  builtAt: '2026-05-03T21:08:21.943128',
+  filename: 'hospital_at_home_board_v0_8_130_discharge_derived_release.html',
+  source: 'hospital_at_home_board_v0_8_130_discharge_derived_source.zip',
+  builtAt: '2026-05-03T21:20:26.913253',
   entry: 'desktop.html'
 };
 </script>
@@ -9403,12 +9403,14 @@ window.HAHBoard = window.HAHBoard || {};
     // mobile-written free text in dischargeReadiness stays stuck there until
     // a board round actively overwrites it with the enum.
     const splitDischarge = splitDischargeFields(patient.operational);
-    patient.operational.dischargeReadiness = splitDischarge.readiness;
     if (splitDischarge.notes && !patient.operational.forDischargeSummary) {
       patient.operational.forDischargeSummary = splitDischarge.notes;
     }
-    const dr = deriveJsonDischargeReadiness(entry.fields || {});
-    if (dr) patient.operational.dischargeReadiness = dr;
+    // Note: we no longer write operational.dischargeReadiness here. As of
+    // v0.8.130 readiness is derived at read-time from the timeline (see
+    // deriveDischargeReadinessFromTimeline). Storing it independently led
+    // to stale values when entries were deleted or dates passed without a
+    // re-commit — same lesson as boardStatus in v0.8.113.
     // Note: we do NOT touch boardStatus here. boardStatus is round-state, not
     // entry-state — a board_round entry committed outside an active round
     // (e.g. retrospective documentation, or a fresh note before round-start)
@@ -9519,6 +9521,44 @@ window.HAHBoard = window.HAHBoard || {};
     return { readiness: '', notes: rawNotes || rawReadiness };
   }
 
+  // Derive the patient's current discharge readiness from the most recent
+  // board-style timeline entry. Returns one of the canonical enum values
+  // ('Ready' | 'Possible today' | 'Likely tomorrow' | 'Not ready') or
+  // empty string if no entry has discharge fields set.
+  //
+  // Why this is a derivation, not stored state: operational.dischargeReadiness
+  // used to be written independently when the user committed a round.
+  // It went stale on three paths: the date passed without a re-commit, the
+  // committing entry was deleted, or a more recent entry was added without
+  // discharge fields. Treating it as derived means the timeline is the
+  // source of truth — same lesson we learned with boardStatus in v0.8.113.
+  function deriveDischargeReadinessFromTimeline(patient) {
+    const timeline = patient && Array.isArray(patient.timeline) ? patient.timeline : [];
+    if (!timeline.length) return '';
+    // Find the latest board-style entry that has discharge fields. Sort
+    // newest first by timestamp; first match wins.
+    const sorted = timeline.slice().sort(function (a, b) {
+      return Date.parse(b && b.timestamp || 0) - Date.parse(a && a.timestamp || 0);
+    });
+    for (let i = 0; i < sorted.length; i++) {
+      const e = sorted[i];
+      if (!isBoardStyleTimelineEntry(e)) continue;
+      const f = e && e.fields ? e.fields : {};
+      const isReady = f.dischargeReady === true || f.dischargeReady === 'true';
+      const dateStr = String(f.dischargeDate || '').trim();
+      if (!isReady && !dateStr) continue;
+      // Same logic as desktop's deriveDischargeReadiness (in 26-desktop-patient.js)
+      if (isReady) return 'Ready';
+      const todayIso = new Date().toISOString().split('T')[0];
+      const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+      const tomorrowIso = tomorrowDate.toISOString().split('T')[0];
+      if (dateStr === todayIso) return 'Possible today';
+      if (dateStr === tomorrowIso) return 'Likely tomorrow';
+      return 'Not ready';
+    }
+    return '';
+  }
+
   function mapJsonPatientToLegacyRaw(patient) {
     const identity = patient.identity || {};
     const serviceBlock = patient.service || {};
@@ -9557,7 +9597,11 @@ window.HAHBoard = window.HAHBoard || {};
       doa: serviceBlock.admittedDate || '',
       priority: operational.priority || '',
       boardStatus: operational.boardStatus || 'Not discussed',
-      dischargeReadiness: dischargeFields.readiness,
+      // dischargeReadiness is now derived from the timeline (most recent
+      // board-style entry's discharge fields). Empty if no entry has
+      // discharge fields set. The legacy operational.dischargeReadiness
+      // is ignored — see deriveDischargeReadinessFromTimeline above.
+      dischargeReadiness: deriveDischargeReadinessFromTimeline(patient),
       forDischargeSummary: dischargeFields.notes,
       dnar: !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes',
       acp: !!alerts.acp || !!(acp.dnacprStatus || acp.tepStatus || acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes),
@@ -15365,7 +15409,12 @@ window.HAHBoard = window.HAHBoard || {};
           const dcChanged = dcCurrent !== dcPersisted;
           const roundActive = (typeof ops.getActiveRound === 'function' && ops.getActiveRound());
           const operationalPatch = {};
-          if (dr) operationalPatch.dischargeReadiness = dr;
+          // Note: we no longer write dischargeReadiness here. As of v0.8.130
+          // readiness is derived at read-time from the timeline; the entry we
+          // just committed via persistEncounterToJson contains the discharge
+          // fields, so the next read will compute the right value. Writing
+          // operational.dischargeReadiness independently would re-introduce
+          // the staleness class of bug.
           if (dcChanged) operationalPatch.forDischargeSummary = dcCurrent;
           // boardStatus belongs in this patch only when a round is active.
           // The JSON store used to set this autonomously on every board_round
@@ -15373,8 +15422,11 @@ window.HAHBoard = window.HAHBoard || {};
           // no round had started — confusing in the patient list. Now the
           // caller decides based on round state.
           if (roundActive) operationalPatch.boardStatus = 'Discussed';
+          // Update local ops state with the readiness for any local-state
+          // consumers (sortPatientRows, etc.). dr is null when no discharge
+          // fields are set in this entry.
+          if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
           if (Object.keys(operationalPatch).length) {
-            if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
             // Wait for timeline write to land before patching operational,
             // so the patch sees the timeline entry in its loaded snapshot.
             timelinePromise
