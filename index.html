@@ -5438,6 +5438,36 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   color: rgba(36,92,210,1);
 }
 
+/* Undo state for the composer Clear button. After tapping Clear, the
+   button morphs into "Undo" with a thin progress bar across the bottom
+   draining over the undo window (default 8s). When the bar empties, the
+   button reverts to its standard Clear appearance and the snapshot is
+   discarded. The progress bar is driven by a CSS animation so the JS
+   only has to add/remove the class. */
+.hah-inline-pill.is-undo {
+  background: rgba(47,111,237,0.10);
+  border-color: rgba(47,111,237,0.30);
+  color: rgba(36,92,210,1);
+  position: relative;
+  overflow: hidden;
+}
+.hah-inline-pill.is-undo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: rgba(47,111,237,0.65);
+  transform-origin: left center;
+  animation: hah-undo-drain 8000ms linear forwards;
+  pointer-events: none;
+}
+@keyframes hah-undo-drain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
 .hah-badge {
   min-height: 24px;
   padding: 0 9px;
@@ -6554,9 +6584,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_118_delete_toast_release.html',
-  source: 'hospital_at_home_board_v0_8_118_delete_toast_source.zip',
-  builtAt: '2026-05-03T16:20:26.815262',
+  filename: 'hospital_at_home_board_v0_8_119_clear_undo_release.html',
+  source: 'hospital_at_home_board_v0_8_119_clear_undo_source.zip',
+  builtAt: '2026-05-03T16:34:11.436618',
   entry: 'desktop.html'
 };
 </script>
@@ -12161,6 +12191,16 @@ window.HAHBoard = window.HAHBoard || {};
   // Filling this gap brings delete latency in line with create latency.
   const pendingDeleteIds = new Set();
 
+  // Snapshot taken when the user taps Clear in the composer, used to power
+  // the Undo affordance. Includes the round-draft fields, the discharge
+  // summary text (which is patient-scoped, not draft-scoped — restoring it
+  // requires a JSON patch back), the patient id, and the composer type at
+  // the moment of clear. Cleared when undo is taken or the 8s window
+  // expires.
+  let composerClearSnapshot = null;
+  let composerClearTimer = null;
+  const COMPOSER_UNDO_WINDOW_MS = 8000;
+
   // Categorise a JSON-store error into a short user-facing reason. Errors
   // from the Graph API come through `graphFetch` with `err.status` for
   // HTTP-level failures; network errors typically arrive as TypeError
@@ -13831,7 +13871,7 @@ window.HAHBoard = window.HAHBoard || {};
       </div>
       <div class="hah-composer-footer">
         <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
-        <button type="button" class="hah-inline-pill"
+        <button type="button" class="hah-inline-pill" id="hahComposerClearBtn"
           data-patient-action="${isLocked ? 'composer-new' : 'composer-clear'}">${isLocked ? 'New note' : 'Clear'}</button>
         <button type="button" class="hah-inline-pill is-primary"
           data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
@@ -14954,11 +14994,23 @@ window.HAHBoard = window.HAHBoard || {};
 
     if (action === 'composer-clear' && vm) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
-      // Write an empty draft (rather than removing it) so the next render's
-      // restoreFields runs and explicitly clears every round field. Without
-      // this, removing the draft means restoreFields is skipped entirely,
-      // and renderComposerForm's pulled values (Issues, Plan, etc.) stay in
-      // the DOM. The user clicks Clear and visually nothing happens.
+
+      // Snapshot the current composer state so the user can undo within
+      // 8s. Captures both the round-draft fields (collectComposerFields)
+      // and the discharge-summary textarea (which is patient-scoped, not
+      // draft-scoped — restoring it requires a JSON patch back to
+      // operational.forDischargeSummary).
+      const dcEl = document.getElementById('cform-discharge-summary');
+      composerClearSnapshot = {
+        patientId: vm.patient.id,
+        composerType: composerType,
+        fields: collectComposerFields(composerType),
+        forDischargeSummary: dcEl ? String(dcEl.value || '') : null
+      };
+
+      // Apply the clear:
+      // 1) Round-draft fields — write empty draft (so restoreFields runs
+      //    on next render and explicitly clears every round field).
       const emptyFields = composerType === 'board_round' ? {
         issues: '', progress: '', bloods: '', plan: '',
         dischargeDate: '', dischargeReady: false, dnar: false, acp: false
@@ -14969,8 +15021,101 @@ window.HAHBoard = window.HAHBoard || {};
       } : { source: '', note: '' };
       saveDraft(vm.patient.id, composerType, emptyFields);
       resetComposerDOM();
+
+      // 2) Discharge summary — clear the patient-level field too. From the
+      //    user's perspective the discharge summary is just another
+      //    composer field; the architectural distinction (patient-scoped
+      //    vs round-scoped) shouldn't show through. Patch the JSON so
+      //    other devices and future renders see the empty value.
+      if (composerType === 'board_round' && composerClearSnapshot.forDischargeSummary) {
+        if (dcEl) dcEl.value = '';
+        if (dcEl) dcEl.dataset.pulledValue = '';
+        persistPatientPatchToJson(vm.patient.id, {
+          operational: { forDischargeSummary: '' }
+        });
+      }
+
       refreshPreview(vm, composerType);
       patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
+
+      // 3) Morph the Clear button into Undo for 8s. CSS .is-undo class
+      //    gives it the blue tint and the draining bottom progress bar.
+      //    The action attribute swap means the next tap calls the
+      //    composer-undo handler rather than composer-clear.
+      const clearBtn = document.getElementById('hahComposerClearBtn');
+      if (clearBtn) {
+        clearBtn.classList.add('is-undo');
+        clearBtn.textContent = 'Undo';
+        clearBtn.setAttribute('data-patient-action', 'composer-undo');
+      }
+      if (composerClearTimer) clearTimeout(composerClearTimer);
+      composerClearTimer = setTimeout(function () {
+        // Window expired. Discard the snapshot and revert the button to
+        // its standard Clear appearance. If the button has been
+        // re-rendered (normal render cycle replaces the DOM), the next
+        // render's button will already say Clear so this is a cleanup
+        // step for the case where it hasn't.
+        composerClearSnapshot = null;
+        composerClearTimer = null;
+        const btn = document.getElementById('hahComposerClearBtn');
+        if (btn) {
+          btn.classList.remove('is-undo');
+          btn.textContent = 'Clear';
+          btn.setAttribute('data-patient-action', 'composer-clear');
+        }
+      }, COMPOSER_UNDO_WINDOW_MS);
+
+      return true;
+    }
+
+    if (action === 'composer-undo' && vm) {
+      // Restore the snapshot taken by composer-clear. Cancels the timer,
+      // re-populates the round-draft, re-writes the discharge summary
+      // back to the patient JSON if it was cleared, and reverts the
+      // button to its standard Clear appearance.
+      if (!composerClearSnapshot) return true;
+      const snap = composerClearSnapshot;
+      const composerType = snap.composerType;
+
+      // Restore round-draft fields by writing the snapshot back as a draft.
+      // The next render will populate the DOM from this draft via
+      // restoreFields, just like normal draft restoration.
+      saveDraft(snap.patientId, composerType, snap.fields);
+
+      // Restore the in-DOM values immediately so the user doesn't have to
+      // wait for a render. This mirrors what restoreFields would do.
+      try { restoreFields(snap.fields, composerType); } catch (_) {}
+
+      // Restore the discharge summary text in the textarea AND patch the
+      // patient JSON back. The local restore is fast; the JSON patch
+      // happens in the background like any other discharge edit.
+      if (composerType === 'board_round' && snap.forDischargeSummary !== null) {
+        const dcEl = document.getElementById('cform-discharge-summary');
+        if (dcEl) {
+          dcEl.value = snap.forDischargeSummary;
+          dcEl.dataset.pulledValue = snap.forDischargeSummary;
+        }
+        if (snap.forDischargeSummary) {
+          persistPatientPatchToJson(snap.patientId, {
+            operational: { forDischargeSummary: snap.forDischargeSummary }
+          });
+        }
+      }
+
+      refreshPreview(vm, composerType);
+
+      // Cancel the timer and revert the button.
+      if (composerClearTimer) {
+        clearTimeout(composerClearTimer);
+        composerClearTimer = null;
+      }
+      composerClearSnapshot = null;
+      const btn = document.getElementById('hahComposerClearBtn');
+      if (btn) {
+        btn.classList.remove('is-undo');
+        btn.textContent = 'Clear';
+        btn.setAttribute('data-patient-action', 'composer-clear');
+      }
       return true;
     }
 
