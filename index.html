@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_110_dc_summary_pull_release.html',
-  source: 'hospital_at_home_board_v0_8_110_dc_summary_pull_source.zip',
-  builtAt: '2026-05-03T08:23:42.866234',
+  filename: 'hospital_at_home_board_v0_8_111_clear_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_111_clear_fix_source.zip',
+  builtAt: '2026-05-03T08:41:52.848524',
   entry: 'desktop.html'
 };
 </script>
@@ -13783,15 +13783,14 @@ window.HAHBoard = window.HAHBoard || {};
         : fallbackIssues;
       const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
       const prevDate   = lastF ? (lastF.dischargeDate || '') : '';
-      // Discharge summary: source the last entry's snapshot (board round or
-      // mobile clinical review). This pulls into the composer the same way
-      // Issues and Plan do. The patient-level operational.forDischargeSummary
-      // and the last entry's fields.forDischargeSummary should match in a
-      // healthy state — we use the entry's snapshot here for consistency
-      // with the other pulled fields (same data shape, same source).
-      // Fall back to the patient field if no entry has the snapshot yet.
-      const pulledDischargeSummary = (lastF && String(lastF.forDischargeSummary || '').trim())
-        || String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
+      // Discharge summary: source from the patient-level
+      // operational.forDischargeSummary, which is the authoritative current
+      // value. It's updated on every round-save (composer-done flushes the
+      // textarea into the patch) AND on every direct-edit autosave. The
+      // entry snapshot at lastF.forDischargeSummary is historical only and
+      // can lag the patient field if the user cleared it directly. Sourcing
+      // from the patient field means clearing actually sticks.
+      const pulledDischargeSummary = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
 
       return `
         <div class="hah-cform-field">
@@ -14340,14 +14339,18 @@ window.HAHBoard = window.HAHBoard || {};
 
     function set(id, v, pulledValue) {
       const el = document.getElementById(id);
-      if (el && v !== undefined && v !== null && String(v).length > 0) {
-        el.value = String(v);
-        // Preserve "pulled" highlight if the saved value still matches the pulled-forward text
-        if (pulledValue && String(v).trim() === String(pulledValue).trim()) {
-          el.classList.add('is-pulled');
-        } else {
-          el.classList.remove('is-pulled');
-        }
+      if (!el || v === undefined || v === null) return;
+      // Honour empty values from the draft. The previous behaviour of
+      // silently skipping empties left pulled content in place, which
+      // broke both the Clear button (clearing the draft would re-render
+      // with pulled values) and manual field deletion (an autosaved empty
+      // draft was treated as "no draft" so the pull came back). Now an
+      // empty draft field is authoritative — the user cleared it.
+      el.value = String(v);
+      if (pulledValue && String(v).trim() === String(pulledValue).trim()) {
+        el.classList.add('is-pulled');
+      } else {
+        el.classList.remove('is-pulled');
       }
     }
     function setChip(id, v) {
@@ -14790,7 +14793,20 @@ window.HAHBoard = window.HAHBoard || {};
 
     if (action === 'composer-clear' && vm) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
-      clearDraft(vm.patient.id, composerType);
+      // Write an empty draft (rather than removing it) so the next render's
+      // restoreFields runs and explicitly clears every round field. Without
+      // this, removing the draft means restoreFields is skipped entirely,
+      // and renderComposerForm's pulled values (Issues, Plan, etc.) stay in
+      // the DOM. The user clicks Clear and visually nothing happens.
+      const emptyFields = composerType === 'board_round' ? {
+        issues: '', progress: '', bloods: '', plan: '',
+        dischargeDate: '', dischargeReady: false, dnar: false, acp: false
+      } : composerType === 'micro_mdm' ? {
+        question: '', recommendation: '', followUp: ''
+      } : composerType === 'resp_mdm' ? {
+        summary: '', recommendation: '', action: ''
+      } : { source: '', note: '' };
+      saveDraft(vm.patient.id, composerType, emptyFields);
       resetComposerDOM();
       refreshPreview(vm, composerType);
       patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
