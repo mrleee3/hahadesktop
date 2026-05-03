@@ -4870,6 +4870,51 @@ button.hah-pt-flag:active {
   padding-right: 30px; /* leave space for the overlay dot */
 }
 
+/* Round-start cascade animation. When the user taps "Start board round",
+   each row's wrap gets `is-round-starting` plus an inline
+   `--hah-round-start-delay` set per index. The wrap pulses (subtle
+   scale up and back) and the status dot inside flashes brighter, both
+   within ~200 ms with the delay seeking each row's start time across
+   the cascade. The animation runs once per render — when the next render
+   replaces the DOM (which happens almost immediately as round-state
+   updates), the new DOM doesn't have is-round-starting and the cascade
+   is over. The animAt timestamp ages out within ~1s so subsequent
+   renders also stop applying the class. */
+.hah-patient-row-wrap.is-round-starting {
+  animation: hah-round-start-pulse 200ms ease-out both;
+  animation-delay: var(--hah-round-start-delay, 0ms);
+}
+.hah-patient-row-wrap.is-round-starting .hah-patient-row-dot {
+  animation: hah-round-start-pip 200ms ease-out both;
+  animation-delay: var(--hah-round-start-delay, 0ms);
+}
+@keyframes hah-round-start-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+@keyframes hah-round-start-pip {
+  /* Brightness pulse: ramps up sharply, settles back. Uses filter so
+     it works regardless of the dot's resting colour (which varies by
+     status). The :scale on the wrap is doing the size work; this
+     emphasises that the status itself just changed. */
+  0%   { filter: brightness(1); transform: scale(1); }
+  40%  { filter: brightness(1.6) saturate(1.4); transform: scale(1.4); }
+  100% { filter: brightness(1) saturate(1); transform: scale(1); }
+}
+
+/* Round-zone fade-in when round has just started. The Start button has
+   been replaced with this zone; reading visually as a morph requires the
+   new element to fade and slide-up rather than pop. ~250 ms keeps it
+   under attention threshold. */
+.hah-round-zone.is-just-started {
+  animation: hah-round-zone-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes hah-round-zone-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .hah-status-overlay {
   position: absolute;
   top: 50%;
@@ -6631,9 +6676,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_133_tep_chip_release.html',
-  source: 'hospital_at_home_board_v0_8_133_tep_chip_source.zip',
-  builtAt: '2026-05-03T21:43:00.994882',
+  filename: 'hospital_at_home_board_v0_8_134_round_start_anim_release.html',
+  source: 'hospital_at_home_board_v0_8_134_round_start_anim_source.zip',
+  builtAt: '2026-05-03T21:55:55.483185',
   entry: 'desktop.html'
 };
 </script>
@@ -12595,7 +12640,18 @@ window.HAHBoard = window.HAHBoard || {};
     const activeRound = ops ? ops.getActiveRound() : null;
     const statusMenuFor = (state.patient && state.patient.statusMenuFor) || null;
 
-    const jumpRows = filteredRows.map((row) => {
+    // Round-start cascade: when start-round fires, the patient list rows
+    // do a staggered pulse-and-pip-flash to mark the moment. Stagger fits
+    // a fixed total budget (~600 ms across all rows) regardless of patient
+    // count so a long list doesn't make the animation feel slow.
+    const ROUND_START_ANIM_BUDGET_MS = 600;
+    const ROUND_START_ANIM_PER_ROW_MS = 200; // duration of each row's animation
+    const animAt = state && state.patient && state.patient.roundStartAnimAt;
+    const animActive = !!(animAt && (Date.now() - animAt) < (ROUND_START_ANIM_BUDGET_MS + ROUND_START_ANIM_PER_ROW_MS + 200));
+    const rowCount = filteredRows.length;
+    const stagger = animActive && rowCount > 1 ? Math.min(40, ROUND_START_ANIM_BUDGET_MS / rowCount) : 0;
+
+    const jumpRows = filteredRows.map((row, idx) => {
       const active = String(row.id) === String(vm.patient.id) ? ' is-active' : '';
       const status = row.boardStatus || 'Not discussed';
       const statusTone = status === 'Discussed' || status === 'Actioned' ? 'is-done'
@@ -12605,7 +12661,9 @@ window.HAHBoard = window.HAHBoard || {};
       const dotHtml = activeRound
         ? renderStatusDotOverlay(row, status, statusMenuFor === row.id)
         : renderStatusDotStatic(status);
-      return `<div class="hah-patient-row-wrap${activeRound ? ' is-round-active' : ''}">
+      const animAttr = animActive ? ` style="--hah-round-start-delay:${idx * stagger}ms"` : '';
+      const animClass = animActive ? ' is-round-starting' : '';
+      return `<div class="hah-patient-row-wrap${activeRound ? ' is-round-active' : ''}${animClass}"${animAttr}>
         <button type="button" class="hah-patient-row${active} ${statusTone}"
           data-patient-action="jump" data-patient-id="${c.escapeHtml(row.id)}">
           <div class="hah-patient-row-main">
@@ -12700,6 +12758,12 @@ window.HAHBoard = window.HAHBoard || {};
     const lastSummary = ops ? ops.getLastRoundSummary() : null;
     const showSummary = lastSummary && !lastSummary.dismissed && !activeRound;
     const avgLabel   = m.total && m.avgLOS ? m.avgLOS.toFixed(1) + 'd' : '—';
+    // Round-start animation: when the round started within the last ~1s,
+    // mark the zone for the fade-in animation. Reads from store state
+    // directly (set by the start-round action handler).
+    const stateForAnim = store && typeof store.getState === 'function' ? store.getState() : {};
+    const animAt = stateForAnim.patient && stateForAnim.patient.roundStartAnimAt;
+    const roundJustStarted = !!(animAt && (Date.now() - animAt) < 1000);
 
     function tile(label, value, filterKey, alert) {
       const isActive  = filterKey && filterSet.has(filterKey);
@@ -12741,7 +12805,7 @@ window.HAHBoard = window.HAHBoard || {};
 
       zoneHtml = `
         <div class="hah-caseload-divider"></div>
-        <div class="hah-round-zone">
+        <div class="hah-round-zone${roundJustStarted ? ' is-just-started' : ''}">
           <svg class="hah-ring" width="64" height="64" viewBox="0 0 64 64">
             <circle class="hah-ring-track" cx="32" cy="32" r="26" />
             <circle class="hah-ring-fill" cx="32" cy="32" r="26"
@@ -15232,7 +15296,16 @@ window.HAHBoard = window.HAHBoard || {};
     }
     if (action === 'start-round' && ops) {
       // Clear all scoped composer states so each patient gets a fresh draft
-      store.setState({ patient: { composerByPatient: {} } });
+      // Trigger the round-start animation by stamping a timestamp on the
+      // patient state. Render-time logic compares against Date.now() and
+      // applies the cascade class only while within the animation window.
+      // After that the timestamp ages out naturally and renders are clean.
+      store.setState({
+        patient: {
+          composerByPatient: {},
+          roundStartAnimAt: Date.now()
+        }
+      });
       ops.startRound();
       // If there's a selected patient, mark them in discussion
       if (vm && vm.patient && vm.patient.id) ops.enterPatient(vm.patient.id);
