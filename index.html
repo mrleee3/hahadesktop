@@ -6707,9 +6707,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_138_roll_call_release.html',
-  source: 'hospital_at_home_board_v0_8_138_roll_call_source.zip',
-  builtAt: '2026-05-03T22:15:19.104220',
+  filename: 'hospital_at_home_board_v0_8_139_discharge_filter_real_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_139_discharge_filter_real_fix_source.zip',
+  builtAt: '2026-05-03T22:20:07.027624',
   entry: 'desktop.html'
 };
 </script>
@@ -10374,11 +10374,16 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function deriveDischargeReadiness(raw, oxygenLpm, iv, priority) {
-    const dischargeText = String(raw.form && raw.form.forDischargeSummary || '').trim();
-    if (!dischargeText) return 'Not ready';
-    if (priority === 'Low' && oxygenLpm === 0 && !iv) return 'Possible today';
-    if (priority === 'Medium' && oxygenLpm === 0) return 'Likely tomorrow';
-    return 'Not ready';
+    // Trust the timeline-derived value set by mapJsonPatientToLegacyRaw.
+    // As of v0.8.130 the canonical readiness comes from the most recent
+    // board-style timeline entry; the previous heuristic (text presence
+    // + clinical indicators) competed with that and went stale when
+    // entries were deleted — the patient stayed in 'Possible today'
+    // because forDischargeSummary text often persists separately.
+    // Empty string indicates no discharge fields in any recent entry.
+    const fromTimeline = String(raw.dischargeReadiness || '').trim();
+    if (fromTimeline) return fromTimeline;
+    return '';
   }
 
   function deriveChangedSinceYesterday(raw, latestReviewAt, bloodSummary, priority) {
