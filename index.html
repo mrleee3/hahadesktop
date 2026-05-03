@@ -6589,9 +6589,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_124_undo_continuity_release.html',
-  source: 'hospital_at_home_board_v0_8_124_undo_continuity_source.zip',
-  builtAt: '2026-05-03T19:30:03.410079',
+  filename: 'hospital_at_home_board_v0_8_125_composer_principle_release.html',
+  source: 'hospital_at_home_board_v0_8_125_composer_principle_source.zip',
+  builtAt: '2026-05-03T19:44:50.623519',
   entry: 'desktop.html'
 };
 </script>
@@ -14049,28 +14049,12 @@ window.HAHBoard = window.HAHBoard || {};
         : fallbackIssues;
       const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
       const prevDate   = lastF ? (lastF.dischargeDate || '') : '';
-      // Discharge summary: source from the patient-level
-      // operational.forDischargeSummary, which is the authoritative current
-      // value. It's updated on every round-save (composer-done flushes the
-      // textarea into the patch) AND on every direct-edit autosave. The
-      // entry snapshot at lastF.forDischargeSummary is historical only and
-      // can lag the patient field if the user cleared it directly. Sourcing
-      // from the patient field means clearing actually sticks.
-      //
-      // Special case: while an undo window is open for this patient, the
-      // patient field may briefly still hold the pre-clear value (the JSON
-      // patch is async; the render fired before the cache patch landed).
-      // Render empty in that case so the user doesn't see the discharge
-      // text flicker back during the undo window. When undo is taken, the
-      // restore path repopulates the textarea directly. When undo expires,
-      // the cache will have been patched long since and the next render
-      // reads empty correctly.
-      const undoActiveForRender = composerClearSnapshot
-        && composerClearDeadline > Date.now()
-        && composerClearSnapshot.patientId === vm.patient.id;
-      const pulledDischargeSummary = undoActiveForRender
-        ? ''
-        : String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
+      // Discharge summary: render with the patient's persisted value on
+      // initial mount. Like Issues and Plan, this gets overwritten by
+      // restoreFields() if the encounter draft has a value (including
+      // empty string after a Clear). The markup is the "no draft" default;
+      // restoreFields applies "draft says X" on top.
+      const pulledDischargeSummary = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
 
       return `
         <div class="hah-cform-field">
@@ -14147,6 +14131,10 @@ window.HAHBoard = window.HAHBoard || {};
     if (type === 'board_round') return {
       issues: val('cform-issues'), progress: val('cform-progress'),
       bloods: val('cform-bloods'), plan: val('cform-plan'),
+      // Discharge summary is collected as a draft field like the others.
+      // It only commits to operational.forDischargeSummary on composer-done,
+      // not while typing — see the principle in CHANGELOG-desktop.md v0.8.125.
+      forDischargeSummary: val('cform-discharge-summary'),
       dischargeDate: val('cform-discharge-date'),
       dischargeReady: active('cform-ready-chip'),
       dnar: active('cform-dnar'),
@@ -14347,26 +14335,15 @@ window.HAHBoard = window.HAHBoard || {};
     });
 
     let saveTimer = null;
-    let dischargeNotesTimer = null;
     pane.querySelectorAll('.hah-cform-textarea').forEach((ta) => {
-      // The discharge-summary textarea is patient-scoped, not encounter-
-      // scoped (it accumulates across rounds and round-trips with mobile
-      // through operational.forDischargeSummary). Patch the patient JSON
-      // directly, debounced. Don't include in the encounter draft.
-      if (ta.id === 'cform-discharge-summary') {
-        ta.addEventListener('input', () => {
-          autoExpand(ta);
-          refreshPreview(vm, type);
-          clearTimeout(dischargeNotesTimer);
-          dischargeNotesTimer = setTimeout(() => {
-            persistPatientPatchToJson(vm.patient.id, {
-              operational: { forDischargeSummary: ta.value }
-            });
-            showAutosaveIndicator(pane);
-          }, 1400);
-        });
-        return;
-      }
+      // All composer textareas — including discharge summary — autosave
+      // to the encounter draft, NOT to the patient JSON. The patient JSON
+      // only changes when the user presses Done. This is the same rule
+      // every note-taking app follows: nothing commits until you save.
+      // Previously the discharge textarea was special-cased to write
+      // directly to operational.forDischargeSummary on every keystroke,
+      // which created cross-device sync events on every typed character
+      // and forced a complex undo dance to handle Clear correctly.
       ta.addEventListener('input', () => {
         autoExpand(ta);
         refreshPreview(vm, type);
@@ -14646,6 +14623,8 @@ window.HAHBoard = window.HAHBoard || {};
           : String(lastF.issues || '').trim())
       : '';
     const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
+    const pulledDischarge = vm && vm.patient && vm.patient.forDischargeSummary
+      ? String(vm.patient.forDischargeSummary).trim() : '';
 
     function set(id, v, pulledValue) {
       const el = document.getElementById(id);
@@ -14673,6 +14652,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (type === 'board_round') {
       set('cform-issues', fields.issues, pulledIssues); set('cform-progress', fields.progress);
       set('cform-bloods', fields.bloods); set('cform-plan', fields.plan, pulledPlan);
+      set('cform-discharge-summary', fields.forDischargeSummary, pulledDischarge);
       set('cform-discharge-date', fields.dischargeDate);
       setChip('cform-ready-chip', fields.dischargeReady);
       setChip('cform-dnar', fields.dnar);
@@ -15028,22 +15008,18 @@ window.HAHBoard = window.HAHBoard || {};
           : Promise.resolve();
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
-          // Flush any pending discharge-summary textarea content so a fast
-          // "type then Done" sequence doesn't drop the user's typing under
-          // the 1.4s autosave debounce. Compare against the textarea's
-          // initially-rendered (pulled) value so we only patch when the
-          // user actually edited the field — this prevents overwriting a
-          // fresh patient-level value with a stale entry snapshot if those
-          // happen to differ (e.g. mobile updated the patient field after
-          // the last desktop round was saved).
-          const dcLiveEl = document.getElementById('cform-discharge-summary');
-          const dcLiveText = dcLiveEl ? String(dcLiveEl.value || '') : null;
-          const dcPulled = dcLiveEl ? String(dcLiveEl.dataset.pulledValue || '') : '';
-          const dcChanged = dcLiveText !== null && dcLiveText !== dcPulled;
+          // Compare the composer's discharge summary against the patient's
+          // currently-persisted value. Only include in the patch if the
+          // user actually changed it. fields.forDischargeSummary now comes
+          // from collectComposerFields (same path as every other field —
+          // the special-case direct-to-JSON autosave is gone).
+          const dcCurrent = String((fields.forDischargeSummary != null ? fields.forDischargeSummary : '')).trim();
+          const dcPersisted = String(vm.patient.forDischargeSummary || '').trim();
+          const dcChanged = dcCurrent !== dcPersisted;
           const roundActive = (typeof ops.getActiveRound === 'function' && ops.getActiveRound());
           const operationalPatch = {};
           if (dr) operationalPatch.dischargeReadiness = dr;
-          if (dcChanged) operationalPatch.forDischargeSummary = dcLiveText;
+          if (dcChanged) operationalPatch.forDischargeSummary = dcCurrent;
           // boardStatus belongs in this patch only when a round is active.
           // The JSON store used to set this autonomously on every board_round
           // entry, but that incorrectly marked patients Discussed even when
@@ -15113,25 +15089,22 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'composer-clear' && vm) {
       const composerType = (state.patient && state.patient.composerType) || 'board_round';
 
-      // Snapshot the current composer state so the user can undo within
-      // 8s. Captures both the round-draft fields (collectComposerFields)
-      // and the discharge-summary textarea (which is patient-scoped, not
-      // draft-scoped — restoring it requires a JSON patch back to
-      // operational.forDischargeSummary).
-      const dcEl = document.getElementById('cform-discharge-summary');
+      // Snapshot the current composer state for Undo. Now that discharge
+      // summary is part of collectComposerFields, this single snapshot
+      // captures everything the composer holds.
       composerClearSnapshot = {
         patientId: vm.patient.id,
         composerType: composerType,
-        fields: collectComposerFields(composerType),
-        forDischargeSummary: dcEl ? String(dcEl.value || '') : null
+        fields: collectComposerFields(composerType)
       };
       composerClearDeadline = Date.now() + COMPOSER_UNDO_WINDOW_MS;
 
-      // Apply the clear:
-      // 1) Round-draft fields — write empty draft (so restoreFields runs
-      //    on next render and explicitly clears every round field).
+      // Apply the clear: write an empty draft and reset the DOM. Both
+      // synchronous, no JSON writes. The patient JSON only changes when
+      // the user presses Done.
       const emptyFields = composerType === 'board_round' ? {
         issues: '', progress: '', bloods: '', plan: '',
+        forDischargeSummary: '',
         dischargeDate: '', dischargeReady: false, dnar: false, acp: false
       } : composerType === 'micro_mdm' ? {
         question: '', recommendation: '', followUp: ''
@@ -15140,41 +15113,13 @@ window.HAHBoard = window.HAHBoard || {};
       } : { source: '', note: '' };
       saveDraft(vm.patient.id, composerType, emptyFields);
       resetComposerDOM();
-
-      // 2) Discharge summary — clear the patient-level field too. From the
-      //    user's perspective the discharge summary is just another
-      //    composer field; the architectural distinction (patient-scoped
-      //    vs round-scoped) shouldn't show through. Patch the JSON so
-      //    other devices and future renders see the empty value.
-      if (composerType === 'board_round' && composerClearSnapshot.forDischargeSummary) {
-        if (dcEl) dcEl.value = '';
-        if (dcEl) dcEl.dataset.pulledValue = '';
-        // Cancel any pending discharge-notes autosave debounce — it would
-        // otherwise fire after clear and write the (already-empty) value
-        // again, but the savePatientCache call inside that path triggers
-        // a re-render that wipes the in-progress undo state from the
-        // DOM. The clear's own JSON patch below handles the persistence.
-        // (Implementation note: the timer variable is closed over by the
-        // input handler; we look it up via window for clean access.)
-        persistPatientPatchToJson(vm.patient.id, {
-          operational: { forDischargeSummary: '' }
-        });
-      }
-
       refreshPreview(vm, composerType);
 
-      // 3) Force a re-render. The render-time logic now reads
-      //    composerClearSnapshot + composerClearDeadline and renders the
-      //    button in undo state. This replaces the previous approach of
-      //    morphing the existing DOM element, which was fragile because
-      //    any subsequent re-render (e.g. from the JSON cache patch
-      //    completing) would rebuild the button in its default state and
-      //    drop the undo state visually.
+      // Force a re-render so the button shows Undo state. The render-time
+      // logic reads composerClearSnapshot + composerClearDeadline.
       patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
 
-      // 4) Schedule the snapshot to expire at the deadline. When the
-      //    timer fires we clear the snapshot AND force a re-render so
-      //    the button reverts to "Clear".
+      // Schedule the snapshot to expire at the deadline.
       if (composerClearTimer) clearTimeout(composerClearTimer);
       composerClearTimer = setTimeout(function () {
         composerClearSnapshot = null;
@@ -15187,43 +15132,14 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     if (action === 'composer-undo' && vm) {
-      // Restore the snapshot taken by composer-clear. Cancels the timer,
-      // re-populates the round-draft, re-writes the discharge summary
-      // back to the patient JSON if it was cleared, and forces a render
-      // so the button reverts to "Clear".
+      // Restore the snapshot. Synchronous, no JSON writes — the cleared
+      // state had never reached JSON in the first place.
       if (!composerClearSnapshot) return true;
       const snap = composerClearSnapshot;
       const composerType = snap.composerType;
-
-      // Restore round-draft fields by writing the snapshot back as a draft.
-      // The next render will populate the DOM from this draft via
-      // restoreFields, just like normal draft restoration.
       saveDraft(snap.patientId, composerType, snap.fields);
-
-      // Restore the in-DOM values immediately so the user doesn't have to
-      // wait for a render. This mirrors what restoreFields would do.
       try { restoreFields(snap.fields, composerType); } catch (_) {}
-
-      // Restore the discharge summary text in the textarea AND patch the
-      // patient JSON back. The local restore is fast; the JSON patch
-      // happens in the background like any other discharge edit.
-      if (composerType === 'board_round' && snap.forDischargeSummary !== null) {
-        const dcEl = document.getElementById('cform-discharge-summary');
-        if (dcEl) {
-          dcEl.value = snap.forDischargeSummary;
-          dcEl.dataset.pulledValue = snap.forDischargeSummary;
-        }
-        if (snap.forDischargeSummary) {
-          persistPatientPatchToJson(snap.patientId, {
-            operational: { forDischargeSummary: snap.forDischargeSummary }
-          });
-        }
-      }
-
       refreshPreview(vm, composerType);
-
-      // Cancel the timer, drop the snapshot, force a render so the
-      // button reverts to "Clear".
       if (composerClearTimer) {
         clearTimeout(composerClearTimer);
         composerClearTimer = null;
