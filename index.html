@@ -6584,9 +6584,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_122_acp_in_preview_release.html',
-  source: 'hospital_at_home_board_v0_8_122_acp_in_preview_source.zip',
-  builtAt: '2026-05-03T19:13:31.593490',
+  filename: 'hospital_at_home_board_v0_8_123_clear_undo_race_release.html',
+  source: 'hospital_at_home_board_v0_8_123_clear_undo_race_source.zip',
+  builtAt: '2026-05-03T19:23:24.203612',
   entry: 'desktop.html'
 };
 </script>
@@ -12199,6 +12199,13 @@ window.HAHBoard = window.HAHBoard || {};
   // expires.
   let composerClearSnapshot = null;
   let composerClearTimer = null;
+  // Absolute timestamp when the undo window expires. Tracked separately
+  // from the snapshot so render-time logic can check whether undo is
+  // currently active (the snapshot alone isn't enough — re-renders during
+  // the undo window need to keep showing the Undo button with the right
+  // amount of progress bar remaining). Set when Clear is tapped, cleared
+  // when Undo is taken or the timer fires.
+  let composerClearDeadline = 0;
   const COMPOSER_UNDO_WINDOW_MS = 8000;
 
   // Categorise a JSON-store error into a short user-facing reason. Errors
@@ -13892,6 +13899,27 @@ window.HAHBoard = window.HAHBoard || {};
       return `<button type="button" class="hah-composer-tab${active}" data-patient-action="set-composer-type"
         data-composer-type="${c.escapeHtml(t.key)}">${c.escapeHtml(t.label)}</button>`;
     }).join('');
+
+    // Compute clear/undo button state. If we're inside an active undo
+    // window for this patient, the button renders as Undo with the
+    // remaining time on the progress bar. Without this, every re-render
+    // during the undo window would rebuild the button DOM in its default
+    // Clear state (because the original morph in the action handler only
+    // touched a now-stale DOM element). The CSS animation needs to know
+    // how much time has already elapsed so the bar continues from the
+    // right position rather than restarting at full.
+    const undoActive = !isLocked
+      && composerClearSnapshot
+      && composerClearDeadline > Date.now()
+      && composerClearSnapshot.patientId === vm.patient.id;
+    const undoElapsedMs = undoActive ? Math.max(0, COMPOSER_UNDO_WINDOW_MS - (composerClearDeadline - Date.now())) : 0;
+    const clearBtnClass = undoActive ? 'hah-inline-pill is-undo' : 'hah-inline-pill';
+    const clearBtnAction = isLocked ? 'composer-new' : (undoActive ? 'composer-undo' : 'composer-clear');
+    const clearBtnLabel = isLocked ? 'New note' : (undoActive ? 'Undo' : 'Clear');
+    // Negative animation-delay seeks the running animation forward by that
+    // amount — picks up where the original timer is.
+    const clearBtnStyle = undoActive ? ` style="animation-delay:-${undoElapsedMs}ms"` : '';
+
     return c.stack([
       c.card(heading, `
       <div class="hah-composer-tabs">${typeTabs}</div>
@@ -13909,8 +13937,8 @@ window.HAHBoard = window.HAHBoard || {};
       </div>
       <div class="hah-composer-footer">
         <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
-        <button type="button" class="hah-inline-pill" id="hahComposerClearBtn"
-          data-patient-action="${isLocked ? 'composer-new' : 'composer-clear'}">${isLocked ? 'New note' : 'Clear'}</button>
+        <button type="button" class="${clearBtnClass}" id="hahComposerClearBtn"
+          data-patient-action="${clearBtnAction}"${clearBtnStyle}>${clearBtnLabel}</button>
         <button type="button" class="hah-inline-pill is-primary"
           data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
       </div>
@@ -14020,7 +14048,21 @@ window.HAHBoard = window.HAHBoard || {};
       // entry snapshot at lastF.forDischargeSummary is historical only and
       // can lag the patient field if the user cleared it directly. Sourcing
       // from the patient field means clearing actually sticks.
-      const pulledDischargeSummary = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
+      //
+      // Special case: while an undo window is open for this patient, the
+      // patient field may briefly still hold the pre-clear value (the JSON
+      // patch is async; the render fired before the cache patch landed).
+      // Render empty in that case so the user doesn't see the discharge
+      // text flicker back during the undo window. When undo is taken, the
+      // restore path repopulates the textarea directly. When undo expires,
+      // the cache will have been patched long since and the next render
+      // reads empty correctly.
+      const undoActiveForRender = composerClearSnapshot
+        && composerClearDeadline > Date.now()
+        && composerClearSnapshot.patientId === vm.patient.id;
+      const pulledDischargeSummary = undoActiveForRender
+        ? ''
+        : String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
 
       return `
         <div class="hah-cform-field">
@@ -15075,6 +15117,7 @@ window.HAHBoard = window.HAHBoard || {};
         fields: collectComposerFields(composerType),
         forDischargeSummary: dcEl ? String(dcEl.value || '') : null
       };
+      composerClearDeadline = Date.now() + COMPOSER_UNDO_WINDOW_MS;
 
       // Apply the clear:
       // 1) Round-draft fields — write empty draft (so restoreFields runs
@@ -15098,39 +15141,38 @@ window.HAHBoard = window.HAHBoard || {};
       if (composerType === 'board_round' && composerClearSnapshot.forDischargeSummary) {
         if (dcEl) dcEl.value = '';
         if (dcEl) dcEl.dataset.pulledValue = '';
+        // Cancel any pending discharge-notes autosave debounce — it would
+        // otherwise fire after clear and write the (already-empty) value
+        // again, but the savePatientCache call inside that path triggers
+        // a re-render that wipes the in-progress undo state from the
+        // DOM. The clear's own JSON patch below handles the persistence.
+        // (Implementation note: the timer variable is closed over by the
+        // input handler; we look it up via window for clean access.)
         persistPatientPatchToJson(vm.patient.id, {
           operational: { forDischargeSummary: '' }
         });
       }
 
       refreshPreview(vm, composerType);
+
+      // 3) Force a re-render. The render-time logic now reads
+      //    composerClearSnapshot + composerClearDeadline and renders the
+      //    button in undo state. This replaces the previous approach of
+      //    morphing the existing DOM element, which was fragile because
+      //    any subsequent re-render (e.g. from the JSON cache patch
+      //    completing) would rebuild the button in its default state and
+      //    drop the undo state visually.
       patchScopedComposerState(vm.patient.id, { locked: false, editId: null });
 
-      // 3) Morph the Clear button into Undo for 8s. CSS .is-undo class
-      //    gives it the blue tint and the draining bottom progress bar.
-      //    The action attribute swap means the next tap calls the
-      //    composer-undo handler rather than composer-clear.
-      const clearBtn = document.getElementById('hahComposerClearBtn');
-      if (clearBtn) {
-        clearBtn.classList.add('is-undo');
-        clearBtn.textContent = 'Undo';
-        clearBtn.setAttribute('data-patient-action', 'composer-undo');
-      }
+      // 4) Schedule the snapshot to expire at the deadline. When the
+      //    timer fires we clear the snapshot AND force a re-render so
+      //    the button reverts to "Clear".
       if (composerClearTimer) clearTimeout(composerClearTimer);
       composerClearTimer = setTimeout(function () {
-        // Window expired. Discard the snapshot and revert the button to
-        // its standard Clear appearance. If the button has been
-        // re-rendered (normal render cycle replaces the DOM), the next
-        // render's button will already say Clear so this is a cleanup
-        // step for the case where it hasn't.
         composerClearSnapshot = null;
+        composerClearDeadline = 0;
         composerClearTimer = null;
-        const btn = document.getElementById('hahComposerClearBtn');
-        if (btn) {
-          btn.classList.remove('is-undo');
-          btn.textContent = 'Clear';
-          btn.setAttribute('data-patient-action', 'composer-clear');
-        }
+        store.setState({ ui: { revision: Date.now() } });
       }, COMPOSER_UNDO_WINDOW_MS);
 
       return true;
@@ -15139,8 +15181,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'composer-undo' && vm) {
       // Restore the snapshot taken by composer-clear. Cancels the timer,
       // re-populates the round-draft, re-writes the discharge summary
-      // back to the patient JSON if it was cleared, and reverts the
-      // button to its standard Clear appearance.
+      // back to the patient JSON if it was cleared, and forces a render
+      // so the button reverts to "Clear".
       if (!composerClearSnapshot) return true;
       const snap = composerClearSnapshot;
       const composerType = snap.composerType;
@@ -15172,18 +15214,15 @@ window.HAHBoard = window.HAHBoard || {};
 
       refreshPreview(vm, composerType);
 
-      // Cancel the timer and revert the button.
+      // Cancel the timer, drop the snapshot, force a render so the
+      // button reverts to "Clear".
       if (composerClearTimer) {
         clearTimeout(composerClearTimer);
         composerClearTimer = null;
       }
       composerClearSnapshot = null;
-      const btn = document.getElementById('hahComposerClearBtn');
-      if (btn) {
-        btn.classList.remove('is-undo');
-        btn.textContent = 'Clear';
-        btn.setAttribute('data-patient-action', 'composer-clear');
-      }
+      composerClearDeadline = 0;
+      store.setState({ ui: { revision: Date.now() } });
       return true;
     }
 
