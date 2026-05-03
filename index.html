@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_111_clear_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_111_clear_fix_source.zip',
-  builtAt: '2026-05-03T08:41:52.848524',
+  filename: 'hospital_at_home_board_v0_8_114_fast_writes_release.html',
+  source: 'hospital_at_home_board_v0_8_114_fast_writes_source.zip',
+  builtAt: '2026-05-03T14:02:40.431121',
   entry: 'desktop.html'
 };
 </script>
@@ -7357,18 +7357,55 @@ window.HAHBoard = window.HAHBoard || {};
 
   // ── Board round lifecycle ────────────────────────────────────────────
 
-  function getActiveRound() {
-    return state.activeRound ? clone(state.activeRound) : null;
-  }
-
-  function startRound() {
-    // Reset all patient statuses for the new round — clean slate
+  // Reset boardStatus to 'Not discussed' across BOTH local state and the
+  // JSON store. Local state covers desktop session; JSON covers cross-
+  // device persistence (so mobile, other desktop sessions, and a fresh
+  // reload all see the reset). Without the JSON propagation, ending a
+  // round would leave stale Discussed markers on the JSON patient list
+  // visible to anyone else loading the workspace.
+  //
+  // Patches are fired in parallel (each patient is independent, so no
+  // race risk). Failures on individual patient patches are logged and
+  // ignored so a single OneDrive blip doesn't abort the whole reset.
+  function resetBoardStatusAcrossStore(reasonLabel) {
+    // Local: clear anything that isn't already Not discussed
     Object.keys(state.patientStates).forEach((pid) => {
       const ps = state.patientStates[pid];
       if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
         state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
       }
     });
+    // JSON: enumerate all patients in the cached bundle and patch each
+    try {
+      const shared = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+      if (!shared || typeof shared.getCachedPatientBundle !== 'function' || typeof shared.patchPatientRecord !== 'function') return;
+      const bundle = shared.getCachedPatientBundle();
+      if (!bundle || !Array.isArray(bundle.rows)) return;
+      const patchPromises = bundle.rows.map(function (row) {
+        if (!row || !row.id) return Promise.resolve();
+        // Skip patients whose JSON boardStatus is already Not discussed —
+        // saves a write per patient who's never been touched.
+        const current = row.boardStatus || (row.sourcePatient && row.sourcePatient.operational && row.sourcePatient.operational.boardStatus) || 'Not discussed';
+        if (current === 'Not discussed' || current === '') return Promise.resolve();
+        return shared.patchPatientRecord(String(row.id), {
+          operational: { boardStatus: 'Not discussed' }
+        }).catch(function (err) {
+          console.warn('[H@H JSON store] Could not reset boardStatus for', row.id, err);
+        });
+      });
+      // Fire and forget — the local reset is already done synchronously
+      // above. The JSON propagation happens in background.
+      Promise.all(patchPromises).catch(function () {});
+    } catch (_) {}
+  }
+
+  function getActiveRound() {
+    return state.activeRound ? clone(state.activeRound) : null;
+  }
+
+  function startRound() {
+    // Reset all patient statuses (local + JSON) for the new round
+    resetBoardStatusAcrossStore('round-started');
     state.activeRound = {
       startedAt: nowIso(),
       startedBy: getActorName(),
@@ -7489,12 +7526,7 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function resetAllBoardStatuses() {
-    Object.keys(state.patientStates).forEach((pid) => {
-      const ps = state.patientStates[pid];
-      if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
-        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
-      }
-    });
+    resetBoardStatusAcrossStore('board-statuses-reset');
     appendAudit({ type: 'round-reset', summary: 'Board statuses reset' });
     saveState('board-statuses-reset', {});
   }
@@ -7521,14 +7553,36 @@ window.HAHBoard = window.HAHBoard || {};
       const stampDay = ps.updatedAt ? new Date(ps.updatedAt).toDateString() : null;
       if (!stampDay || stampDay !== todayDay) needsReset = true;
     });
+    // Case 2b: state.patientStates may be empty on a fresh browser session
+    // even though the JSON has stale Discussed markers from yesterday. Check
+    // the JSON cache directly so a fresh-load-on-new-day still triggers the
+    // reset and propagates to JSON.
+    if (!needsReset) {
+      try {
+        const shared = window.HAHBoard && window.HAHBoard.sharedJsonStore;
+        if (shared && typeof shared.getCachedPatientBundle === 'function') {
+          const bundle = shared.getCachedPatientBundle();
+          if (bundle && Array.isArray(bundle.rows)) {
+            for (const row of bundle.rows) {
+              const status = row && row.boardStatus;
+              if (!status || status === 'Not discussed') continue;
+              // JSON has no per-patient day-stamp on boardStatus, but if the
+              // patient document's meta.updatedAt is from a previous day AND
+              // status is non-default, treat as stale.
+              const meta = row.sourcePatient && row.sourcePatient.meta;
+              const stampDay = meta && meta.updatedAt ? new Date(meta.updatedAt).toDateString() : null;
+              if (!stampDay || stampDay !== todayDay) { needsReset = true; break; }
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     if (needsReset) {
-      Object.keys(state.patientStates).forEach((pid) => {
-        const ps = state.patientStates[pid];
-        if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
-          state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
-        }
-      });
+      // Propagate to JSON too — anyone loading the desktop fresh on a new
+      // day should see Not discussed on every patient, not yesterday's
+      // residue. Without this, the cross-device list is permanently stale.
+      resetBoardStatusAcrossStore('auto-reset-new-day');
     }
 
     // Always clear nextAllocation on new day (regardless of board status state)
@@ -8288,6 +8342,46 @@ window.HAHBoard = window.HAHBoard || {};
     refreshShell(patientCache.rows && patientCache.rows.length ? 'JSON patients' : 'JSON store');
   }
 
+  // Replace a single patient row in the in-memory patient cache without
+  // re-fetching the entire dataset. This is the hot path for write
+  // operations: previously every save triggered a full loadPatientDataset
+  // which fetched ~17 patient files from OneDrive in parallel — adding
+  // ~700-1000ms to every write for no benefit, since we already have the
+  // fresh patient locally. Now we patch the cache in place and call
+  // savePatientCache() to trigger the shell refresh. Other writers'
+  // changes still flow through the websocket sync layer.
+  function patchPatientCacheRow(patient) {
+    if (!patient || !patient.id) return;
+    if (!patientCache || !Array.isArray(patientCache.rows)) {
+      // No cache loaded yet; can't patch — caller's own loadPatientDataset
+      // call (or the next one anywhere) will populate it.
+      return;
+    }
+    const id = String(patient.id);
+    const newRow = mapJsonPatientToLegacyRaw(patient);
+    const idx = patientCache.rows.findIndex(function (row) { return row && String(row.id) === id; });
+    if (idx >= 0) {
+      patientCache.rows[idx] = newRow;
+    } else {
+      // New patient, didn't exist in cache yet — but only add if it's in
+      // the active service list (otherwise it might be archived or stale).
+      const activeIds = patientCache.service ? getActivePatientIds(patientCache.service) : [];
+      if (activeIds.indexOf(id) >= 0) {
+        patientCache.rows.unshift(newRow);
+      }
+    }
+    patientCache.loadedAt = nowIso();
+    savePatientCache();
+  }
+
+  // Same idea but for deletions: drop the entry at patientId from the cache.
+  // Used by removePatientTimelineEntry and patient deletion paths.
+  function patchPatientCacheRowAfterMutation(patient) {
+    // Alias for clarity at call site — same body. Kept as a separate name
+    // so future deletion-from-cache logic has a place to land.
+    patchPatientCacheRow(patient);
+  }
+
   function saveTaskCache() {
     try { localStorage.setItem(TASK_CACHE_KEY, JSON.stringify(taskCache)); } catch (_) {}
     refreshShell(taskCache.tasks && taskCache.tasks.length ? 'JSON tasks' : 'JSON store');
@@ -8881,16 +8975,16 @@ window.HAHBoard = window.HAHBoard || {};
     if (!patient || !patient.id) patient = makePatientSchema(id, { name: id });
     patient = mergeDeep(patient, patientCorePatch(fields));
     await savePatient(patient);
-    try {
-      await appendAudit({
-        type: 'patient-core-updated',
-        entityType: 'patient',
-        entityId: id,
-        summary: `Updated patient details for ${patient.identity && patient.identity.name ? patient.identity.name : id}`
-      });
-    } catch (_) {}
-    await loadPatientDataset();
-    state.lastOperation = `Updated JSON patient details and reloaded the caseload`;
+    // Patch the in-memory cache synchronously rather than reloading the
+    // whole dataset — see patchPatientCacheRow.
+    patchPatientCacheRow(patient);
+    appendAudit({
+      type: 'patient-core-updated',
+      entityType: 'patient',
+      entityId: id,
+      summary: `Updated patient details for ${patient.identity && patient.identity.name ? patient.identity.name : id}`
+    }).catch(function () {});
+    state.lastOperation = `Updated JSON patient details`;
     state.lastError = '';
     saveState();
     return patient;
@@ -8977,15 +9071,17 @@ window.HAHBoard = window.HAHBoard || {};
     if (!patient || !patient.id) patient = makePatientSchema(id, { name: id });
     patient = mergeDeep(patient, patch || {});
     await savePatient(patient);
-    try {
-      await appendAudit({
-        type: 'patient-record-patched',
-        entityType: 'patient',
-        entityId: id,
-        summary: `Updated patient record for ${id}`
-      });
-    } catch (_) {}
-    try { await loadPatientDataset(); } catch (_) {}
+    // Patch the in-memory cache synchronously so the next render reflects
+    // the change without waiting on a dataset reload. See patchPatientCacheRow
+    // for the reasoning.
+    patchPatientCacheRow(patient);
+    // Audit log fire-and-forget — diagnostic, doesn't need to block UI.
+    appendAudit({
+      type: 'patient-record-patched',
+      entityType: 'patient',
+      entityId: id,
+      summary: `Updated patient record for ${id}`
+    }).catch(function () {});
     return patient;
   }
 
@@ -9240,18 +9336,23 @@ window.HAHBoard = window.HAHBoard || {};
     }
     const dr = deriveJsonDischargeReadiness(entry.fields || {});
     if (dr) patient.operational.dischargeReadiness = dr;
-    if (entry.type === 'board_round') patient.operational.boardStatus = 'Discussed';
+    // Note: we do NOT touch boardStatus here. boardStatus is round-state, not
+    // entry-state — a board_round entry committed outside an active round
+    // (e.g. retrospective documentation, or a fresh note before round-start)
+    // should not change Discussed/Not-discussed. The caller in composer-done
+    // is responsible for patching boardStatus separately, gated on whether
+    // a round is actually active.
 
     await savePatient(patient);
-    try {
-      await appendAudit({
-        type: 'patient-timeline-updated',
-        entityType: 'patient',
-        entityId: id,
-        summary: `Saved ${entry.type.replace(/_/g, ' ')} entry for ${id}`
-      });
-    } catch (_) {}
-    try { await loadPatientDataset(); } catch (_) {}
+    // Patch the in-memory cache synchronously so the next render reflects
+    // the new timeline entry without waiting on a dataset reload.
+    patchPatientCacheRow(patient);
+    appendAudit({
+      type: 'patient-timeline-updated',
+      entityType: 'patient',
+      entityId: id,
+      summary: `Saved ${entry.type.replace(/_/g, ' ')} entry for ${id}`
+    }).catch(function () {});
     return entry;
   }
 
@@ -9273,15 +9374,16 @@ window.HAHBoard = window.HAHBoard || {};
     if (after.length === before.length) return false;
     patient.timeline = after;
     await savePatient(patient);
-    try {
-      await appendAudit({
-        type: 'patient-timeline-removed',
-        entityType: 'patient',
-        entityId: id,
-        summary: `Removed timeline entry ${ent} for ${id}`
-      });
-    } catch (_) {}
-    try { await loadPatientDataset(); } catch (_) {}
+    // Patch the in-memory cache synchronously so the deleted entry
+    // disappears from the UI immediately, without waiting on a dataset
+    // reload (which was previously adding ~1s of network round-trips).
+    patchPatientCacheRowAfterMutation(patient);
+    appendAudit({
+      type: 'patient-timeline-removed',
+      entityType: 'patient',
+      entityId: id,
+      summary: `Removed timeline entry ${ent} for ${id}`
+    }).catch(function () {});
     return true;
   }
 
@@ -14730,9 +14832,16 @@ window.HAHBoard = window.HAHBoard || {};
           const dcLiveText = dcLiveEl ? String(dcLiveEl.value || '') : null;
           const dcPulled = dcLiveEl ? String(dcLiveEl.dataset.pulledValue || '') : '';
           const dcChanged = dcLiveText !== null && dcLiveText !== dcPulled;
+          const roundActive = (typeof ops.getActiveRound === 'function' && ops.getActiveRound());
           const operationalPatch = {};
           if (dr) operationalPatch.dischargeReadiness = dr;
           if (dcChanged) operationalPatch.forDischargeSummary = dcLiveText;
+          // boardStatus belongs in this patch only when a round is active.
+          // The JSON store used to set this autonomously on every board_round
+          // entry, but that incorrectly marked patients Discussed even when
+          // no round had started — confusing in the patient list. Now the
+          // caller decides based on round state.
+          if (roundActive) operationalPatch.boardStatus = 'Discussed';
           if (Object.keys(operationalPatch).length) {
             if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
             // Wait for timeline write to land before patching operational,
@@ -14743,8 +14852,10 @@ window.HAHBoard = window.HAHBoard || {};
                 persistPatientPatchToJson(vm.patient.id, { operational: operationalPatch });
               });
           }
-          // If round active, mark this patient as Discussed and try to auto-advance
-          if (typeof ops.getActiveRound === 'function' && ops.getActiveRound()) {
+          // If round active, mark this patient as Discussed in local state
+          // (the JSON patch above handles the persistent record) and try to
+          // auto-advance to the next undiscussed patient.
+          if (roundActive) {
             ops.markPatientDiscussed(vm.patient.id);
             // Auto-advance: find the next "Not discussed" patient in the current sort order
             try {
