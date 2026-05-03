@@ -6584,9 +6584,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_121_undo_full_fill_release.html',
-  source: 'hospital_at_home_board_v0_8_121_undo_full_fill_source.zip',
-  builtAt: '2026-05-03T19:07:04.046411',
+  filename: 'hospital_at_home_board_v0_8_122_acp_in_preview_release.html',
+  source: 'hospital_at_home_board_v0_8_122_acp_in_preview_source.zip',
+  builtAt: '2026-05-03T19:13:31.593490',
   entry: 'desktop.html'
 };
 </script>
@@ -14204,6 +14204,36 @@ window.HAHBoard = window.HAHBoard || {};
     if ((fields.plan || '').trim()) {
       lines.push('PLAN');
       lines.push(fields.plan.trim());
+      lines.push('');
+    }
+    // ACP block — mirrors the mobile clinical note generator's "Advanced
+    // care plan:" section. Sources from getAcpStateForVm which resolves
+    // JSON vs local state correctly and is the same helper the ACP card
+    // on the left pane uses. Only included when at least one field has
+    // content.
+    const acp = getAcpStateForVm(vm);
+    const acpLines = [];
+    const dnacprStatus = String(acp.dnacprStatus || '').trim();
+    const dnacprFormSeen = !!acp.dnacprFormSeen;
+    const tepStatus = String(acp.tepStatus || '').trim();
+    const ceilingOfCare = String(acp.tep || acp.ceilingOfCare || '').trim();
+    const acpNotes = String(acp.notes || acp.acpNotes || '').trim();
+    if (dnacprStatus) {
+      const dnar = dnacprStatus === 'yes'
+        ? (dnacprFormSeen ? 'Yes, form seen' : 'Yes')
+        : (dnacprStatus === 'no' ? 'No' : 'Unknown');
+      acpLines.push('DNACPR: ' + dnar);
+    }
+    if (tepStatus) {
+      const ucp = tepStatus === 'present' ? 'Present'
+        : tepStatus === 'absent' ? 'Absent' : 'Unknown';
+      acpLines.push('UCP: ' + ucp);
+    }
+    if (ceilingOfCare) acpLines.push('TEP: ' + ceilingOfCare);
+    if (acpNotes) acpLines.push('ACP notes: ' + acpNotes);
+    if (acpLines.length) {
+      lines.push('ADVANCED CARE PLAN');
+      acpLines.forEach((l) => lines.push(l));
       lines.push('');
     }
     const edd = formatEDD(fields.dischargeDate, fields.dischargeReady);
