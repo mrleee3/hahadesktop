@@ -6554,9 +6554,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_104_timeline_race_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_104_timeline_race_fix_source.zip',
-  builtAt: '2026-05-02T15:45:47.228611',
+  filename: 'hospital_at_home_board_v0_8_107_discharge_textarea_release.html',
+  source: 'hospital_at_home_board_v0_8_107_discharge_textarea_source.zip',
+  builtAt: '2026-05-03T07:26:10.891622',
   entry: 'desktop.html'
 };
 </script>
@@ -8629,6 +8629,7 @@ window.HAHBoard = window.HAHBoard || {};
       operational: {
         boardStatus: 'Not discussed',
         dischargeReadiness: '',
+        forDischargeSummary: '',
         blockers: [],
         priority: ''
       },
@@ -9228,6 +9229,15 @@ window.HAHBoard = window.HAHBoard || {};
     if (note.bloodsIx) patient.clinical.bloodsSummary = note.bloodsIx;
 
     patient.operational = Object.assign({}, patient.operational || {});
+    // Migrate any legacy free-text dischargeReadiness to forDischargeSummary before
+    // applying this entry's derived enum value. Without this, a patient with
+    // mobile-written free text in dischargeReadiness stays stuck there until
+    // a board round actively overwrites it with the enum.
+    const splitDischarge = splitDischargeFields(patient.operational);
+    patient.operational.dischargeReadiness = splitDischarge.readiness;
+    if (splitDischarge.notes && !patient.operational.forDischargeSummary) {
+      patient.operational.forDischargeSummary = splitDischarge.notes;
+    }
     const dr = deriveJsonDischargeReadiness(entry.fields || {});
     if (dr) patient.operational.dischargeReadiness = dr;
     if (entry.type === 'board_round') patient.operational.boardStatus = 'Discussed';
@@ -9278,12 +9288,39 @@ window.HAHBoard = window.HAHBoard || {};
     return type === 'board_round' || type === 'mobile_clinical_review';
   }
 
+  // Canonical discharge readiness enum (matches deriveDischargeReadiness in
+  // 24-desktop-derived.js and 26-desktop-patient.js). Values outside this set
+  // are treated as legacy free-text notes and migrated on next read+write.
+  const DISCHARGE_READINESS_ENUM = ['Ready', 'Possible today', 'Likely tomorrow', 'Not ready'];
+  function isDischargeReadinessEnum(value) {
+    return DISCHARGE_READINESS_ENUM.indexOf(String(value || '').trim()) >= 0;
+  }
+  // Returns {readiness, notes} for an operational block, splitting any legacy
+  // free-text value out of dischargeReadiness into forDischargeSummary. Pure: does
+  // not mutate. Used at read-time and as part of write-time migration.
+  function splitDischargeFields(operational) {
+    const op = operational && typeof operational === 'object' ? operational : {};
+    const rawReadiness = String(op.dischargeReadiness || '').trim();
+    // Free text lives at operational.forDischargeSummary (canonical name).
+    // Brief v0.8.105 build used operational.dischargeNotes — fall through to
+    // it so any patient saved during that window migrates on next read+write.
+    const rawNotes = String(op.forDischargeSummary || op.dischargeNotes || '').trim();
+    if (isDischargeReadinessEnum(rawReadiness)) {
+      return { readiness: rawReadiness, notes: rawNotes };
+    }
+    // Legacy: free text was being stored in dischargeReadiness by mobile.
+    // Treat as notes. If a separate notes field already exists, keep that and
+    // discard the ambiguous readiness value.
+    return { readiness: '', notes: rawNotes || rawReadiness };
+  }
+
   function mapJsonPatientToLegacyRaw(patient) {
     const identity = patient.identity || {};
     const serviceBlock = patient.service || {};
     const alerts = patient.alerts || {};
     const clinical = patient.clinical || {};
     const operational = patient.operational || {};
+    const dischargeFields = splitDischargeFields(operational);
     const latest = latestTimelineEntry(patient, isBoardStyleTimelineEntry) || latestTimelineEntry(patient);
     const note = latest && latest.note ? latest.note : {};
     const issueLines = Array.isArray(clinical.persistentIssues)
@@ -9315,7 +9352,8 @@ window.HAHBoard = window.HAHBoard || {};
       doa: serviceBlock.admittedDate || '',
       priority: operational.priority || '',
       boardStatus: operational.boardStatus || 'Not discussed',
-      dischargeReadiness: operational.dischargeReadiness || '',
+      dischargeReadiness: dischargeFields.readiness,
+      forDischargeSummary: dischargeFields.notes,
       dnar: !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes',
       acp: !!alerts.acp || !!(acp.dnacprStatus || acp.tepStatus || acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes),
       escalation: alerts.escalation || '',
@@ -9327,7 +9365,7 @@ window.HAHBoard = window.HAHBoard || {};
         examination: note.examination || '',
         plan: note.plan || '',
         bloods: note.bloodsIx || clinical.bloodsSummary || '',
-        forDischargeSummary: operational.dischargeReadiness || '',
+        forDischargeSummary: dischargeFields.notes,
         temp: flatObs.temp,
         bp: flatObs.bp,
         hr: flatObs.hr,
@@ -13739,6 +13777,11 @@ window.HAHBoard = window.HAHBoard || {};
               placeholder="Select date"
               min="${todayIso()}" value="${c.escapeHtml(prevDate)}">
           </div>
+        </div>
+        <div class="hah-cform-field">
+          <label class="hah-cform-label">For discharge summary</label>
+          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-discharge-summary" rows="3"
+            placeholder="Notes that will feed into the eventual discharge summary…">${c.escapeHtml(vm.patient.forDischargeSummary || '')}</textarea>
         </div>`;
     }
 
@@ -13885,6 +13928,21 @@ window.HAHBoard = window.HAHBoard || {};
       lines.push('EDD: ' + edd);
       lines.push('');
     }
+    // For discharge summary text — sourced from the live textarea if present
+    // (optimistic), otherwise the patient's persisted operational.forDischargeSummary.
+    // This field is patient-scoped, not encounter-draft-scoped — it round-trips
+    // with mobile's "For discharge summary" textarea.
+    const dcLiveEl = document.getElementById('cform-discharge-summary');
+    const dcText = String(
+      dcLiveEl !== null && dcLiveEl !== undefined
+        ? dcLiveEl.value
+        : (vm && vm.patient && vm.patient.forDischargeSummary || '')
+    ).trim();
+    if (dcText) {
+      lines.push('FOR DISCHARGE SUMMARY');
+      lines.push(dcText);
+      lines.push('');
+    }
     return lines.join('\n').trim();
   }
 
@@ -13926,7 +13984,26 @@ window.HAHBoard = window.HAHBoard || {};
     });
 
     let saveTimer = null;
+    let dischargeNotesTimer = null;
     pane.querySelectorAll('.hah-cform-textarea').forEach((ta) => {
+      // The discharge-summary textarea is patient-scoped, not encounter-
+      // scoped (it accumulates across rounds and round-trips with mobile
+      // through operational.forDischargeSummary). Patch the patient JSON
+      // directly, debounced. Don't include in the encounter draft.
+      if (ta.id === 'cform-discharge-summary') {
+        ta.addEventListener('input', () => {
+          autoExpand(ta);
+          refreshPreview(vm, type);
+          clearTimeout(dischargeNotesTimer);
+          dischargeNotesTimer = setTimeout(() => {
+            persistPatientPatchToJson(vm.patient.id, {
+              operational: { forDischargeSummary: ta.value }
+            });
+            showAutosaveIndicator(pane);
+          }, 1400);
+        });
+        return;
+      }
       ta.addEventListener('input', () => {
         autoExpand(ta);
         refreshPreview(vm, type);
@@ -14584,14 +14661,23 @@ window.HAHBoard = window.HAHBoard || {};
           : Promise.resolve();
         if (composerType === 'board_round') {
           const dr = deriveDischargeReadiness(fields.dischargeDate, fields.dischargeReady);
-          if (dr) {
-            ops.setDischargeReadiness(vm.patient.id, dr);
+          // Flush any pending discharge-summary textarea content so a fast
+          // "type then Done" sequence doesn't drop the user's typing under
+          // the 1.4s autosave debounce.
+          const dcLiveEl = document.getElementById('cform-discharge-summary');
+          const dcLiveText = dcLiveEl ? String(dcLiveEl.value || '') : null;
+          const dcChanged = dcLiveText !== null && dcLiveText !== String(vm.patient.forDischargeSummary || '');
+          const operationalPatch = {};
+          if (dr) operationalPatch.dischargeReadiness = dr;
+          if (dcChanged) operationalPatch.forDischargeSummary = dcLiveText;
+          if (Object.keys(operationalPatch).length) {
+            if (dr) ops.setDischargeReadiness(vm.patient.id, dr);
             // Wait for timeline write to land before patching operational,
             // so the patch sees the timeline entry in its loaded snapshot.
             timelinePromise
               .catch(function () {})
               .then(function () {
-                persistPatientPatchToJson(vm.patient.id, { operational: { dischargeReadiness: dr } });
+                persistPatientPatchToJson(vm.patient.id, { operational: operationalPatch });
               });
           }
           // If round active, mark this patient as Discussed and try to auto-advance
