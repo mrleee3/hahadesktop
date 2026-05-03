@@ -2577,7 +2577,7 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-board-members-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--desk-text-muted);
 }
@@ -2665,14 +2665,14 @@ body.hah-ws-connecting .hah-ws-dot {
 .hah-composer-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
 .hah-cform-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .hah-cform-label {
@@ -2700,19 +2700,23 @@ body.hah-ws-connecting .hah-ws-dot {
 .hah-cform-checkbox-row {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  font-size: 12px;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 4px 2px 4px 4px;
+  font-size: 12.5px;
   color: var(--desk-text-muted);
   cursor: pointer;
   user-select: none;
+  border-radius: 6px;
+  transition: background 120ms ease, color 120ms ease;
 }
 .hah-cform-checkbox-row:hover {
   color: var(--desk-text);
+  background: rgba(15,23,42,0.03);
 }
 .hah-cform-checkbox {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   margin: 0;
   cursor: pointer;
   accent-color: var(--desk-accent, #2f6fed);
@@ -2751,7 +2755,7 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-plan-presets-label {
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--desk-text-muted);
 }
@@ -3015,24 +3019,23 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-dchip {
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 20px;
-  border: 1px solid rgba(25,45,72,0.14);
-  background: rgba(255,255,255,0.85);
-  font-size: 11px;
-  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: rgba(255,255,255,0.75);
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--desk-text-muted);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all 120ms ease;
+  transition: all 140ms ease;
 }
 
 .hah-dchip:hover {
-  border-color: rgba(47,111,237,0.3);
-  color: rgba(47,111,237,0.9);
-  background: rgba(47,111,237,0.06);
+  border-color: rgba(25,45,72,0.2);
+  color: var(--desk-text);
+  background: rgba(255,255,255,0.95);
 }
 
 .hah-dchip-ready:hover,
@@ -6707,9 +6710,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_141_label_size_more_release.html',
-  source: 'hospital_at_home_board_v0_8_141_label_size_more_source.zip',
-  builtAt: '2026-05-03T22:29:48.061735',
+  filename: 'hospital_at_home_board_v0_8_142_composer_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_142_composer_polish_source.zip',
+  builtAt: '2026-05-03T22:36:23.710302',
   entry: 'desktop.html'
 };
 </script>
