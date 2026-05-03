@@ -6589,9 +6589,9 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_125_composer_principle_release.html',
-  source: 'hospital_at_home_board_v0_8_125_composer_principle_source.zip',
-  builtAt: '2026-05-03T19:44:50.623519',
+  filename: 'hospital_at_home_board_v0_8_126_flatpickr_clear_release.html',
+  source: 'hospital_at_home_board_v0_8_126_flatpickr_clear_source.zip',
+  builtAt: '2026-05-03T20:15:46.281886',
   entry: 'desktop.html'
 };
 </script>
@@ -14629,6 +14629,15 @@ window.HAHBoard = window.HAHBoard || {};
     function set(id, v, pulledValue) {
       const el = document.getElementById(id);
       if (!el || v === undefined || v === null) return;
+      // Special case for the flatpickr-wrapped date input — its visible
+      // altInput is separate from the underlying input, so setting
+      // .value alone leaves the displayed date out of sync. The flatpickr
+      // setDate / clear API updates both.
+      if (el._flatpickr && typeof el._flatpickr.setDate === 'function') {
+        if (String(v) === '') el._flatpickr.clear();
+        else el._flatpickr.setDate(String(v), false); // false = don't fire onChange
+        return;
+      }
       // Honour empty values from the draft. The previous behaviour of
       // silently skipping empties left pulled content in place, which
       // broke both the Clear button (clearing the draft would re-render
@@ -14679,8 +14688,27 @@ window.HAHBoard = window.HAHBoard || {};
     });
     const readyChip = document.getElementById('cform-ready-chip');
     if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active', 'is-locked'); readyChip.disabled = false; }
+    const todayChip = document.getElementById('cform-chip-today');
+    if (todayChip) { todayChip.dataset.active = 'false'; todayChip.classList.remove('is-active'); }
+    const tomorrowChip = document.getElementById('cform-chip-tomorrow');
+    if (tomorrowChip) { tomorrowChip.dataset.active = 'false'; tomorrowChip.classList.remove('is-active'); }
     const dateInput = document.getElementById('cform-discharge-date');
-    if (dateInput) { dateInput.value = ''; dateInput.disabled = false; dateInput.classList.remove('is-locked'); }
+    if (dateInput) {
+      // The date input is wrapped by flatpickr, which creates an "altInput"
+      // displaying the formatted date (e.g. "Mon 4 May 2026") alongside the
+      // hidden underlying input. Setting input.value = '' only clears the
+      // underlying input; the altInput keeps its display value, the calendar
+      // popup keeps the selected date, and refreshPreview reads the stale
+      // value back via val('cform-discharge-date'). Use the flatpickr API
+      // (parked on the element as ._flatpickr) to clear both.
+      if (dateInput._flatpickr && typeof dateInput._flatpickr.clear === 'function') {
+        dateInput._flatpickr.clear();
+      } else {
+        dateInput.value = '';
+      }
+      dateInput.disabled = false;
+      dateInput.classList.remove('is-locked');
+    }
   }
 
   function showToast(pane, text) {
