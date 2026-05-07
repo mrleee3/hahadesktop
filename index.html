@@ -7024,9 +7024,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_147_medchg_polish_release.html',
-  source: 'hospital_at_home_board_v0_8_147_medchg_polish_source.zip',
-  builtAt: '2026-05-07T20:49:34.165764',
+  filename: 'hospital_at_home_board_v0_8_148_composer_autosave_race_release.html',
+  source: 'hospital_at_home_board_v0_8_148_composer_autosave_race_source.zip',
+  builtAt: '2026-05-07T21:14:25.502648',
   entry: 'desktop.html'
 };
 </script>
@@ -12682,6 +12682,71 @@ window.HAHBoard = window.HAHBoard || {};
     { key: 'other',       label: 'Other'        }
   ];
 
+  // ─── v0.8.148: composer autosave race fix ────────────────────────────────
+  //
+  // BACKGROUND: Composer field changes schedule a 1.4s debounced
+  // saveDraft. The timer captures vm.patient.id in its closure but reads
+  // collectComposerFields(type) from the LIVE DOM at fire time. When a
+  // user switches patients before the timer fires, the captured id and
+  // the live DOM no longer agree — saveDraft writes the new patient's
+  // DOM content into the old patient's draft key. Repeated rapid
+  // patient-switching while typing accumulated dozens of cross-
+  // contaminated drafts in localStorage (verified in the wild via
+  // diagnostic snippet 2026-05-07).
+  //
+  // FIX:
+  //   (a) Lift saveTimer to module scope. Before any new render attaches
+  //       its own listeners, cancel the previous render's pending timer.
+  //       Single source of truth — no concurrent timers can survive a
+  //       patient switch.
+  //   (b) Defense in depth at fire time: verify the patient hasn't
+  //       changed since the timer was scheduled. If it has, skip the
+  //       save. Catches any timer the cancel in (a) missed (different
+  //       code paths, async race, etc).
+  //
+  // CLEANUP: drafts already corrupted in localStorage when this build
+  // installs are not recoverable — there's no way to know which content
+  // originally belonged to which patient. They get cleared once on
+  // first load of v0.8.148+ via cleanupCorruptedDrafts(). Flagged so it
+  // doesn't repeat on subsequent loads.
+  let pendingSaveTimer = null;
+  function cancelPendingSaveTimer() {
+    if (pendingSaveTimer) { clearTimeout(pendingSaveTimer); pendingSaveTimer = null; }
+  }
+  function guardedSaveDraft(capturedPatientId, type, pane) {
+    // At fire time, verify the patient hasn't changed since this timer
+    // was scheduled. If it has, the live DOM contains the new patient's
+    // content — saving with the captured id would corrupt the old
+    // patient's draft.
+    try {
+      const currentState = store.getState();
+      const currentVm = d.buildPatientWorkspaceModel(currentState);
+      if (!currentVm || String(currentVm.patient.id) !== String(capturedPatientId)) {
+        return; // patient changed; skip
+      }
+      saveDraft(capturedPatientId, type, collectComposerFields(type));
+      if (pane && typeof showAutosaveIndicator === 'function') showAutosaveIndicator(pane);
+    } catch (_) { /* swallow — autosave failures shouldn't surface */ }
+  }
+  // One-time cleanup of corrupted drafts. Runs on module load if the
+  // flag isn't set. Counts and logs what it cleared so future debugging
+  // has a record.
+  const DRAFT_CLEANUP_FLAG_KEY = 'hah_draft_cleanup_v0_8_148_applied';
+  function cleanupCorruptedDrafts() {
+    try {
+      if (localStorage.getItem(DRAFT_CLEANUP_FLAG_KEY)) return;
+      const draftKeys = Object.keys(localStorage).filter(k => k.startsWith('hah_draft:'));
+      draftKeys.forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+      localStorage.setItem(DRAFT_CLEANUP_FLAG_KEY, new Date().toISOString());
+      if (draftKeys.length > 0) {
+        // Quiet console note. Not surfaced in UI — this is one-shot.
+        console.log('[H@H Board v0.8.148] Cleaned up ' + draftKeys.length + ' composer drafts that may have been cross-contaminated by a pre-v0.8.148 autosave race. See changelog for details.');
+      }
+    } catch (_) {}
+  }
+  cleanupCorruptedDrafts();
+  // ─── end v0.8.148 fix ────────────────────────────────────────────────────
+
   const BOARD_STATUS_CYCLE = ['Not discussed', 'In discussion', 'Discussed', 'Actioned', 'Deferred'];
   const DISCHARGE_CYCLE    = ['Not ready', 'Possible today', 'Likely tomorrow', 'Ready'];
   const DRAFT_PREFIX       = 'hah_draft:';
@@ -15358,7 +15423,13 @@ window.HAHBoard = window.HAHBoard || {};
       }
     });
 
-    let saveTimer = null;
+    // v0.8.148: cancel any pending timer from a previous render before
+    // attaching fresh listeners. Without this, a debounced save scheduled
+    // before patient switch could fire after the new patient's render
+    // and write the new DOM into the old patient's draft. See module
+    // header comment for full failure mode.
+    cancelPendingSaveTimer();
+    const capturedPatientId = vm.patient.id;
     pane.querySelectorAll('.hah-cform-textarea').forEach((ta) => {
       // All composer textareas — including discharge summary — autosave
       // to the encounter draft, NOT to the patient JSON. The patient JSON
@@ -15371,11 +15442,8 @@ window.HAHBoard = window.HAHBoard || {};
       ta.addEventListener('input', () => {
         autoExpand(ta);
         refreshPreview(vm, type);
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          saveDraft(vm.patient.id, type, collectComposerFields(type));
-          showAutosaveIndicator(pane);
-        }, 1400);
+        cancelPendingSaveTimer();
+        pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
       });
     });
 
@@ -15386,11 +15454,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (includePrevBloodsCb) {
       includePrevBloodsCb.addEventListener('change', () => {
         refreshPreview(vm, type);
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          saveDraft(vm.patient.id, type, collectComposerFields(type));
-          showAutosaveIndicator(pane);
-        }, 1400);
+        cancelPendingSaveTimer();
+        pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
       });
     }
 
@@ -15410,8 +15475,8 @@ window.HAHBoard = window.HAHBoard || {};
           const tc = pane.querySelector('#cform-chip-today'), tm = pane.querySelector('#cform-chip-tomorrow');
           [tc, tm].forEach((c) => { if (c) { c.dataset.active = 'false'; c.classList.remove('is-active'); } });
           refreshPreview(vm, type);
-          clearTimeout(saveTimer);
-          saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+          cancelPendingSaveTimer();
+          pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
         }
       });
 
@@ -15437,8 +15502,8 @@ window.HAHBoard = window.HAHBoard || {};
       dischargeDateInput.addEventListener('change', () => {
         if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
         refreshPreview(vm, type);
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+        cancelPendingSaveTimer();
+        pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
       });
     }
     pane.querySelectorAll('[data-discharge-quick]').forEach((chip) => {
@@ -15472,8 +15537,8 @@ window.HAHBoard = window.HAHBoard || {};
           if (!nowActive) setDate('');
         }
         refreshPreview(vm, type);
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+        cancelPendingSaveTimer();
+        pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
       });
     });
 
@@ -15484,8 +15549,8 @@ window.HAHBoard = window.HAHBoard || {};
         chip.dataset.active = wasActive ? 'false' : 'true';
         chip.classList.toggle('is-active', !wasActive);
         refreshPreview(vm, type);
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => { saveDraft(vm.patient.id, type, collectComposerFields(type)); showAutosaveIndicator(pane); }, 1400);
+        cancelPendingSaveTimer();
+        pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
       });
     });
 
