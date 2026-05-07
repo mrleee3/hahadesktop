@@ -5101,6 +5101,285 @@ button.hah-pt-flag:active {
   width: min(520px, calc(100vw - 32px));
 }
 
+/* ─── Medication changes card (v0.8.145) ─────────────────────────────────
+   Logs discrete medication transitions during admission (start/stop/
+   adjust/hold/resume). One line per change with a coloured chip,
+   inline composer for adding/editing, edit pencil per row.
+   Harmonised with .hah-ref-widget styling family. */
+
+.hah-medchg-card {
+  background: rgba(255,255,255,0.88);
+  border: 1px solid var(--desk-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hah-medchg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.hah-medchg-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--desk-text);
+  flex: 0 0 auto;
+}
+
+.hah-medchg-count {
+  font-size: 10px;
+  color: var(--desk-text-muted);
+  flex: 0 0 auto;
+}
+
+.hah-medchg-add-btn {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(10,132,255,.20);
+  background: #e8f1ff;
+  color: #0a84ff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.hah-medchg-add-btn:hover { background: #d6e7ff; }
+.hah-medchg-add-btn:active { background: #c4dcff; }
+
+.hah-medchg-empty {
+  padding: 12px 14px;
+  font-size: 11px;
+  color: var(--desk-text-muted);
+  font-style: italic;
+}
+
+.hah-medchg-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.hah-medchg-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--desk-border);
+  font-size: 12px;
+  line-height: 1.3;
+}
+.hah-medchg-row:last-child { border-bottom: none; }
+.hah-medchg-row.is-editing {
+  background: rgba(10,132,255,0.06);
+}
+
+.hah-medchg-chip {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.hah-medchg-chip.is-start  { background: #e6f7ec; color: #1a7f37; }
+.hah-medchg-chip.is-stop   { background: #fde7e9; color: #b42318; }
+.hah-medchg-chip.is-adjust { background: #fff4e0; color: #b54708; }
+.hah-medchg-chip.is-hold   { background: #f1f3f5; color: #4b5563; }
+.hah-medchg-chip.is-resume { background: #e0eefc; color: #0a5fa8; }
+
+.hah-medchg-drug {
+  flex: 0 1 auto;
+  font-weight: 600;
+  color: var(--desk-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hah-medchg-transition {
+  flex: 0 1 auto;
+  color: var(--desk-text);
+  white-space: nowrap;
+}
+.hah-medchg-arrow {
+  color: var(--desk-text-muted);
+  font-weight: 400;
+  padding: 0 2px;
+}
+
+.hah-medchg-reason {
+  flex: 1 1 auto;
+  color: var(--desk-text-muted);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.hah-medchg-date {
+  flex: 0 0 auto;
+  color: var(--desk-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.hah-medchg-sep {
+  color: rgba(15,23,42,.22);
+  flex: 0 0 auto;
+  font-size: 10px;
+  user-select: none;
+}
+
+.hah-medchg-edit-btn {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--desk-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.hah-medchg-edit-btn:hover {
+  background: rgba(10,132,255,0.10);
+  color: #0a84ff;
+  border-color: rgba(10,132,255,.16);
+}
+
+/* Composer — inline form for new/edit. Sits between header and list when
+   open. */
+.hah-medchg-composer {
+  padding: 10px 12px;
+  background: rgba(10,132,255,0.04);
+  border-bottom: 1px solid rgba(10,132,255,.10);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hah-medchg-comp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hah-medchg-comp-label {
+  flex: 0 0 60px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--desk-text-muted);
+}
+
+.hah-medchg-comp-input {
+  flex: 1 1 auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--desk-border);
+  background: #fff;
+  color: var(--desk-text);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.hah-medchg-comp-input:focus {
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 3px rgba(10,132,255,0.16);
+}
+
+/* Change-type radio group: hide the actual radio, style the chip label. */
+.hah-medchg-radio-group {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.hah-medchg-radio {
+  display: inline-flex;
+  cursor: pointer;
+}
+.hah-medchg-radio input[type="radio"] {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.hah-medchg-radio-chip {
+  padding: 3px 9px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  background: rgba(0,0,0,0.04);
+  color: var(--desk-text-muted);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.hah-medchg-radio:hover .hah-medchg-radio-chip {
+  background: rgba(10,132,255,0.06);
+  color: var(--desk-text);
+}
+/* Active state (the selected radio): full chip color matching the entry chip palette. */
+.hah-medchg-radio.is-active .hah-medchg-radio-chip.is-start  { background: #e6f7ec; color: #1a7f37; border-color: rgba(26,127,55,.20); }
+.hah-medchg-radio.is-active .hah-medchg-radio-chip.is-stop   { background: #fde7e9; color: #b42318; border-color: rgba(180,35,24,.20); }
+.hah-medchg-radio.is-active .hah-medchg-radio-chip.is-adjust { background: #fff4e0; color: #b54708; border-color: rgba(181,71,8,.20); }
+.hah-medchg-radio.is-active .hah-medchg-radio-chip.is-hold   { background: #f1f3f5; color: #4b5563; border-color: rgba(75,85,99,.20); }
+.hah-medchg-radio.is-active .hah-medchg-radio-chip.is-resume { background: #e0eefc; color: #0a5fa8; border-color: rgba(10,95,168,.20); }
+
+.hah-medchg-comp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.hah-medchg-comp-btn {
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--desk-border);
+  background: #fff;
+  color: var(--desk-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.hah-medchg-comp-btn.is-cancel:hover {
+  background: rgba(0,0,0,0.04);
+}
+.hah-medchg-comp-btn.is-save {
+  background: #0a84ff;
+  color: #fff;
+  border-color: #0a84ff;
+}
+.hah-medchg-comp-btn.is-save:hover {
+  background: #006edc;
+  border-color: #006edc;
+}
+.hah-medchg-comp-btn.is-save:active {
+  background: #005bb8;
+}
+/* ─── End of medication changes card ─────────────────────────────────── */
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -6717,9 +6996,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_144_chip_label_refine_release.html',
-  source: 'hospital_at_home_board_v0_8_144_chip_label_refine_source.zip',
-  builtAt: '2026-05-03T22:49:36.599668',
+  filename: 'hospital_at_home_board_v0_8_145_medication_changes_card_release.html',
+  source: 'hospital_at_home_board_v0_8_145_medication_changes_card_source.zip',
+  builtAt: '2026-05-07T20:19:31.615014',
   entry: 'desktop.html'
 };
 </script>
@@ -9425,6 +9704,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (raw === 'mobile_clinical_review' || raw === 'mobileclinicalreview' || raw === 'mobile_clinical_update' || raw === 'mobileclinicalupdate') return 'mobile_clinical_review';
     if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
     if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
+    // v0.8.145: medication_change entries persist via the same path.
+    if (raw === 'medication_change' || raw === 'medicationchange' || raw === 'med_change' || raw === 'medchange') return 'medication_change';
     return 'other';
   }
 
@@ -12472,6 +12753,8 @@ window.HAHBoard = window.HAHBoard || {};
     if (raw === 'mobile_clinical_review' || raw === 'mobileclinicalreview' || raw === 'mobile_clinical_update' || raw === 'mobileclinicalupdate') return 'mobile_clinical_review';
     if (raw === 'micro_mdm' || raw === 'micromdm' || raw === 'micro') return 'micro_mdm';
     if (raw === 'resp_mdm' || raw === 'respiratory_mdm' || raw === 'respmdm' || raw === 'resp') return 'resp_mdm';
+    // v0.8.145: medication_change entries logged via the new card.
+    if (raw === 'medication_change' || raw === 'medicationchange' || raw === 'med_change' || raw === 'medchange') return 'medication_change';
     return 'other';
   }
 
@@ -13006,7 +13289,7 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   const WS_LAYOUT_KEY = 'hah_ws_layout';
-  const WS_DEFAULT_LAYOUT = { left: ['board_round', 'mdm_pair'], right: ['acp', 'bloods', 'medications'] };
+  const WS_DEFAULT_LAYOUT = { left: ['board_round', 'mdm_pair'], right: ['acp', 'bloods', 'medications', 'medication_changes'] };
 
   function getWsLayout() {
     try {
@@ -13045,6 +13328,12 @@ window.HAHBoard = window.HAHBoard || {};
     const microMdms   = encounters.filter((e) => e.type === 'micro_mdm');
     const respMdms    = encounters.filter((e) => e.type === 'resp_mdm');
     const otherEncs   = encounters.filter((e) => e.type === 'other');
+    // v0.8.145: medication_change entries are timeline events shown only
+    // in the dedicated medication-changes card. Filter them out from the
+    // generic encounter buckets above (they wouldn't have matched any of
+    // those filters anyway, but listing the filter explicitly here makes
+    // the code's intent clear when reading top-down).
+    const medChanges  = encounters.filter((e) => e.type === 'medication_change');
 
     const layout = getWsLayout();
 
@@ -13073,6 +13362,10 @@ window.HAHBoard = window.HAHBoard || {};
           return `<div class="hah-ws-section" data-section="medications" draggable="true">
             ${renderMedsWidget(vm)}
             ${otherEncs.length ? renderOtherWidget(otherEncs) : ''}
+          </div>`;
+        case 'medication_changes':
+          return `<div class="hah-ws-section" data-section="medication_changes" draggable="true">
+            ${renderMedicationChangesCard(vm, state, medChanges)}
           </div>`;
         default: return '';
       }
@@ -13469,6 +13762,179 @@ window.HAHBoard = window.HAHBoard || {};
       ).join('')}</div>
     </div>`;
   }
+
+  // ─── Medication changes card (v0.8.145) ────────────────────────────────
+  // Tracks discrete medication transitions during admission as
+  // medication_change timeline entries. See JSON_SCHEMA.md for the full
+  // entry shape. UI is intentionally compact: one line per change with
+  // a coloured chip (Started/Stopped/Adjusted/Held/Resumed), drug name,
+  // transition string, optional reason, date, and edit pencil.
+
+  const MED_CHANGE_TYPES = [
+    { key: 'start',   verb: 'Started',  cls: 'is-start',   needsFrom: false, needsTo: true  },
+    { key: 'stop',    verb: 'Stopped',  cls: 'is-stop',    needsFrom: false, needsTo: false },
+    { key: 'adjust',  verb: 'Adjusted', cls: 'is-adjust',  needsFrom: true,  needsTo: true  },
+    { key: 'hold',    verb: 'Held',     cls: 'is-hold',    needsFrom: false, needsTo: false },
+    { key: 'resume',  verb: 'Resumed',  cls: 'is-resume',  needsFrom: false, needsTo: false }
+  ];
+  function getMedChangeTypeMeta(key) {
+    return MED_CHANGE_TYPES.find((t) => t.key === key) || MED_CHANGE_TYPES[0];
+  }
+  // Format the transition string for an entry. 'start' → toValue alone.
+  // 'adjust' → "from → to". 'stop'/'hold' → faded "(stopped)"/"(held)".
+  // 'resume' → just the verb is enough; show toValue if provided.
+  function formatMedChangeTransition(fields) {
+    const meta = getMedChangeTypeMeta(fields.changeType);
+    const from = String(fields.fromValue || '').trim();
+    const to   = String(fields.toValue   || '').trim();
+    if (meta.key === 'adjust' && from && to) return `${c.escapeHtml(from)} <span class="hah-medchg-arrow">→</span> ${c.escapeHtml(to)}`;
+    if (meta.key === 'adjust' && to) return c.escapeHtml(to);
+    if (meta.key === 'start'  && to) return c.escapeHtml(to);
+    if (meta.key === 'resume' && to) return c.escapeHtml(to);
+    return '';
+  }
+  // Date label for a med change. Today / Yesterday / "5 May".
+  function formatMedChangeDate(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '';
+      const now = new Date();
+      const isSameDay = (a, b) =>
+        a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+      if (isSameDay(d, now)) return 'Today';
+      if (isSameDay(d, yesterday)) return 'Yesterday';
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch (_) { return ''; }
+  }
+  // Default composer state shape.
+  function defaultMedChangeComposer() {
+    return {
+      open: false,
+      editingId: null,
+      drug: '',
+      changeType: 'start',
+      fromValue: '',
+      toValue: '',
+      reason: ''
+    };
+  }
+  function getMedChangeComposer(state) {
+    const cur = state && state.patient && state.patient.medChangeComposer;
+    if (cur && typeof cur === 'object') {
+      // Merge with defaults to handle partially-stored state
+      return Object.assign(defaultMedChangeComposer(), cur);
+    }
+    return defaultMedChangeComposer();
+  }
+
+  function renderMedicationChangesCard(vm, state, changes) {
+    const composer = getMedChangeComposer(state);
+    const headerCount = changes.length
+      ? `<span class="hah-medchg-count">${changes.length}</span>`
+      : '';
+    const addBtn = composer.open
+      ? '' // hide add button while composer is open
+      : `<button type="button" class="hah-medchg-add-btn" data-patient-action="medchg-open-add" title="Log a new medication change">+ Add</button>`;
+
+    const composerHtml = composer.open ? renderMedChangeComposer(composer) : '';
+
+    const listHtml = changes.length
+      ? `<div class="hah-medchg-list">${changes.map((entry) => renderMedChangeRow(entry, composer)).join('')}</div>`
+      : (composer.open ? '' : `<div class="hah-medchg-empty">No medication changes logged yet during this admission.</div>`);
+
+    return `<div class="hah-medchg-card">
+      <div class="hah-medchg-head">
+        <span class="hah-medchg-title">Medication changes</span>
+        ${headerCount}
+        ${addBtn}
+      </div>
+      ${composerHtml}
+      ${listHtml}
+    </div>`;
+  }
+
+  function renderMedChangeRow(entry, composer) {
+    const f = entry.fields || {};
+    const meta = getMedChangeTypeMeta(f.changeType);
+    const transition = formatMedChangeTransition(f);
+    const reason = String(f.reason || '').trim();
+    const dateLabel = formatMedChangeDate(entry.timestamp);
+    const drug = c.escapeHtml(String(f.drug || '').trim() || '—');
+    const isEditing = composer.open && composer.editingId === entry.id;
+    const rowClass = isEditing ? 'hah-medchg-row is-editing' : 'hah-medchg-row';
+
+    // Build inline parts. Use `·` as the separator between groups so the
+    // row reads as a single fluent line. Reason / date / etc are dropped
+    // gracefully when empty.
+    const parts = [];
+    parts.push(`<span class="hah-medchg-chip ${meta.cls}">${meta.verb}</span>`);
+    parts.push(`<span class="hah-medchg-drug">${drug}</span>`);
+    if (transition) parts.push(`<span class="hah-medchg-transition">${transition}</span>`);
+    if (reason)     parts.push(`<span class="hah-medchg-reason">${c.escapeHtml(reason)}</span>`);
+    if (dateLabel)  parts.push(`<span class="hah-medchg-date">${c.escapeHtml(dateLabel)}</span>`);
+    const editBtn = `<button type="button" class="hah-medchg-edit-btn" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" title="Edit this change" aria-label="Edit this medication change">✎</button>`;
+
+    return `<div class="${rowClass}">${parts.join('<span class="hah-medchg-sep" aria-hidden="true">·</span>')}${editBtn}</div>`;
+  }
+
+  function renderMedChangeComposer(composer) {
+    const isEdit = !!composer.editingId;
+    const meta = getMedChangeTypeMeta(composer.changeType);
+    const typeRadios = MED_CHANGE_TYPES.map((t) => {
+      const checked = composer.changeType === t.key ? 'checked' : '';
+      return `<label class="hah-medchg-radio ${composer.changeType === t.key ? 'is-active' : ''}">
+        <input type="radio" name="medchg-type" value="${t.key}" data-patient-action="medchg-set-type" data-type="${t.key}" ${checked}>
+        <span class="hah-medchg-radio-chip ${t.cls}">${t.verb}</span>
+      </label>`;
+    }).join('');
+
+    // Conditional from/to fields based on change type.
+    const showFrom = meta.needsFrom;
+    const showTo   = meta.needsTo;
+
+    return `<div class="hah-medchg-composer">
+      <div class="hah-medchg-comp-row">
+        <label class="hah-medchg-comp-label">Drug</label>
+        <input type="text" class="hah-medchg-comp-input" id="medChangeDrug"
+          placeholder="e.g. Apixaban"
+          value="${c.escapeHtml(composer.drug || '')}"
+          autocomplete="off">
+      </div>
+      <div class="hah-medchg-comp-row">
+        <label class="hah-medchg-comp-label">Change</label>
+        <div class="hah-medchg-radio-group">${typeRadios}</div>
+      </div>
+      ${showFrom ? `<div class="hah-medchg-comp-row">
+        <label class="hah-medchg-comp-label">From</label>
+        <input type="text" class="hah-medchg-comp-input" id="medChangeFromValue"
+          placeholder="e.g. 5mg OD"
+          value="${c.escapeHtml(composer.fromValue || '')}"
+          autocomplete="off">
+      </div>` : ''}
+      ${showTo ? `<div class="hah-medchg-comp-row">
+        <label class="hah-medchg-comp-label">${meta.key === 'start' ? 'Dose' : 'To'}</label>
+        <input type="text" class="hah-medchg-comp-input" id="medChangeToValue"
+          placeholder="e.g. ${meta.key === 'start' ? '5mg BD' : '10mg OD'}"
+          value="${c.escapeHtml(composer.toValue || '')}"
+          autocomplete="off">
+      </div>` : ''}
+      <div class="hah-medchg-comp-row">
+        <label class="hah-medchg-comp-label">Reason</label>
+        <input type="text" class="hah-medchg-comp-input" id="medChangeReason"
+          placeholder="optional"
+          value="${c.escapeHtml(composer.reason || '')}"
+          autocomplete="off">
+      </div>
+      <div class="hah-medchg-comp-actions">
+        <button type="button" class="hah-medchg-comp-btn is-cancel" data-patient-action="medchg-cancel">Cancel</button>
+        <button type="button" class="hah-medchg-comp-btn is-save" data-patient-action="medchg-save">${isEdit ? 'Update' : 'Save'}</button>
+      </div>
+    </div>`;
+  }
+
+  // ─── End of medication changes card ──────────────────────────────────
 
   // Each analyte: key, label, aliases (for regex), unit, range, flag fn, fullName, notes
   // Regex is built dynamically: \b(?:alias1|alias2|...)\s+VALUE
@@ -15815,6 +16281,118 @@ window.HAHBoard = window.HAHBoard || {};
       }
       return true;
     }
+
+    // ─── Medication changes card actions (v0.8.145) ───────────────────
+    if (action === 'medchg-open-add' && vm) {
+      // Open the composer in "new entry" mode with default values.
+      store.setState({ patient: { medChangeComposer: Object.assign(defaultMedChangeComposer(), { open: true, editingId: null }) } });
+      // Focus the drug input on next paint
+      setTimeout(() => { const el = document.getElementById('medChangeDrug'); if (el) el.focus(); }, 0);
+      return true;
+    }
+    if (action === 'medchg-edit' && vm) {
+      const encId = target.getAttribute('data-entry-id');
+      if (!encId) return false;
+      const encounters = getPatientEncounterRows(vm.patient) || [];
+      const enc = encounters.find((e) => e.id === encId);
+      if (!enc) return false;
+      const f = enc.fields || {};
+      store.setState({
+        patient: {
+          medChangeComposer: {
+            open: true,
+            editingId: encId,
+            drug: String(f.drug || ''),
+            changeType: String(f.changeType || 'start'),
+            fromValue: String(f.fromValue || ''),
+            toValue: String(f.toValue || ''),
+            reason: String(f.reason || '')
+          }
+        }
+      });
+      setTimeout(() => { const el = document.getElementById('medChangeDrug'); if (el) el.focus(); }, 0);
+      return true;
+    }
+    if (action === 'medchg-set-type' && vm) {
+      const t = target.getAttribute('data-type');
+      if (!t) return false;
+      const cur = getMedChangeComposer(state);
+      // Preserve typed-but-not-yet-saved values from the DOM when switching
+      // types. We don't track input changes in the store (would steal focus
+      // on re-render), so we read live values here before the re-render.
+      const drugEl   = document.getElementById('medChangeDrug');
+      const fromEl   = document.getElementById('medChangeFromValue');
+      const toEl     = document.getElementById('medChangeToValue');
+      const reasonEl = document.getElementById('medChangeReason');
+      const liveDrug   = drugEl   ? String(drugEl.value   || '') : cur.drug;
+      const liveFrom   = fromEl   ? String(fromEl.value   || '') : cur.fromValue;
+      const liveTo     = toEl     ? String(toEl.value     || '') : cur.toValue;
+      const liveReason = reasonEl ? String(reasonEl.value || '') : cur.reason;
+      const meta = getMedChangeTypeMeta(t);
+      const next = {
+        open: cur.open,
+        editingId: cur.editingId,
+        drug: liveDrug,
+        changeType: t,
+        fromValue: meta.needsFrom ? liveFrom : '',
+        toValue:   meta.needsTo   ? liveTo   : '',
+        reason: liveReason
+      };
+      store.setState({ patient: { medChangeComposer: next } });
+      return true;
+    }
+    if (action === 'medchg-cancel' && vm) {
+      store.setState({ patient: { medChangeComposer: defaultMedChangeComposer() } });
+      return true;
+    }
+    if (action === 'medchg-save' && vm && ops) {
+      // Collect from DOM directly — input events don't update store, so
+      // the store's composer state may be stale for fields the user typed
+      // into. The DOM is the source of truth at save time.
+      const drugEl       = document.getElementById('medChangeDrug');
+      const fromEl       = document.getElementById('medChangeFromValue');
+      const toEl         = document.getElementById('medChangeToValue');
+      const reasonEl     = document.getElementById('medChangeReason');
+      const composerCur  = getMedChangeComposer(state);
+      const drug         = drugEl   ? String(drugEl.value   || '').trim() : '';
+      const fromValue    = fromEl   ? String(fromEl.value   || '').trim() : '';
+      const toValue      = toEl     ? String(toEl.value     || '').trim() : '';
+      const reason       = reasonEl ? String(reasonEl.value || '').trim() : '';
+      const changeType   = composerCur.changeType || 'start';
+      // Validation: drug is required. Other fields are optional —
+      // typeMeta.needsTo is enforced via UI (the field shows/hides) but
+      // we don't reject if missing; clinician may want to log "started X"
+      // without yet knowing the dose.
+      if (!drug) {
+        window.alert('Please enter a drug name.');
+        if (drugEl) drugEl.focus();
+        return true;
+      }
+      const fields = { drug, changeType, fromValue, toValue, reason };
+      const editingId = composerCur.editingId || null;
+      let savedEncounter = null;
+      if (editingId) {
+        savedEncounter = ops.updateEncounter(editingId, fields) || null;
+        // If updateEncounter doesn't carry through the type, ensure it stays medication_change.
+        if (savedEncounter && savedEncounter.type !== 'medication_change') {
+          savedEncounter.type = 'medication_change';
+        }
+      } else {
+        savedEncounter = ops.createEncounter({ patientId: vm.patient.id, type: 'medication_change', fields }) || null;
+      }
+      if (savedEncounter) {
+        persistEncounterToJson(vm.patient, savedEncounter)
+          .catch((err) => {
+            console.error('[H@H medication change] Could not persist to JSON', err);
+            window.alert('Could not save medication change. Please try again.');
+          });
+      }
+      // Close composer regardless of save success — failure is logged
+      // and surfaced via alert; user can re-add if needed.
+      store.setState({ patient: { medChangeComposer: defaultMedChangeComposer() } });
+      return true;
+    }
+    // ─── End of medication changes card actions ───────────────────────
 
     if (action === 'edit-encounter' && vm && ops) {
       const encId = target.getAttribute('data-encounter-id');
