@@ -5171,37 +5171,47 @@ button.hah-pt-flag:active {
 
 .hah-medchg-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--desk-border);
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.4;
+  position: relative;
 }
 .hah-medchg-row:last-child { border-bottom: none; }
 .hah-medchg-row.is-editing {
   background: rgba(10,132,255,0.06);
 }
-
-.hah-medchg-chip {
-  flex: 0 0 auto;
-  padding: 2px 8px;
-  border-radius: 9px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  line-height: 1.4;
+/* v0.8.147: hover background for click affordance — shows the row is
+ * interactive even though the click target is the pencil. */
+.hah-medchg-row:not(.is-editing):hover {
+  background: rgba(0,0,0,0.025);
 }
-.hah-medchg-chip.is-start  { background: #e6f7ec; color: #1a7f37; }
-.hah-medchg-chip.is-stop   { background: #fde7e9; color: #b42318; }
-.hah-medchg-chip.is-adjust { background: #fff4e0; color: #b54708; }
-.hah-medchg-chip.is-hold   { background: #f1f3f5; color: #4b5563; }
-.hah-medchg-chip.is-resume { background: #e0eefc; color: #0a5fa8; }
 
+/* v0.8.147: verb is now coloured text, no chip background. Same five
+ * is-* classes from the chip era — colour palette deliberately matches
+ * the radio-chip palette in the composer so the active radio "Started"
+ * reads as the same green as the row's "Started" verb. */
+.hah-medchg-verb {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 11.5px;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+.hah-medchg-verb.is-start  { color: #1a7f37; }
+.hah-medchg-verb.is-stop   { color: #b42318; }
+.hah-medchg-verb.is-adjust { color: #b54708; }
+.hah-medchg-verb.is-hold   { color: #4b5563; }
+.hah-medchg-verb.is-resume { color: #0a5fa8; }
+
+/* v0.8.147: drug name now takes flex priority. Truncates only when the
+ * row genuinely runs out of space. min-width:0 needed so the flex item
+ * can actually shrink below its content's intrinsic width. */
 .hah-medchg-drug {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 600;
   color: var(--desk-text);
   white-space: nowrap;
@@ -5210,7 +5220,7 @@ button.hah-pt-flag:active {
 }
 
 .hah-medchg-transition {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   color: var(--desk-text);
   white-space: nowrap;
 }
@@ -5221,7 +5231,7 @@ button.hah-pt-flag:active {
 }
 
 .hah-medchg-reason {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   color: var(--desk-text-muted);
   font-style: italic;
   white-space: nowrap;
@@ -5233,17 +5243,14 @@ button.hah-pt-flag:active {
 .hah-medchg-date {
   flex: 0 0 auto;
   color: var(--desk-text-muted);
-  font-size: 11px;
+  font-size: 10.5px;
   white-space: nowrap;
 }
 
-.hah-medchg-sep {
-  color: rgba(15,23,42,.22);
-  flex: 0 0 auto;
-  font-size: 10px;
-  user-select: none;
-}
-
+/* v0.8.147: edit pencil hover-reveal. Stays visible while the row is
+ * being edited so the binding to the composer is obvious. Pencil
+ * occupies fixed space at the right via flex: 0 0 auto, but its
+ * opacity transitions in/out — so layout doesn't shift on hover. */
 .hah-medchg-edit-btn {
   flex: 0 0 auto;
   width: 22px;
@@ -5258,12 +5265,27 @@ button.hah-pt-flag:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+  opacity: 0;
+}
+.hah-medchg-row:hover .hah-medchg-edit-btn,
+.hah-medchg-row.is-editing .hah-medchg-edit-btn,
+.hah-medchg-edit-btn:focus-visible {
+  opacity: 1;
 }
 .hah-medchg-edit-btn:hover {
   background: rgba(10,132,255,0.10);
   color: #0a84ff;
   border-color: rgba(10,132,255,.16);
+}
+
+/* v0.8.147: quiet header hint shown when all entries are on the same
+ * day. Avoids "Today · Today · Today" repetition on individual rows. */
+.hah-medchg-day-hint {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--desk-text-muted);
+  font-style: italic;
 }
 
 /* Composer — inline form for new/edit. Sits between header and list when
@@ -7002,9 +7024,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_146_pane_scrollbar_gutter_release.html',
-  source: 'hospital_at_home_board_v0_8_146_pane_scrollbar_gutter_source.zip',
-  builtAt: '2026-05-07T20:34:18.302552',
+  filename: 'hospital_at_home_board_v0_8_147_medchg_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_147_medchg_polish_source.zip',
+  builtAt: '2026-05-07T20:49:34.165764',
   entry: 'desktop.html'
 };
 </script>
@@ -13837,8 +13859,31 @@ window.HAHBoard = window.HAHBoard || {};
 
   function renderMedicationChangesCard(vm, state, changes) {
     const composer = getMedChangeComposer(state);
+    // v0.8.147: detect single-day. If every entry shares the same local
+    // calendar date, suppress per-row date labels and surface a quiet
+    // header hint instead. Removes "Today · Today · Today" repetition.
+    let suppressDates = false;
+    let singleDayLabel = '';
+    if (changes.length >= 2) {
+      const dayKey = (iso) => {
+        try {
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return '';
+          return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        } catch (_) { return ''; }
+      };
+      const firstKey = dayKey(changes[0].timestamp);
+      if (firstKey && changes.every((e) => dayKey(e.timestamp) === firstKey)) {
+        suppressDates = true;
+        singleDayLabel = formatMedChangeDate(changes[0].timestamp);
+      }
+    }
+
     const headerCount = changes.length
       ? `<span class="hah-medchg-count">${changes.length}</span>`
+      : '';
+    const headerHint = suppressDates && singleDayLabel
+      ? `<span class="hah-medchg-day-hint">${c.escapeHtml('All ' + singleDayLabel.toLowerCase())}</span>`
       : '';
     const addBtn = composer.open
       ? '' // hide add button while composer is open
@@ -13847,13 +13892,14 @@ window.HAHBoard = window.HAHBoard || {};
     const composerHtml = composer.open ? renderMedChangeComposer(composer) : '';
 
     const listHtml = changes.length
-      ? `<div class="hah-medchg-list">${changes.map((entry) => renderMedChangeRow(entry, composer)).join('')}</div>`
+      ? `<div class="hah-medchg-list">${changes.map((entry) => renderMedChangeRow(entry, composer, { suppressDates })).join('')}</div>`
       : (composer.open ? '' : `<div class="hah-medchg-empty">No medication changes logged yet during this admission.</div>`);
 
     return `<div class="hah-medchg-card">
       <div class="hah-medchg-head">
         <span class="hah-medchg-title">Medication changes</span>
         ${headerCount}
+        ${headerHint}
         ${addBtn}
       </div>
       ${composerHtml}
@@ -13861,28 +13907,39 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
   }
 
-  function renderMedChangeRow(entry, composer) {
+  function renderMedChangeRow(entry, composer, opts) {
     const f = entry.fields || {};
     const meta = getMedChangeTypeMeta(f.changeType);
     const transition = formatMedChangeTransition(f);
     const reason = String(f.reason || '').trim();
-    const dateLabel = formatMedChangeDate(entry.timestamp);
+    // v0.8.147: omit individual date labels when every entry is from the
+    // same day (e.g. all "Today"). The card header surfaces a quiet
+    // "All today" hint instead. Saves repetitive visual noise.
+    const showDate = !(opts && opts.suppressDates);
+    const dateLabel = showDate ? formatMedChangeDate(entry.timestamp) : '';
     const drug = c.escapeHtml(String(f.drug || '').trim() || '—');
     const isEditing = composer.open && composer.editingId === entry.id;
     const rowClass = isEditing ? 'hah-medchg-row is-editing' : 'hah-medchg-row';
 
-    // Build inline parts. Use `·` as the separator between groups so the
-    // row reads as a single fluent line. Reason / date / etc are dropped
-    // gracefully when empty.
-    const parts = [];
-    parts.push(`<span class="hah-medchg-chip ${meta.cls}">${meta.verb}</span>`);
-    parts.push(`<span class="hah-medchg-drug">${drug}</span>`);
-    if (transition) parts.push(`<span class="hah-medchg-transition">${transition}</span>`);
-    if (reason)     parts.push(`<span class="hah-medchg-reason">${c.escapeHtml(reason)}</span>`);
-    if (dateLabel)  parts.push(`<span class="hah-medchg-date">${c.escapeHtml(dateLabel)}</span>`);
+    // v0.8.147: chip → coloured-text verb. Lighter visual weight, more
+    // horizontal space for drug + transition + reason. Verb still
+    // carries the change-type signal via colour.
+    const verbHtml = `<span class="hah-medchg-verb ${meta.cls}">${meta.verb}</span>`;
+    const drugHtml = `<span class="hah-medchg-drug">${drug}</span>`;
+    const transitionHtml = transition
+      ? `<span class="hah-medchg-transition">${transition}</span>`
+      : '';
+    const reasonHtml = reason
+      ? `<span class="hah-medchg-reason">${c.escapeHtml(reason)}</span>`
+      : '';
+    const dateHtml = dateLabel
+      ? `<span class="hah-medchg-date">${c.escapeHtml(dateLabel)}</span>`
+      : '';
+    // v0.8.147: edit pencil hover-reveal. Stays visible when row is
+    // .is-editing so the binding to the composer is clear.
     const editBtn = `<button type="button" class="hah-medchg-edit-btn" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" title="Edit this change" aria-label="Edit this medication change">✎</button>`;
 
-    return `<div class="${rowClass}">${parts.join('<span class="hah-medchg-sep" aria-hidden="true">·</span>')}${editBtn}</div>`;
+    return `<div class="${rowClass}">${verbHtml}${drugHtml}${transitionHtml}${reasonHtml}${dateHtml}${editBtn}</div>`;
   }
 
   function renderMedChangeComposer(composer) {
