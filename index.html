@@ -221,6 +221,12 @@ html, body {
   min-height: 0;
   overflow: auto;
   padding: var(--desk-gap-4);
+  /* v0.8.146: reserve scrollbar space whether or not one is shown.
+   * Otherwise, filter buttons that reduce the patient list to fit
+   * without scrolling cause the scrollbar to disappear, giving the
+   * interior ~10px more room and shifting all the content slightly.
+   * scrollbar-gutter:stable holds the gutter constant. */
+  scrollbar-gutter: stable;
 }
 
 .hah-left-pane {
@@ -6996,9 +7002,9 @@ button.hah-pt-flag:active {
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_145_medication_changes_card_release.html',
-  source: 'hospital_at_home_board_v0_8_145_medication_changes_card_source.zip',
-  builtAt: '2026-05-07T20:19:31.615014',
+  filename: 'hospital_at_home_board_v0_8_146_pane_scrollbar_gutter_release.html',
+  source: 'hospital_at_home_board_v0_8_146_pane_scrollbar_gutter_source.zip',
+  builtAt: '2026-05-07T20:34:18.302552',
   entry: 'desktop.html'
 };
 </script>
