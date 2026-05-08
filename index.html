@@ -7382,7 +7382,7 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_release.html',
   source: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_source.zip',
-  builtAt: '2026-05-08T22:38:25.689482',
+  builtAt: '2026-05-08T22:46:32.027949',
   entry: 'desktop.html'
 };
 </script>
@@ -10372,6 +10372,14 @@ window.HAHBoard = window.HAHBoard || {};
       // is ignored — see deriveDischargeReadinessFromTimeline above.
       dischargeReadiness: deriveDischargeReadinessFromTimeline(patient),
       forDischargeSummary: dischargeFields.notes,
+      // v0.8.149: discharge letter (operational.dischargeLetter) — passed
+      // through verbatim. Module 33-desktop-discharge-letter.js owns the
+      // schema. Storing the raw object here lets the view-model layer hoist
+      // it onto the summary the same way forDischargeSummary is hoisted,
+      // without forcing 24-desktop-derived.js to know the letter shape.
+      dischargeLetter: operational.dischargeLetter && typeof operational.dischargeLetter === 'object'
+        ? operational.dischargeLetter
+        : null,
       dnar: !!alerts.dnar || String(acp.dnacprStatus || '').toLowerCase() === 'yes',
       acp: !!alerts.acp || !!(acp.dnacprStatus || acp.tepStatus || acp.ceilingOfCare || acp.tep || acp.notes || acp.acpNotes),
       escalation: alerts.escalation || '',
@@ -11140,7 +11148,14 @@ window.HAHBoard = window.HAHBoard || {};
       // textarea via operational.forDischargeSummary in JSON. mapJsonPatientToLegacyRaw
       // resolves this from operational (with legacy operational.dischargeNotes
       // fallback), so by the time we see it on raw it's already canonicalised.
-      forDischargeSummary: String(raw.forDischargeSummary || '')
+      forDischargeSummary: String(raw.forDischargeSummary || ''),
+      // v0.8.149: discharge letter object (operational.dischargeLetter).
+      // Hoisted from the JSON record by mapJsonPatientToLegacyRaw. Module
+      // 33-desktop-discharge-letter.js reads it via getDischargeLetter()
+      // which handles missing/partial shapes defensively. Always include
+      // the field on the summary even if null — keeps the read path uniform
+      // for the discharge letter card and editor.
+      dischargeLetter: raw.dischargeLetter || null
     };
 
     return applyPatientOperationalState(summary);
@@ -18464,13 +18479,30 @@ window.HAHBoard = window.HAHBoard || {};
 
   function getDischargeLetter(patient) {
     if (!patient) return emptyLetter();
-    const op = patient.operational || {};
-    const dl = op.dischargeLetter;
-    if (!dl || typeof dl !== 'object') return emptyLetter();
+    // v0.8.149: read paths.
+    //
+    // Browser path (vm.patient): the summary view-model. mapJsonPatientToLegacyRaw
+    // copies operational.dischargeLetter onto the legacy raw object, then
+    // 24-desktop-derived.js hoists it as a top-level summary field. So the
+    // canonical browser read is `patient.dischargeLetter`.
+    //
+    // JSON path (raw patient document): for tests and any direct JSON
+    // consumer. The schema location is `operational.dischargeLetter`.
+    //
+    // We try the hoisted summary field first (browser) and fall back to
+    // the JSON shape (tests). Either gives us the same object.
+    let dl = null;
+    if (patient.dischargeLetter && typeof patient.dischargeLetter === 'object') {
+      dl = patient.dischargeLetter;
+    } else if (patient.operational && typeof patient.operational === 'object'
+               && patient.operational.dischargeLetter
+               && typeof patient.operational.dischargeLetter === 'object') {
+      dl = patient.operational.dischargeLetter;
+    }
+    if (!dl) return emptyLetter();
     // Defensive fill — if a partial object exists (e.g. created by mobile
     // sync round-trip preserving an older shape), backfill missing fields
     // from the empty default. This is read-time only; we don't write back.
-    const empty = emptyLetter();
     return {
       status: VALID_STATUSES.includes(dl.status) ? dl.status : null,
       body: typeof dl.body === 'string' ? dl.body : '',
@@ -18573,12 +18605,18 @@ window.HAHBoard = window.HAHBoard || {};
 
   function buildLetterSpec(vm, letter) {
     const patient = vm && vm.patient ? vm.patient : {};
-    const identity = patient.identity || {};
+    // v0.8.149: in the browser, vm.patient is the summary (vm.patient.name
+    // exists at top level). In tests, the patient may be the raw JSON
+    // document (with patient.identity.name). Read both paths.
+    const patientName =
+      (patient && patient.name) ||
+      (patient && patient.identity && patient.identity.name) ||
+      'Mr Jo-test';
 
     // Re-derived at every render so a corrected patient name flows through.
     // Intentionally NOT pulled into the body itself — the body is the
     // clinician-edited prose; the Re: line is structured.
-    const reLine = formatReLine(identity);
+    const reLine = formatReLine({ name: patientName });
 
     return {
       // Header info
@@ -18647,7 +18685,12 @@ window.HAHBoard = window.HAHBoard || {};
   // ─── Filename helpers ──────────────────────────────────────────────────
 
   function buildFilename(vm, ext) {
-    const name = (vm && vm.patient && vm.patient.identity && vm.patient.identity.name) || 'patient';
+    // v0.8.149: same dual-shape support as buildLetterSpec.
+    const patient = vm && vm.patient ? vm.patient : {};
+    const name =
+      (patient && patient.name) ||
+      (patient && patient.identity && patient.identity.name) ||
+      'patient';
     const surname = name.split(/\s+/).pop().replace(/[^A-Za-z0-9_-]/g, '') || 'patient';
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -18943,7 +18986,13 @@ window.HAHBoard = window.HAHBoard || {};
     const c = helpers && helpers.c ? helpers.c : { escapeHtml: (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])) };
     const patient = vm.patient;
     const letter = getDischargeLetter(patient);
-    const dischargeReadiness = vm.dischargeReadiness || (patient.operational && patient.operational.dischargeReadiness) || '';
+    // v0.8.149: discharge readiness lives on vm.patient.dischargeReadiness,
+    // derived from the timeline by 24-desktop-derived.js (since v0.8.130).
+    // The legacy operational.dischargeReadiness field is ignored on read
+    // per JSON_SCHEMA.md — don't fall back to it. Bug found in field test:
+    // setting Possible today via board round didn't enable the card
+    // because we were reading the wrong field.
+    const dischargeReadiness = (patient && patient.dischargeReadiness) || '';
     const cardState = getCardState(letter, dischargeReadiness);
 
     const previewText = previewSnippet(letter.body);
