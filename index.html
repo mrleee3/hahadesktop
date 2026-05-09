@@ -7615,9 +7615,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_153_discharge_letter_word_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_153_discharge_letter_word_fix_source.zip',
-  builtAt: '2026-05-09T09:16:05.218099',
+  filename: 'hospital_at_home_board_v0_8_154_discharge_letter_polish3_release.html',
+  source: 'hospital_at_home_board_v0_8_154_discharge_letter_polish3_source.zip',
+  builtAt: '2026-05-09T09:21:34.034929',
   entry: 'desktop.html'
 };
 </script>
@@ -15507,7 +15507,13 @@ window.HAHBoard = window.HAHBoard || {};
     if (dlMode && !dlMatch) {
       // Different patient now; auto-clear the mode flag so this doesn't
       // re-trigger every render. Done as an idempotent setState (no-op
-      // if already cleared by another path).
+      // if already cleared by another path). v0.8.153b: also clear the
+      // in-progress edit pending state so cross-patient bleed doesn't
+      // happen on the next bind.
+      if (window.HAHBoard && window.HAHBoard.dischargeLetter
+          && typeof window.HAHBoard.dischargeLetter.clearDlEditorPending === 'function') {
+        window.HAHBoard.dischargeLetter.clearDlEditorPending();
+      }
       setTimeout(() => store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } }), 0);
     }
     if (dlMatch && window.HAHBoard && window.HAHBoard.dischargeLetter) {
@@ -18912,10 +18918,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.153. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.154. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.153. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.154. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19191,14 +19197,18 @@ window.HAHBoard = window.HAHBoard || {};
       if (fromOperational) return fromOperational;
     }
 
-    // 3. Latest timeline entry whose note carries forDischargeSummary.
-    //    Covers the case where the data was written into a clinical
-    //    review note but isn't (yet) reflected on the operational block.
+    // 3. Latest timeline entry whose fields carry forDischargeSummary.
+    //    v0.8.153b: timeline entries store the fds snapshot at
+    //    `entry.fields.forDischargeSummary` (the same field name the
+    //    patient log entry renderer reads from `enc.fields`). Previously
+    //    I was checking `entry.note.forDischargeSummary` which doesn't
+    //    exist on these entries — that's why v0.8.152's "fixed" fallback
+    //    didn't actually find the value the user could see in the log.
     if (json && Array.isArray(json.timeline)) {
       const candidates = json.timeline
-        .filter((e) => e && e.note && e.note.forDischargeSummary && String(e.note.forDischargeSummary).trim())
+        .filter((e) => e && e.fields && e.fields.forDischargeSummary && String(e.fields.forDischargeSummary).trim())
         .sort((a, b) => Date.parse(b.timestamp || 0) - Date.parse(a.timestamp || 0));
-      if (candidates.length) return String(candidates[0].note.forDischargeSummary).trim();
+      if (candidates.length) return String(candidates[0].fields.forDischargeSummary).trim();
     }
 
     return '';
@@ -19878,6 +19888,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'dl-close-editor') {
       currentPreviewPage = 0;
       dlPreviewUpdateRef = null;
+      clearDlEditorPending();
       api.store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } });
       return true;
     }
@@ -19897,6 +19908,7 @@ window.HAHBoard = window.HAHBoard || {};
       persistLetterPatch(api, patientId, emptyLetter());
       currentPreviewPage = 0;
       dlPreviewUpdateRef = null;
+      clearDlEditorPending();
       api.store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } });
       return true;
     }
@@ -19997,6 +20009,35 @@ window.HAHBoard = window.HAHBoard || {};
   let dlPreviewUpdateRef = null;
   let dlPreviewResizeObserver = null;
 
+  // v0.8.153b: cross-render textarea preservation.
+  //
+  // The desktop store architecture writes every JSON change through
+  // patchPatientRecord → patchPatientCacheRow → savePatientCache →
+  // refreshShell, which causes the right pane to re-render. The
+  // textarea is recreated with `value=letter.body` (the persisted body),
+  // and any keystrokes typed during the async write window are
+  // clobbered. v0.8.152 tried to fix this by bypassing
+  // persistPatientPatchToJson — but the underlying patchPatientCacheRow
+  // ALSO triggers refreshShell from inside patchPatientRecord, so the
+  // re-render happens regardless.
+  //
+  // Workaround: capture the latest user-typed value (and cursor
+  // position) on every input event into this module-scope variable.
+  // On bind, if pending value differs from what the freshly-rendered
+  // textarea has, restore it and refocus. Patient-scoped so a stale
+  // pending value from one patient doesn't leak into another patient's
+  // editor. Cleared on close, delete, and patient switch.
+  let dlEditorPending = {
+    patientId: null,
+    value: null,
+    selectionStart: 0,
+    selectionEnd: 0
+  };
+
+  function clearDlEditorPending() {
+    dlEditorPending = { patientId: null, value: null, selectionStart: 0, selectionEnd: 0 };
+  }
+
   function cancelPendingDlSave() {
     if (dlSaveTimer) {
       clearTimeout(dlSaveTimer);
@@ -20023,6 +20064,21 @@ window.HAHBoard = window.HAHBoard || {};
     // current patient at fire time and bails if it's changed (defense in
     // depth, mirroring v0.8.148 pattern).
     const capturedPatientId = ta.getAttribute('data-patient-id');
+
+    // v0.8.153b: restore in-progress edits if the pending value belongs
+    // to this patient and differs from the textarea's freshly-rendered
+    // content. The freshly-rendered content comes from the persisted
+    // letter body; if the user typed past it during an async save, the
+    // pending value is newer. See dlEditorPending comment above.
+    if (dlEditorPending.patientId === capturedPatientId
+        && dlEditorPending.value !== null
+        && dlEditorPending.value !== ta.value) {
+      ta.value = dlEditorPending.value;
+      try {
+        ta.setSelectionRange(dlEditorPending.selectionStart, dlEditorPending.selectionEnd);
+        ta.focus();
+      } catch (_) { /* selection can throw on some browsers; safe to ignore */ }
+    }
 
     // v0.8.150: A4 preview measurements. Paper is rendered at "real"
     // pt-equivalent pixels (595×842 = A4 at 72dpi) inside a frame whose
@@ -20152,6 +20208,14 @@ window.HAHBoard = window.HAHBoard || {};
     };
 
     ta.addEventListener('input', () => {
+      // v0.8.153b: capture in-progress value so a re-render mid-typing
+      // can restore it. See dlEditorPending comment.
+      dlEditorPending = {
+        patientId: capturedPatientId,
+        value: ta.value,
+        selectionStart: ta.selectionStart,
+        selectionEnd: ta.selectionEnd
+      };
       updateWordCount();
       updateContent();
       scheduleSave();
@@ -20207,7 +20271,7 @@ window.HAHBoard = window.HAHBoard || {};
     // UI
     renderDischargeLetterCard, renderLetterPane, renderLetterPreviewHtml,
     // Action plumbing (called from 26-desktop-patient.js)
-    handleDlAction, bindLetterEditor, cancelPendingDlSave,
+    handleDlAction, bindLetterEditor, cancelPendingDlSave, clearDlEditorPending,
     // Helpers (testable)
     previewSnippet, countWords,
     // Body conversion (also testable)
