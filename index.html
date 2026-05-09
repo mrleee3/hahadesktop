@@ -7596,8 +7596,13 @@ button.hah-pt-flag:active {
        attach themselves to window — module 33-desktop-discharge-letter
        checks for window.docx and window.pdfMake. Loaded async; if
        offline on first launch, generation will fail gracefully with a
-       toast. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+       toast.
+
+       v0.8.153: docx-js source switched from cdnjs (which doesn't host
+       this package — silently 404'd, leaving window.docx undefined and
+       Word button non-functional) to jsdelivr's UMD bundle. Verified
+       endpoint: cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js. -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
 </head>
@@ -7610,9 +7615,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_152_discharge_letter_polish2_release.html',
-  source: 'hospital_at_home_board_v0_8_152_discharge_letter_polish2_source.zip',
-  builtAt: '2026-05-09T08:32:03.164009',
+  filename: 'hospital_at_home_board_v0_8_153_discharge_letter_word_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_153_discharge_letter_word_fix_source.zip',
+  builtAt: '2026-05-09T09:16:05.218099',
   entry: 'desktop.html'
 };
 </script>
@@ -18907,10 +18912,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.152. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.153. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.152. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.153. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19252,14 +19257,21 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function renderDocx(spec) {
-    const D = ensureDocxLibrary();
-    const {
-      Document, Packer, Paragraph, TextRun, ImageRun,
-      AlignmentType, BorderStyle, LevelFormat, Footer, Header,
-      convertInchesToTwip
-    } = D;
+    // v0.8.153: wrap in Promise.resolve().then so a sync throw from
+    // ensureDocxLibrary becomes a promise rejection rather than
+    // bypassing the caller's .catch handler. Field-test bug: when the
+    // library failed to load (cdnjs 404), the sync throw escaped past
+    // the .catch and silently disappeared — Word button looked
+    // unresponsive instead of showing the "library not loaded" toast.
+    return Promise.resolve().then(() => {
+      const D = ensureDocxLibrary();
+      const {
+        Document, Packer, Paragraph, TextRun, ImageRun,
+        AlignmentType, BorderStyle, Footer, Header,
+        convertInchesToTwip
+      } = D;
 
-    return loadLetterheadBytes().then((letterheadBytes) => {
+      return loadLetterheadBytes().then((letterheadBytes) => {
       // Letterhead 2361×225 source. ~700px wide in header. Negative indent
       // extends the image beyond body content margins (matches the proof-of-
       // concept layout we settled on in scoping).
@@ -19372,6 +19384,7 @@ window.HAHBoard = window.HAHBoard || {};
 
       return Packer.toBlob(doc);
     });
+    });
   }
 
   function bodyToDocxParagraphs(body, justified, TextRun, Paragraph) {
@@ -19425,8 +19438,11 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function renderPdf(spec) {
-    const pdfMake = ensurePdfMakeLibrary();
-    return loadLetterheadDataUrl().then((logoDataUrl) => {
+    // v0.8.153: same Promise.resolve wrap as renderDocx so a sync throw
+    // from ensurePdfMakeLibrary surfaces as a rejection.
+    return Promise.resolve().then(() => {
+      const pdfMake = ensurePdfMakeLibrary();
+      return loadLetterheadDataUrl().then((logoDataUrl) => {
       // v0.8.149-hotfix2: tightened margins and font size to match the
       // mock proportions we settled on in scoping. The previous values
       // (95pt top, 11pt body, lineHeight 1.18) read as visibly looser
@@ -19492,6 +19508,7 @@ window.HAHBoard = window.HAHBoard || {};
           reject(e);
         }
       });
+    });
     });
   }
 
@@ -19709,12 +19726,11 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<span class="hah-dl-badge is-sent">✓ Sent</span>`
       : `<span class="hah-dl-badge is-draft">Draft</span>`;
 
-    const generatedLine = letter.generatedAt
-      ? 'Generated ' + (formatRelativeTime(letter.generatedAt) || 'recently')
-      : 'New draft';
-    const editedLine = letter.updatedAt && letter.updatedAt !== letter.generatedAt
-      ? 'Last edited ' + (formatRelativeTime(letter.updatedAt) || 'recently')
-      : '';
+    // v0.8.153: status row (Generated / Last edited timestamps + disabled
+    // Re-generate button) removed. The "Saved" indicator at the bottom-
+    // right of the textarea covers the same information more concisely;
+    // the timestamps were redundant. Re-generate will return as part of
+    // Build B in a position that fits the AI flow.
 
     return `<div class="hah-dl-pane">
       <div class="hah-dl-pane-head">
@@ -19727,13 +19743,6 @@ window.HAHBoard = window.HAHBoard || {};
           <button type="button" class="hah-dl-pane-delete" data-patient-action="dl-delete" aria-label="Delete this letter" title="Delete this letter">🗑</button>
           <button type="button" class="hah-dl-pane-close" data-patient-action="dl-close-editor" aria-label="Close letter editor">✕</button>
         </div>
-      </div>
-      <div class="hah-dl-pane-statusrow">
-        <div class="hah-dl-pane-meta">
-          <div>${c.escapeHtml(generatedLine)}</div>
-          ${editedLine ? `<div>${c.escapeHtml(editedLine)}</div>` : ''}
-        </div>
-        <button type="button" class="hah-dl-regen-btn is-disabled" disabled title="AI re-generation arrives in v0.8.150">↻ Re-generate</button>
       </div>
       <div class="hah-dl-pane-bodywrap">
         <textarea
