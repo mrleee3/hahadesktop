@@ -7248,6 +7248,38 @@ button.hah-pt-flag:active {
   border-color: #9ca3af;
 }
 
+/* v0.8.151: head-actions container holds delete + close buttons.
+   Flex with small gap keeps them adjacent in the top-right of the
+   editor head. */
+.hah-dl-pane-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hah-dl-pane-delete {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  padding: 4px 9px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+  font-family: inherit;
+  line-height: 1;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.hah-dl-pane-delete:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.hah-dl-pane-delete:active {
+  background: #fee2e2;
+}
+
 .hah-dl-pane-statusrow {
   display: flex;
   align-items: flex-start;
@@ -7578,9 +7610,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_150_discharge_letter_polish_release.html',
-  source: 'hospital_at_home_board_v0_8_150_discharge_letter_polish_source.zip',
-  builtAt: '2026-05-09T08:08:25.721484',
+  filename: 'hospital_at_home_board_v0_8_151_discharge_letter_delete_release.html',
+  source: 'hospital_at_home_board_v0_8_151_discharge_letter_delete_source.zip',
+  builtAt: '2026-05-09T08:13:29.556005',
   entry: 'desktop.html'
 };
 </script>
@@ -18875,10 +18907,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.150. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.151. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.150. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.151. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19648,7 +19680,10 @@ window.HAHBoard = window.HAHBoard || {};
           <span>Editing discharge letter</span>
           ${badgeHtml}
         </div>
-        <button type="button" class="hah-dl-pane-close" data-patient-action="dl-close-editor" aria-label="Close letter editor">✕</button>
+        <div class="hah-dl-pane-head-actions">
+          <button type="button" class="hah-dl-pane-delete" data-patient-action="dl-delete" aria-label="Delete this letter" title="Delete this letter">🗑</button>
+          <button type="button" class="hah-dl-pane-close" data-patient-action="dl-close-editor" aria-label="Close letter editor">✕</button>
+        </div>
       </div>
       <div class="hah-dl-pane-statusrow">
         <div class="hah-dl-pane-meta">
@@ -19772,6 +19807,25 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     if (action === 'dl-close-editor') {
+      currentPreviewPage = 0;
+      dlPreviewUpdateRef = null;
+      api.store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } });
+      return true;
+    }
+
+    if (action === 'dl-delete') {
+      // v0.8.151: destructive — reset operational.dischargeLetter to its
+      // empty shape and exit letter mode. The card auto-reverts to its
+      // no_draft / not_ready state via the existing state machine; no
+      // separate "deleted" status needed. Sent letters are treated the
+      // same as drafts here — for a trial tool this is the right friction
+      // level. Confirmation dialog uses window.confirm rather than a
+      // styled modal — native, unambiguous, Escape-cancellable.
+      const confirmed = (typeof window !== 'undefined' && typeof window.confirm === 'function')
+        ? window.confirm('Delete this discharge letter? The body and status will be removed. This cannot be undone.')
+        : true;
+      if (!confirmed) return true;
+      persistLetterPatch(api, patientId, emptyLetter());
       currentPreviewPage = 0;
       dlPreviewUpdateRef = null;
       api.store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } });
