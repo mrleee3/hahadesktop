@@ -5363,6 +5363,89 @@ button.hah-pt-flag:active {
   gap: 8px;
 }
 
+/* v0.8.163: history block — read-only summary of previous titration
+ * steps shown above the form when editing an entry with > 1 history
+ * item. The form below edits the latest step. */
+.hah-medchg-history {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.7);
+  padding: 8px 10px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hah-medchg-history-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--desk-text-muted);
+  margin-bottom: 2px;
+}
+.hah-medchg-history-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  flex-wrap: wrap;
+}
+.hah-medchg-history-step + .hah-medchg-history-step {
+  border-top: 1px dotted rgba(0,0,0,0.08);
+  padding-top: 5px;
+}
+.hah-medchg-history-step.is-latest {
+  /* Latest step is the one the form is editing — slight emphasis so
+   * the link between trail entry and editable form is visible. */
+  font-weight: 500;
+}
+.hah-medchg-history-step-date {
+  flex: 0 0 auto;
+  color: var(--desk-text-muted);
+  font-size: 10.5px;
+  min-width: 36px;
+}
+.hah-medchg-history-step-verb {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.hah-medchg-history-step-verb.is-start  { color: #1a7f37; }
+.hah-medchg-history-step-verb.is-stop   { color: #b42318; }
+.hah-medchg-history-step-verb.is-adjust { color: #b54708; }
+.hah-medchg-history-step-verb.is-hold   { color: #4b5563; }
+.hah-medchg-history-step-verb.is-resume { color: #0a5fa8; }
+.hah-medchg-history-step-doses {
+  flex: 1 1 auto;
+  color: var(--desk-text);
+  min-width: 0;
+}
+.hah-medchg-history-step-reason {
+  flex: 0 0 auto;
+  color: var(--desk-text-muted);
+  font-style: italic;
+}
+.hah-medchg-history-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--desk-text-muted);
+  font-style: italic;
+}
+
+/* v0.8.163: subtle (N) indicator on the card row when the entry has
+ * more than one history step. Quiet — single character + parens —
+ * but discoverable via the hover tooltip that explains it. */
+.hah-medchg-history-count {
+  flex: 0 0 auto;
+  color: var(--desk-text-muted);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  margin-right: 2px;
+}
+
 .hah-medchg-comp-row {
   display: flex;
   align-items: center;
@@ -5439,9 +5522,18 @@ button.hah-pt-flag:active {
 
 .hah-medchg-comp-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 6px;
   padding-top: 4px;
+}
+
+/* v0.8.162: spacer pushes the cancel/save pair to the right while
+ * keeping the delete button (when present) on the left. flex: 1 makes
+ * it absorb available width. When delete isn't rendered (add mode),
+ * the spacer is the only flexing element and the cancel/save pair
+ * still aligns right. */
+.hah-medchg-comp-actions-spacer {
+  flex: 1 1 auto;
 }
 
 .hah-medchg-comp-btn {
@@ -5453,7 +5545,7 @@ button.hah-pt-flag:active {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 .hah-medchg-comp-btn.is-cancel:hover {
   background: rgba(0,0,0,0.04);
@@ -5469,6 +5561,21 @@ button.hah-pt-flag:active {
 }
 .hah-medchg-comp-btn.is-save:active {
   background: #005bb8;
+}
+/* v0.8.162: delete button. Neutral default so it doesn't shout —
+ * the user has to deliberately reach for it — and red on hover for
+ * the destructive-intent signal. Matches the discharge letter's
+ * delete affordance pattern. */
+.hah-medchg-comp-btn.is-delete {
+  color: #555;
+}
+.hah-medchg-comp-btn.is-delete:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.hah-medchg-comp-btn.is-delete:active {
+  background: #fee2e2;
 }
 /* ─── End of medication changes card ─────────────────────────────────── */
 
@@ -7635,9 +7742,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_161_card_action_revert_release.html',
-  source: 'hospital_at_home_board_v0_8_161_card_action_revert_source.zip',
-  builtAt: '2026-05-09T12:24:39.450474',
+  filename: 'hospital_at_home_board_v0_8_163_med_change_history_release.html',
+  source: 'hospital_at_home_board_v0_8_163_med_change_history_source.zip',
+  builtAt: '2026-05-09T16:28:34.675038',
   entry: 'desktop.html'
 };
 </script>
@@ -14603,7 +14710,7 @@ window.HAHBoard = window.HAHBoard || {};
       ? '' // hide add button while composer is open
       : `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="medchg-open-add" title="Log a new medication change" aria-label="Add medication change"><span class="hah-card-action-icon">+</span> Add</button>`;
 
-    const composerHtml = composer.open ? renderMedChangeComposer(composer) : '';
+    const composerHtml = composer.open ? renderMedChangeComposer(composer, changes) : '';
 
     const listHtml = changes.length
       ? `<div class="hah-medchg-list">${changes.map((entry) => renderMedChangeRow(entry, composer, { suppressDates })).join('')}</div>`
@@ -14700,15 +14807,32 @@ window.HAHBoard = window.HAHBoard || {};
 
   function renderMedChangeRow(entry, composer, opts) {
     const f = entry.fields || {};
-    const meta = getMedChangeTypeMeta(f.changeType);
-    const transition = formatMedChangeTransition(f);
-    const reason = String(f.reason || '').trim();
+    // v0.8.163: read net values via the discharge letter module's
+    // resolveMedChangeNet so the displayed transition reflects the
+    // earliest fromValue → latest toValue across history (rather than
+    // a single step). Both card and letter share this resolver.
+    const dlModule = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.dischargeLetter) || null;
+    const net = (dlModule && typeof dlModule.resolveMedChangeNet === 'function')
+      ? dlModule.resolveMedChangeNet(entry)
+      : { drug: f.drug || '', changeType: f.changeType || '', fromValue: f.fromValue || '', toValue: f.toValue || '', reason: f.reason || '', historyCount: 1, historyItems: [] };
+    const meta = getMedChangeTypeMeta(net.changeType);
+    // formatMedChangeTransition takes a `fields`-shaped object. Build
+    // a synthetic one from the net values so transition rendering uses
+    // earliest→latest doses regardless of which shape the entry is in.
+    const transition = formatMedChangeTransition({
+      drug: net.drug,
+      changeType: net.changeType,
+      fromValue: net.fromValue,
+      toValue: net.toValue,
+      reason: net.reason
+    });
+    const reason = String(net.reason || '').trim();
     // v0.8.147: omit individual date labels when every entry is from the
     // same day (e.g. all "Today"). The card header surfaces a quiet
     // "All today" hint instead. Saves repetitive visual noise.
     const showDate = !(opts && opts.suppressDates);
     const dateLabel = showDate ? formatMedChangeDate(entry.timestamp) : '';
-    const drug = c.escapeHtml(String(f.drug || '').trim() || '—');
+    const drug = c.escapeHtml(String(net.drug || '').trim() || '—');
     const isEditing = composer.open && composer.editingId === entry.id;
     const rowClass = isEditing ? 'hah-medchg-row is-editing' : 'hah-medchg-row';
 
@@ -14716,11 +14840,10 @@ window.HAHBoard = window.HAHBoard || {};
     // CSS picks up the .is-X colour class and the SVG inherits it via
     // fill="currentColor". Hidden falls-back to a coloured bullet glyph
     // if the discharge letter module fails to load.
-    const dlModule = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.dischargeLetter) || null;
     const badge = (dlModule && typeof dlModule.getMedChangeBadge === 'function')
       ? dlModule.getMedChangeBadge(entry)
       : { iconSvg: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>', cls: meta.cls, verb: '' };
-    const tooltipText = meta.verb + (f.changeType === 'adjust' && badge.verb !== 'CHANGE' && badge.verb ? ' (' + badge.verb.toLowerCase() + ')' : '');
+    const tooltipText = meta.verb + (net.changeType === 'adjust' && badge.verb !== 'CHANGE' && badge.verb ? ' (' + badge.verb.toLowerCase() + ')' : '');
     const verbHtml = `<span class="hah-medchg-icon ${badge.cls}" title="${c.escapeHtml(tooltipText)}" aria-label="${c.escapeHtml(tooltipText)}">${badge.iconSvg}</span>`;
     const drugHtml = `<span class="hah-medchg-drug">${drug}</span>`;
     // v0.8.157: always emit the transition span — even when empty, it
@@ -14729,6 +14852,13 @@ window.HAHBoard = window.HAHBoard || {};
     // with no dose collapsed the right-hand cluster leftward and the date
     // mis-aligned with sibling rows.
     const transitionHtml = `<span class="hah-medchg-transition">${transition || ''}</span>`;
+    // v0.8.163: history step indicator. When historyCount > 1, show a
+    // subtle "(N)" before the date to surface that this entry has
+    // intermediate steps. Quiet — single character + parens — but
+    // discoverable on inspection. Tooltip explains it.
+    const historyHtml = (net.historyCount > 1)
+      ? `<span class="hah-medchg-history-count" title="${net.historyCount} steps recorded">(${net.historyCount})</span>`
+      : '';
     // v0.8.157: reason removed from the visible row at this width — too
     // cluttered alongside drug + dose + date. Surfaced via the row's
     // title attribute (full tooltip on hover) instead, and still visible
@@ -14739,7 +14869,11 @@ window.HAHBoard = window.HAHBoard || {};
     // v0.8.157: row-level tooltip exposes the reason (and the change
     // type) on hover. Concatenated as "verb · reason" so the hover
     // shows the same context the row would have rendered inline.
-    const rowTooltip = reason ? meta.verb + ' · ' + reason : meta.verb;
+    // v0.8.163: append history-step indicator to tooltip when present.
+    const tooltipParts = [meta.verb];
+    if (reason) tooltipParts.push(reason);
+    if (net.historyCount > 1) tooltipParts.push(net.historyCount + ' steps');
+    const rowTooltip = tooltipParts.join(' · ');
 
     // v0.8.160: edit affordance moved from a hover-revealed inline
     // button to the whole row being the click target. The inline
@@ -14751,10 +14885,10 @@ window.HAHBoard = window.HAHBoard || {};
     // row so the existing medchg-edit handler (target.getAttribute(
     // 'data-entry-id')) keeps working unchanged. role="button" +
     // tabindex make it keyboard-accessible too.
-    return `<div class="${rowClass}" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" role="button" tabindex="0" title="${c.escapeHtml(rowTooltip)}" aria-label="Edit ${c.escapeHtml(meta.verb.toLowerCase())} ${c.escapeHtml(drug)}">${verbHtml}${drugHtml}${transitionHtml}${dateHtml}</div>`;
+    return `<div class="${rowClass}" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" role="button" tabindex="0" title="${c.escapeHtml(rowTooltip)}" aria-label="Edit ${c.escapeHtml(meta.verb.toLowerCase())} ${c.escapeHtml(drug)}">${verbHtml}${drugHtml}${transitionHtml}${historyHtml}${dateHtml}</div>`;
   }
 
-  function renderMedChangeComposer(composer) {
+  function renderMedChangeComposer(composer, allChanges) {
     const isEdit = !!composer.editingId;
     const meta = getMedChangeTypeMeta(composer.changeType);
     const typeRadios = MED_CHANGE_TYPES.map((t) => {
@@ -14769,7 +14903,48 @@ window.HAHBoard = window.HAHBoard || {};
     const showFrom = meta.needsFrom;
     const showTo   = meta.needsTo;
 
+    // v0.8.163: history section — appears in edit mode when the entry
+    // being edited has more than one step recorded. Read-only summary
+    // of the trail. The form below it edits the *latest* step; older
+    // steps can't be edited individually in v1 (defer per-step edit
+    // affordance until there's a concrete need). If a clinician needs
+    // to fix an old step, they can delete the entire entry and re-add.
+    let historyHtml = '';
+    if (isEdit && Array.isArray(allChanges)) {
+      const editingEnc = allChanges.find((e) => e && e.id === composer.editingId);
+      const dlModule = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.dischargeLetter) || null;
+      const net = (editingEnc && dlModule && typeof dlModule.resolveMedChangeNet === 'function')
+        ? dlModule.resolveMedChangeNet(editingEnc)
+        : null;
+      if (net && net.historyCount > 1) {
+        const stepsHtml = net.historyItems.map((step, idx) => {
+          const isLatest = idx === net.historyItems.length - 1;
+          const stepDate = step.at ? formatMedChangeDate(step.at) : '';
+          const stepMeta = getMedChangeTypeMeta(step.changeType);
+          const f = String(step.fromValue || '').trim();
+          const t = String(step.toValue || '').trim();
+          let stepDoses = '';
+          if (step.changeType === 'adjust' && f && t) stepDoses = f + ' → ' + t;
+          else if (t) stepDoses = t;
+          else if (f) stepDoses = f;
+          const stepReason = String(step.reason || '').trim();
+          return `<div class="hah-medchg-history-step${isLatest ? ' is-latest' : ''}">
+            <span class="hah-medchg-history-step-date">${c.escapeHtml(stepDate)}</span>
+            <span class="hah-medchg-history-step-verb ${stepMeta.cls}">${c.escapeHtml(stepMeta.verb)}</span>
+            <span class="hah-medchg-history-step-doses">${c.escapeHtml(stepDoses)}</span>
+            ${stepReason ? `<span class="hah-medchg-history-step-reason">${c.escapeHtml(stepReason)}</span>` : ''}
+          </div>`;
+        }).join('');
+        historyHtml = `<div class="hah-medchg-history">
+          <div class="hah-medchg-history-label">Previous steps</div>
+          ${stepsHtml}
+          <div class="hah-medchg-history-hint">Editing the latest step ↓</div>
+        </div>`;
+      }
+    }
+
     return `<div class="hah-medchg-composer">
+      ${historyHtml}
       <div class="hah-medchg-comp-row">
         <label class="hah-medchg-comp-label">Drug</label>
         <input type="text" class="hah-medchg-comp-input" id="medChangeDrug"
@@ -14803,6 +14978,8 @@ window.HAHBoard = window.HAHBoard || {};
           autocomplete="off">
       </div>
       <div class="hah-medchg-comp-actions">
+        ${isEdit ? `<button type="button" class="hah-medchg-comp-btn is-delete" data-patient-action="medchg-delete" title="Delete this medication change">Delete</button>` : ''}
+        <span class="hah-medchg-comp-actions-spacer"></span>
         <button type="button" class="hah-medchg-comp-btn is-cancel" data-patient-action="medchg-cancel">Cancel</button>
         <button type="button" class="hah-medchg-comp-btn is-save" data-patient-action="medchg-save">${isEdit ? 'Update' : 'Save'}</button>
       </div>
@@ -17333,18 +17510,124 @@ window.HAHBoard = window.HAHBoard || {};
         if (drugEl) drugEl.focus();
         return true;
       }
-      const fields = { drug, changeType, fromValue, toValue, reason };
       const editingId = composerCur.editingId || null;
       let savedEncounter = null;
-      if (editingId) {
-        savedEncounter = ops.updateEncounter(editingId, fields) || null;
-        // If updateEncounter doesn't carry through the type, ensure it stays medication_change.
+
+      // v0.8.163: when the user clicks + Add and types a drug name that
+      // matches an existing entry in this admission (case-insensitive,
+      // trimmed), we merge instead of creating a new entry — append a
+      // step to the existing entry's history, advance the outer net
+      // toValue/changeType/reason. This lets clinicians titrate the
+      // same drug multiple times during admission without cluttering
+      // the card with separate rows or the letter with separate bullets.
+      // Skip the merge check in edit mode — there the user is updating
+      // a specific entry by id.
+      let mergeTargetEnc = null;
+      if (!editingId) {
+        const existingEntries = getPatientEncounterRows(vm.patient) || [];
+        const drugLower = drug.toLowerCase();
+        mergeTargetEnc = existingEntries.find((enc) => {
+          if (!enc || enc.type !== 'medication_change') return false;
+          const existingDrug = String((enc.fields && enc.fields.drug) || '').trim().toLowerCase();
+          return existingDrug === drugLower;
+        }) || null;
+      }
+
+      if (mergeTargetEnc) {
+        // Merge: append a new step to the target entry's history, advance
+        // the outer net values. The new step's fromValue defaults to the
+        // existing entry's current toValue if the user didn't type one.
+        const existingFields = mergeTargetEnc.fields || {};
+        const existingHistory = Array.isArray(existingFields.history) ? existingFields.history.slice() : null;
+        // Build the canonical history array. Legacy entry: bootstrap from
+        // outer fields as the first step. Then append the new step.
+        let history;
+        if (existingHistory && existingHistory.length > 0) {
+          history = existingHistory.slice();
+        } else {
+          history = [{
+            at: String(mergeTargetEnc.timestamp || ''),
+            changeType: existingFields.changeType || '',
+            fromValue: String(existingFields.fromValue || ''),
+            toValue: String(existingFields.toValue || ''),
+            reason: String(existingFields.reason || '')
+          }];
+        }
+        // Effective fromValue: if user left it blank, default to the
+        // current toValue of the merge target (the dose the patient is
+        // currently on).
+        const newStepFrom = fromValue || String(existingFields.toValue || '');
+        const newStep = {
+          at: new Date().toISOString(),
+          changeType,
+          fromValue: newStepFrom,
+          toValue,
+          reason
+        };
+        history.push(newStep);
+        // Outer net values reflect the full span:
+        //   fromValue: earliest fromValue we have (history[0])
+        //   toValue: latest (the new step's toValue)
+        //   changeType: latest changeType (drives the badge / verb)
+        //   reason: latest reason (the most relevant for the card hover
+        //           and the letter)
+        const mergedFields = {
+          drug,
+          changeType,
+          fromValue: history[0].fromValue,
+          toValue: newStep.toValue,
+          reason: newStep.reason,
+          history
+        };
+        savedEncounter = ops.updateEncounter(mergeTargetEnc.id, mergedFields) || null;
+        if (savedEncounter && savedEncounter.type !== 'medication_change') {
+          savedEncounter.type = 'medication_change';
+        }
+      } else if (editingId) {
+        // v0.8.163: edit mode. The existing-entry path. No history
+        // mutation here — editing the latest step is what they're
+        // doing, so update the outer fields and (if history exists)
+        // also update the last step in the history so it stays
+        // consistent with the outer net.
+        const editingEnc = (getPatientEncounterRows(vm.patient) || []).find((e) => e.id === editingId);
+        const existingFields = (editingEnc && editingEnc.fields) || {};
+        const existingHistory = Array.isArray(existingFields.history) ? existingFields.history.slice() : null;
+        let history = null;
+        if (existingHistory && existingHistory.length > 0) {
+          history = existingHistory.slice();
+          // Replace the last step with the edited values
+          history[history.length - 1] = {
+            at: history[history.length - 1].at, // preserve original step timestamp
+            changeType, fromValue, toValue, reason
+          };
+        }
+        const updatedFields = { drug, changeType, fromValue, toValue, reason };
+        if (history) {
+          updatedFields.history = history;
+          // Recompute outer net: fromValue = earliest, toValue = latest
+          updatedFields.fromValue = history[0].fromValue;
+          updatedFields.toValue = history[history.length - 1].toValue;
+        }
+        savedEncounter = ops.updateEncounter(editingId, updatedFields) || null;
         if (savedEncounter && savedEncounter.type !== 'medication_change') {
           savedEncounter.type = 'medication_change';
         }
       } else {
+        // Brand-new entry, no merge target. Initialise history with a
+        // single bootstrap step. This makes every newly-created entry
+        // history-shaped from the start; legacy single-step entries only
+        // exist for records created before v0.8.163.
+        const firstStep = {
+          at: new Date().toISOString(),
+          changeType, fromValue, toValue, reason
+        };
+        const fields = {
+          drug, changeType, fromValue, toValue, reason,
+          history: [firstStep]
+        };
         savedEncounter = ops.createEncounter({ patientId: vm.patient.id, type: 'medication_change', fields }) || null;
       }
+
       if (savedEncounter) {
         persistEncounterToJson(vm.patient, savedEncounter)
           .catch((err) => {
@@ -17355,6 +17638,50 @@ window.HAHBoard = window.HAHBoard || {};
       // Close composer regardless of save success — failure is logged
       // and surfaced via alert; user can re-add if needed.
       store.setState({ patient: { medChangeComposer: defaultMedChangeComposer() } });
+      return true;
+    }
+    if (action === 'medchg-delete' && vm && ops) {
+      // v0.8.162: delete affordance on the medication change composer.
+      // Only renders in edit mode (the composer button only appears
+      // when isEdit is true), so editingId should always be present.
+      // Defensive guard anyway. Confirmation dialog before destructive
+      // action; reuses the same optimistic-hide + JSON roundtrip
+      // pattern as the encounter delete elsewhere.
+      const composerCur = getMedChangeComposer(state);
+      const editingId = composerCur.editingId;
+      if (!editingId) return false;
+      const drugLabel = String(composerCur.drug || '').trim() || 'this entry';
+      const confirmed = window.confirm('Delete the medication change for ' + drugLabel + '? This cannot be undone.');
+      if (!confirmed) return true;
+
+      ops.deleteEncounter(editingId);
+      pendingDeleteIds.add(String(editingId));
+      // Close composer immediately so the user sees the row vanish.
+      store.setState({ patient: { medChangeComposer: defaultMedChangeComposer() } });
+      store.setState({ ui: { revision: Date.now() } });
+
+      const api = window.HAHBoard.sharedJsonStore;
+      if (api && typeof api.removePatientTimelineEntry === 'function') {
+        api.removePatientTimelineEntry(vm.patient.id, editingId)
+          .then(function () {
+            pendingDeleteIds.delete(String(editingId));
+          })
+          .catch(function (err) {
+            // Revert the optimistic hide on failure so the user sees
+            // the row re-appear and knows the delete didn't take.
+            pendingDeleteIds.delete(String(editingId));
+            store.setState({ ui: { revision: Date.now() } });
+            console.warn('[H@H JSON store] Could not remove medication change entry', err);
+            const pane = document.querySelector('#hahRightPane');
+            if (pane && typeof showToast === 'function') {
+              const reason = describeJsonStoreError(err);
+              showToast(pane, 'Could not delete · ' + reason + ' · entry restored');
+            }
+          });
+      } else {
+        // Local-only patient: ops.deleteEncounter is sufficient.
+        pendingDeleteIds.delete(String(editingId));
+      }
       return true;
     }
     // ─── End of medication changes card actions ───────────────────────
@@ -19057,10 +19384,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.161. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.163. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.161. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.163. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19288,15 +19615,77 @@ window.HAHBoard = window.HAHBoard || {};
   const ICON_HOLD     = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/></svg>';
   const ICON_RESUME   = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3l9 5-9 5z"/></svg>';
 
-  function getMedChangeBadge(entry) {
+  // v0.8.163: medication change history resolver.
+  //
+  // The fields shape on a medication_change entry can be one of two
+  // shapes:
+  //
+  //   Legacy (pre-v0.8.163): no `history` key; just outer drug,
+  //   changeType, fromValue, toValue, reason. One change event total.
+  //
+  //   With history (v0.8.163+): outer fields are the *net* state
+  //   (drug, changeType, fromValue=earliest, toValue=latest, latest
+  //   reason). `history` is an append-only array of step records
+  //   {at, changeType, fromValue, toValue, reason}. Latest step
+  //   matches the outer net.
+  //
+  // resolveMedChangeNet returns a normalised view that consumers
+  // (card row, letter stitcher, badge) can use without caring which
+  // shape the entry is in. Always returns {drug, changeType,
+  // fromValue, toValue, reason, historyCount, historyItems}.
+  //
+  //   historyCount: 1 for legacy entries (the implicit single step),
+  //                 N for entries with history (N steps logged)
+  //   historyItems: array of step records, oldest first. Synthesised
+  //                 from outer fields for legacy entries.
+  //
+  // Letter and card both read the NET (outer fields), so the discharge
+  // summary shows e.g. "INCREASE Furosemide 40mg OD → 80mg BD" even if
+  // there were intermediate steps. The composer uses historyItems to
+  // render the trail in edit mode.
+  function resolveMedChangeNet(entry) {
     const f = (entry && entry.fields) || {};
-    const type = f.changeType;
+    const drug = String(f.drug || '');
+    const changeType = f.changeType || '';
+    const fromValue = String(f.fromValue || '');
+    const toValue = String(f.toValue || '');
+    const reason = String(f.reason || '');
+    const history = Array.isArray(f.history) ? f.history : null;
+    if (history && history.length > 0) {
+      return {
+        drug, changeType, fromValue, toValue, reason,
+        historyCount: history.length,
+        historyItems: history.slice()
+      };
+    }
+    // Legacy entry: synthesise a one-item history from outer fields.
+    // The synthesised step's `at` is the entry's timestamp (best
+    // available marker for "when this change happened").
+    const synthAt = String((entry && entry.timestamp) || '');
+    return {
+      drug, changeType, fromValue, toValue, reason,
+      historyCount: 1,
+      historyItems: [{
+        at: synthAt,
+        changeType, fromValue, toValue, reason
+      }]
+    };
+  }
+
+  function getMedChangeBadge(entry) {
+    const net = resolveMedChangeNet(entry);
+    const type = net.changeType;
     if (type === 'start')  return { iconSvg: ICON_START,  verb: 'NEW',    cls: 'is-start'  };
     if (type === 'stop')   return { iconSvg: ICON_STOP,   verb: 'STOP',   cls: 'is-stop'   };
     if (type === 'hold')   return { iconSvg: ICON_HOLD,   verb: 'HOLD',   cls: 'is-hold'   };
     if (type === 'resume') return { iconSvg: ICON_RESUME, verb: 'RESUME', cls: 'is-resume' };
     if (type === 'adjust') {
-      const direction = getAdjustDirection(f.fromValue, f.toValue);
+      // v0.8.163: direction now computed across the NET span (earliest
+      // fromValue → latest toValue), not against an arbitrary single
+      // step. Two titrations 40 OD → 40 BD then 40 BD → 80 BD net to
+      // INCREASE (40 OD → 80 BD), even if one of the intermediate
+      // steps in isolation might compute differently.
+      const direction = getAdjustDirection(net.fromValue, net.toValue);
       if (direction === 'increase') return { iconSvg: ICON_INCREASE, verb: 'INCREASE', cls: 'is-adjust' };
       if (direction === 'decrease') return { iconSvg: ICON_DECREASE, verb: 'DECREASE', cls: 'is-adjust' };
       return { iconSvg: ICON_CHANGE, verb: 'CHANGE', cls: 'is-adjust' };
@@ -19350,23 +19739,28 @@ window.HAHBoard = window.HAHBoard || {};
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
       if (!e || !e.fields) continue;
-      const f = e.fields;
-      const drug = String(f.drug || '').trim();
+      // v0.8.163: read net values via resolver. For entries with
+      // history, this gives us the earliest fromValue and latest
+      // toValue — so the letter shows the net change ("Furosemide
+      // 40mg OD → 80mg BD") rather than enumerating intermediate
+      // titration steps. Legacy entries pass through unchanged
+      // (resolver synthesises a one-step history).
+      const net = resolveMedChangeNet(e);
+      const drug = net.drug.trim();
       if (!drug) continue;
       const badge = getMedChangeBadge(e);
       const verb = badge.verb;
-      const from = String(f.fromValue || '').trim();
-      const to = String(f.toValue || '').trim();
-      const reason = String(f.reason || '').trim();
+      const from = net.fromValue.trim();
+      const to = net.toValue.trim();
+      const reason = net.reason.trim();
+      const ct = net.changeType;
       let line = verb + ' ' + drug;
-      if (f.changeType === 'adjust' && from && to) line += ' (' + from + ' → ' + to + ')';
-      else if (to && (f.changeType === 'start' || f.changeType === 'resume' || f.changeType === 'adjust')) line += ' ' + to;
-      // v0.8.158: stop entries now optionally carry the dose the patient
-      // was on (fromValue). If present, include it in the letter line so
-      // the GP knows what dose was halted — important for taper-back-on
-      // and risk counselling. Falls through silently if not present
-      // (back-compat with stop entries created before v0.8.158).
-      else if (f.changeType === 'stop' && from) line += ' ' + from;
+      if (ct === 'adjust' && from && to) line += ' (' + from + ' → ' + to + ')';
+      else if (to && (ct === 'start' || ct === 'resume' || ct === 'adjust')) line += ' ' + to;
+      // Stop entries optionally carry the dose the patient was on
+      // (v0.8.158). If present, include it so the GP knows what dose
+      // was halted.
+      else if (ct === 'stop' && from) line += ' ' + from;
       if (reason) line += ' — ' + reason;
       lines.push(line);
     }
@@ -20504,6 +20898,7 @@ window.HAHBoard = window.HAHBoard || {};
     // v0.8.155: medication change badge — shared between letter stitch
     // and the medication_change card in 26-desktop-patient.js
     getMedChangeBadge, getAdjustDirection, parseFirstNumber, parseFrequency,
+    resolveMedChangeNet,
     // Dynamic merge for re-opens
     mergeStructuredSections, isAutoRecContent,
     // Filename
