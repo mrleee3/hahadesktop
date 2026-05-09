@@ -7266,53 +7266,57 @@ button.hah-pt-flag:active {
 }
 
 /* Row layout — single source for both option-A (one row) and the
- * future option-B (history list). Borrows the medication-change
- * row's hover + focus pattern so the two cards feel like the same
- * family. */
+ * future option-B (history list).
+ *
+ * v0.8.169: filename text is the click target (not the whole row).
+ * Renders as a <button> styled as a hyperlink — text-info colour,
+ * underline on hover, native focus + Enter/Space activation. The
+ * row no longer has hover tint or role="button" — it's a passive
+ * container holding the link, badge, and icons.
+ */
 .hah-dl-row {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  cursor: pointer;
   border-top: 1px solid var(--desk-border);
-  transition: background 120ms ease;
 }
 .hah-dl-row:first-child {
   border-top: none;
 }
-.hah-dl-row:hover {
-  background: rgba(0,0,0,0.025);
-}
-.hah-dl-row[role="button"]:focus-visible {
-  outline: 2px solid rgba(10,132,255,0.50);
-  outline-offset: -2px;
-  background: rgba(10,132,255,0.04);
-}
 
-.hah-dl-row-fileicon {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: var(--desk-text-muted);
-}
-.hah-dl-row-fileicon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.hah-dl-row-name {
+/* v0.8.169: filename is a button styled as a hyperlink. Text-info
+ * blue by default, underline on hover. font-family: inherit so it
+ * picks up the rest of the card's typography rather than the
+ * browser's default button font. */
+.hah-dl-row-name-link {
   flex: 0 1 auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
   font-size: 12.5px;
-  color: var(--desk-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  text-align: left;
+  color: rgba(47,111,237,0.95);
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 2px;
+  /* Allow long filenames to wrap rather than truncate — the dd/mm/yy
+   * format keeps them short, but a wrapping fallback is safer than
+   * an ellipsis that hides information. */
+  white-space: normal;
+  word-break: break-word;
+  transition: color 120ms ease, text-decoration-color 120ms ease;
+}
+.hah-dl-row-name-link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.hah-dl-row-name-link:focus-visible {
+  outline: 2px solid rgba(10,132,255,0.50);
+  outline-offset: 2px;
 }
 
 .hah-dl-row-badge {
@@ -7940,9 +7944,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_167_dl_card_file_list_release.html',
-  source: 'hospital_at_home_board_v0_8_167_dl_card_file_list_source.zip',
-  builtAt: '2026-05-09T17:41:39.735984',
+  filename: 'hospital_at_home_board_v0_8_169_dl_card_filename_link_release.html',
+  source: 'hospital_at_home_board_v0_8_169_dl_card_filename_link_source.zip',
+  builtAt: '2026-05-09T17:52:11.179018',
   entry: 'desktop.html'
 };
 </script>
@@ -14989,12 +14993,8 @@ window.HAHBoard = window.HAHBoard || {};
   // delegated click dispatcher in the shell. Tracked via dataset flag
   // so we don't double-bind across re-renders.
   function bindMedChangeRowKeyboard(pane) {
-    // v0.8.167: also covers dl-card rows. Both use role="button" + click
-    // delegation; the binding is identical, so a single pass over both
-    // selectors keeps things simple.
     if (!pane) return;
-    const selector = '.hah-medchg-row[role="button"], .hah-dl-row[role="button"]';
-    const rows = pane.querySelectorAll(selector);
+    const rows = pane.querySelectorAll('.hah-medchg-row[role="button"]');
     rows.forEach((row) => {
       if (row.dataset.kbBound === '1') return;
       row.dataset.kbBound = '1';
@@ -19689,12 +19689,21 @@ window.HAHBoard = window.HAHBoard || {};
     return day + ' ' + month + ' ' + year;
   }
 
+  // v0.8.169: short numeric format for compact contexts (filenames in
+  // the dl card row). 09/05/26.
+  function formatShortDate(d) {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear() % 100).padStart(2, '0');
+    return dd + '/' + mm + '/' + yy;
+  }
+
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.167. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.169. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.167. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.169. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -20942,29 +20951,29 @@ window.HAHBoard = window.HAHBoard || {};
 
     // draft or sent — render as a single-row file list. The row markup
     // anticipates the option B (history) layout: a list of rows, each
-    // with its own click target and icon strip. Option A just renders
+    // with its own filename link and icon strip. Option A just renders
     // one row.
+    //
+    // v0.8.169: filename text is the click target (not the whole row).
+    // Renders as a <button> styled as a hyperlink — text-info colour
+    // by default, underline on hover, native focus + Enter/Space
+    // activation. Row hover tint and role="button" gone.
+    // Date format reduced to compact dd/mm/yy and the em-dash dropped
+    // to a regular hyphen so the full filename fits without truncation.
     const isDraft = cardState === 'draft';
-    const dateLabel = formatDate(new Date(letter.generatedAt || letter.updatedAt || Date.now()));
-    const filename = 'Discharge summary — ' + dateLabel;
+    const dateLabel = formatShortDate(new Date(letter.generatedAt || letter.updatedAt || Date.now()));
+    const filename = 'Discharge summary - ' + dateLabel;
 
     const badgeHtml = isDraft
       ? `<span class="hah-dl-row-badge is-draft">Draft</span>`
       : `<span class="hah-dl-row-badge is-sent">Sent</span>`;
 
-    // Row click → open PDF. Icon buttons stop propagation (handler in
-    // 26-desktop-patient.js's delegated click already walks closest()
-    // to find the [data-patient-action] target, so an icon click resolves
-    // to the icon's action, not the row's).
-    //
-    // SVG icons inline so they style with currentColor and don't need a
-    // webfont. Sized to 16×16 fitting comfortably in the 26×26 button.
+    // SVG icons for the action strip. Sized to 16×16 inside the 26×26 buttons.
     const iconSvg = {
       edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2z"/><path d="M10 4l2 2"/></svg>',
       word: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h6L13 5v9.5h-9.5z"/><path d="M9 1.5V5h4"/><path d="M5.5 9l1 4 1.5-3 1.5 3 1-4"/></svg>',
       email: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1"/><path d="M2.5 4.5l5.5 4 5.5-4"/></svg>',
-      sent: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>',
-      file: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h6L13 5v9.5h-9.5z"/><path d="M9 1.5V5h4"/><path d="M5.5 8h5"/><path d="M5.5 10.5h5"/></svg>'
+      sent: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>'
     };
 
     const iconBtn = (action, title, glyph) =>
@@ -20980,9 +20989,8 @@ window.HAHBoard = window.HAHBoard || {};
 
     return `<div class="hah-ref-widget hah-dl-card">
       ${titleBar({ action: headActionHtml })}
-      <div class="hah-dl-row" data-patient-action="dl-export-pdf" role="button" tabindex="0" title="Open as PDF" aria-label="Open ${c.escapeHtml(filename)} as PDF">
-        <span class="hah-dl-row-fileicon">${iconSvg.file}</span>
-        <span class="hah-dl-row-name">${c.escapeHtml(filename)}</span>
+      <div class="hah-dl-row">
+        <button type="button" class="hah-dl-row-name-link" data-patient-action="dl-export-pdf" title="Open as PDF" aria-label="Open ${c.escapeHtml(filename)} as PDF">${c.escapeHtml(filename)}</button>
         ${badgeHtml}
         <span class="hah-dl-row-spacer"></span>
         <div class="hah-dl-row-actions">${iconStrip}</div>
@@ -21501,14 +21509,38 @@ window.HAHBoard = window.HAHBoard || {};
     // depth, mirroring v0.8.148 pattern).
     const capturedPatientId = editor.getAttribute('data-patient-id');
 
-    // v0.8.166: restore in-progress edits if the pending HTML belongs
-    // to this patient and differs from the editor's freshly-rendered
-    // content. Caret is restored via text-char offset (survives
-    // innerHTML rebuild — see getCaretOffsetWithin / setCaretOffsetWithin).
+    // v0.8.168: restore focus + caret whenever the user was actively
+    // editing this patient's letter, even when the rendered content
+    // already matches pending. The previous gate
+    // (dlEditorPending.html !== editor.innerHTML) skipped the focus
+    // restore when the autosave had completed before re-render — the
+    // freshly-rendered editor's innerHTML matched what was in
+    // pending, so the gate was false and editor.focus() never fired.
+    // Field test: typing → autosave fires → re-render happens for
+    // some unrelated reason → user loses focus mid-sentence.
+    //
+    // Two separate concerns conflated into one check: HTML restore
+    // (only needed when content actually differs, to avoid clobbering
+    // up-to-date content with stale pending) and focus restore
+    // (always needed when the user was editing). Splitting them.
+    //
+    // The persistLetterPatchSilent path is supposed to bypass setState
+    // so no re-render fires from autosave itself. But re-renders can
+    // happen for other reasons (other tabs syncing, websocket events,
+    // unrelated state changes), so the restore needs to be robust to
+    // any re-render mid-edit, not just the one autosave was meant to
+    // suppress.
     if (dlEditorPending.patientId === capturedPatientId
-        && dlEditorPending.html !== null
-        && dlEditorPending.html !== editor.innerHTML) {
-      editor.innerHTML = dlEditorPending.html;
+        && dlEditorPending.html !== null) {
+      // Only restore HTML if it actually differs — otherwise we'd be
+      // overwriting freshly-rendered content with potentially-stale
+      // pending, and the resulting innerHTML rebuild can shift the
+      // DOM nodes and complicate caret restore.
+      if (dlEditorPending.html !== editor.innerHTML) {
+        editor.innerHTML = dlEditorPending.html;
+      }
+      // Focus + caret restore — always run when pending is for this
+      // patient, regardless of HTML match.
       try {
         editor.focus();
         setCaretOffsetWithin(editor, dlEditorPending.caret);
