@@ -2474,6 +2474,82 @@ body.hah-ws-connecting .hah-ws-dot {
   color: var(--desk-text-muted);
 }
 
+/* ============================================================
+   v0.8.159: standardised card action button.
+   Single base class + two shape modifiers, used across all
+   centre-pane right-column cards (ACP, Blood results, Medication
+   changes, Discharge letter). Eliminates the per-card button
+   classes (.hah-acp-edit-btn, .hah-ref-options-btn,
+   .hah-medchg-add-btn, .hah-dl-edit-btn) which drifted into four
+   different styles. The pattern that won the standardisation was
+   the Blood results "⋯" button — neutral, doesn't shout, clear
+   hit area without needing to imply a specific action via colour.
+
+     .hah-card-action               base — 26px tall, neutral pill
+     .hah-card-action.is-round      26×26 circle (icon-only, e.g. ⋯)
+     .hah-card-action.is-pill       auto-width pill with text label
+     .hah-card-action.is-pill-icon  pill with leading icon + text
+
+   Identical border, hover, and active across all variants.
+   ============================================================ */
+.hah-card-action {
+  height: 26px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.7);
+  color: var(--desk-text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: inherit;
+  /* Default to round shape so an undecorated .hah-card-action
+     gracefully falls back to icon size; .is-pill / .is-pill-icon
+     override below. */
+  width: 26px;
+  border-radius: 50%;
+  padding: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.hah-card-action.is-round {
+  width: 26px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 13px;
+}
+.hah-card-action.is-pill {
+  width: auto;
+  border-radius: 13px;
+  padding: 0 12px;
+}
+.hah-card-action.is-pill-icon {
+  width: auto;
+  border-radius: 13px;
+  padding: 0 11px 0 9px;
+  gap: 3px;
+}
+.hah-card-action.is-pill-icon .hah-card-action-icon {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  /* Tiny optical adjustment so a "+" baseline-aligns with text */
+  margin-top: -1px;
+}
+.hah-card-action:hover {
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(0,0,0,0.25);
+}
+.hah-card-action:active {
+  background: rgba(0,0,0,0.05);
+}
+.hah-card-action.is-open,
+.hah-card-action[aria-expanded="true"] {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.30);
+}
+
 .hah-ref-body {
   padding: 10px 12px;
   display: flex;
@@ -4159,24 +4235,8 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 /* ─── Blood results widget refinements ───────────────────────────────── */
 
-.hah-ref-options-btn {
-  padding: 2px 7px;
-  border: 1px solid var(--desk-border);
-  border-radius: 8px;
-  background: transparent;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--desk-text-muted);
-  cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.hah-ref-options-btn:hover,
-.hah-ref-options-btn.is-open {
-  background: rgba(47,111,237,0.08);
-  color: rgba(47,111,237,0.95);
-  border-color: rgba(47,111,237,0.2);
-}
+/* v0.8.159: .hah-ref-options-btn rules removed — Blood results card
+ * now uses the standardised .hah-card-action.is-round pattern. */
 
 /* Latest column: bolder header only, cells same size as others */
 .dbl-date-col.is-latest {
@@ -4455,21 +4515,8 @@ button.hah-pt-flag:active {
 
 /* ─── ACP card ───────────────────────────────────────────────────────── */
 
-.hah-acp-edit-btn {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--desk-border);
-  background: transparent;
-  color: rgba(47,111,237,0.9);
-  cursor: pointer;
-  transition: background 120ms ease;
-}
-
-.hah-acp-edit-btn:hover {
-  background: rgba(47,111,237,0.07);
-}
+/* v0.8.159: .hah-acp-edit-btn rules removed — ACP card now uses the
+ * standardised .hah-card-action.is-pill pattern. */
 
 .hah-acp-body {
   padding: 10px 12px;
@@ -5142,20 +5189,8 @@ button.hah-pt-flag:active {
   flex: 0 0 auto;
 }
 
-.hah-medchg-add-btn {
-  margin-left: auto;
-  padding: 3px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(10,132,255,.20);
-  background: #e8f1ff;
-  color: #0a84ff;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s ease;
-}
-.hah-medchg-add-btn:hover { background: #d6e7ff; }
-.hah-medchg-add-btn:active { background: #c4dcff; }
+/* v0.8.159: .hah-medchg-add-btn rules removed — Medication changes
+ * card now uses the standardised .hah-card-action.is-pill-icon pattern. */
 
 .hah-medchg-empty {
   padding: 12px 14px;
@@ -7108,33 +7143,23 @@ button.hah-pt-flag:active {
    Card (centre-pane right column)
    ============================================================ */
 
-.hah-dl-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
+/* v0.8.159: card box now governed by .hah-ref-widget (shared with ACP,
+ * Blood results, Medication changes). The previous duplicate definitions
+ * here (background #fff, border #e5e7eb, border-radius 8px) overrode the
+ * canonical translucent-white pattern; removed so the dl card sits in
+ * the same visual family. The .hah-dl-card class is kept on the element
+ * for the per-card rules below (body, badge, preview, action row, etc).
+ *
+ * .is-quiet variant kept — controls "available when ready" greyed state. */
 .hah-dl-card.is-quiet {
   background: #fafafa;
-  border-color: #e5e7eb;
 }
 
-.hah-dl-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  gap: 8px;
-}
-
-.hah-dl-card.is-quiet .hah-dl-head {
-  border-bottom: none;
-}
-
+/* v0.8.159: card head and title now governed by .hah-ref-head and
+ * .hah-ref-label (shared rules). The previous .hah-dl-head and
+ * .hah-dl-title rules here are removed. The .hah-dl-head-left flex
+ * wrapper is kept because it's still used in the markup to keep title
+ * + badge as a single left-side group. */
 .hah-dl-head-left {
   display: flex;
   align-items: center;
@@ -7142,13 +7167,7 @@ button.hah-pt-flag:active {
   min-width: 0;
 }
 
-.hah-dl-title {
-  font-weight: 500;
-  font-size: 13px;
-  color: #1a1a1a;
-}
-
-.hah-dl-card.is-quiet .hah-dl-title {
+.hah-dl-card.is-quiet .hah-ref-label {
   color: #888;
 }
 
@@ -7170,37 +7189,9 @@ button.hah-pt-flag:active {
   color: #3f6212;
 }
 
-.hah-dl-add-btn,
-.hah-dl-edit-btn {
-  background: transparent;
-  border: 1px solid #d1d5db;
-  padding: 3px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-  transition: background-color 0.12s, border-color 0.12s;
-}
-
-.hah-dl-add-btn {
-  color: #185fa5;
-  border-color: #b5d4f4;
-}
-
-.hah-dl-add-btn:hover {
-  background: #e6f1fb;
-  border-color: #378add;
-}
-
-.hah-dl-edit-btn {
-  color: #444;
-}
-
-.hah-dl-edit-btn:hover {
-  background: #f3f4f6;
-  border-color: #b8bcc4;
-}
+/* v0.8.159: .hah-dl-add-btn and .hah-dl-edit-btn rules removed —
+ * dl card now uses the standardised .hah-card-action.is-pill /
+ * .is-pill-icon pattern in markup. */
 
 .hah-dl-body {
   padding: 10px 12px;
@@ -7686,9 +7677,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_158_med_change_stop_dose_release.html',
-  source: 'hospital_at_home_board_v0_8_158_med_change_stop_dose_source.zip',
-  builtAt: '2026-05-09T12:04:52.074123',
+  filename: 'hospital_at_home_board_v0_8_159_card_action_unification_release.html',
+  source: 'hospital_at_home_board_v0_8_159_card_action_unification_source.zip',
+  builtAt: '2026-05-09T12:15:41.596161',
   entry: 'desktop.html'
 };
 </script>
@@ -14450,8 +14441,8 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-ref-widget hah-acp-card">
       <div class="hah-ref-head">
         <span class="hah-ref-label">Advanced Care Plan</span>
-        <button type="button" class="hah-acp-edit-btn" data-patient-action="open-acp-modal">
-          ${hasData ? 'Edit' : '+ Add'}
+        <button type="button" class="hah-card-action ${hasData ? 'is-pill' : 'is-pill-icon'}" data-patient-action="open-acp-modal" title="${hasData ? 'Edit ACP' : 'Add ACP'}">
+          ${hasData ? 'Edit' : '<span class="hah-card-action-icon">+</span> Add'}
         </button>
       </div>
       ${hasData ? `
@@ -14652,7 +14643,7 @@ window.HAHBoard = window.HAHBoard || {};
       : '';
     const addBtn = composer.open
       ? '' // hide add button while composer is open
-      : `<button type="button" class="hah-medchg-add-btn" data-patient-action="medchg-open-add" title="Log a new medication change">+ Add</button>`;
+      : `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="medchg-open-add" title="Log a new medication change" aria-label="Add medication change"><span class="hah-card-action-icon">+</span> Add</button>`;
 
     const composerHtml = composer.open ? renderMedChangeComposer(composer) : '';
 
@@ -14660,9 +14651,18 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<div class="hah-medchg-list">${changes.map((entry) => renderMedChangeRow(entry, composer, { suppressDates })).join('')}</div>`
       : (composer.open ? '' : `<div class="hah-medchg-empty">No medication changes logged yet during this admission.</div>`);
 
-    return `<div class="hah-medchg-card">
-      <div class="hah-medchg-head">
-        <span class="hah-medchg-title">Medication changes</span>
+    // v0.8.159: card head switched from bespoke .hah-medchg-card /
+    // .hah-medchg-head / .hah-medchg-title to the canonical
+    // .hah-ref-widget / .hah-ref-head / .hah-ref-label pattern shared
+    // with ACP and Blood results, eliminating the per-card head drift.
+    // The .hah-medchg-card class is retained alongside .hah-ref-widget
+    // so the existing per-card body rules (rows, icons, separator
+    // pseudo-element, drug column variable, hover) keep applying. The
+    // .hah-medchg-head / -title CSS rules become dead code but are left
+    // in the stylesheet for now in case any other view uses them.
+    return `<div class="hah-ref-widget hah-medchg-card">
+      <div class="hah-ref-head">
+        <span class="hah-ref-label">Medication changes</span>
         ${headerHint}
         ${addBtn}
       </div>
@@ -15503,8 +15503,8 @@ window.HAHBoard = window.HAHBoard || {};
     return `<div class="hah-ref-widget">
       <div class="hah-ref-head">
         <span class="hah-ref-label">Blood results</span>
-        <button type="button" class="hah-ref-options-btn${showOptions ? ' is-open' : ''}"
-          data-patient-action="toggle-blood-options" title="Options">⋯</button>
+        <button type="button" class="hah-card-action is-round${showOptions ? ' is-open' : ''}"
+          data-patient-action="toggle-blood-options" title="Options" aria-label="Options" aria-expanded="${showOptions ? 'true' : 'false'}">⋯</button>
       </div>
       ${optionsPanel}
       <div class="hah-ref-body hah-ref-body--bloods">
@@ -19068,10 +19068,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.158. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.159. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.158. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.159. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19870,16 +19870,25 @@ window.HAHBoard = window.HAHBoard || {};
     const previewText = previewSnippet(letter.body);
     const wordCount = countWords(letter.body);
 
-    const titleBar = (extras) => `<div class="hah-dl-head">
+    // v0.8.159: dl card head switched from bespoke .hah-dl-card /
+    // .hah-dl-head / .hah-dl-title to the canonical .hah-ref-widget /
+    // .hah-ref-head / .hah-ref-label so it sits in the same visual
+    // family as ACP, Blood results, and Medication changes. Action
+    // buttons (+ Generate, Edit) switched to .hah-card-action pills.
+    // The .hah-dl-card class is kept alongside .hah-ref-widget so the
+    // card body, action row, badge, and preview rules continue to apply.
+    // The is-quiet variant is preserved on the card and now affects
+    // appearance via existing rules .hah-dl-card.is-quiet *.
+    const titleBar = (extras) => `<div class="hah-ref-head">
       <div class="hah-dl-head-left">
-        <span class="hah-dl-title">Discharge letter</span>
+        <span class="hah-ref-label">Discharge letter</span>
         ${extras.badge || ''}
       </div>
       ${extras.action || ''}
     </div>`;
 
     if (cardState === 'not_ready') {
-      return `<div class="hah-dl-card is-quiet">
+      return `<div class="hah-ref-widget hah-dl-card is-quiet">
         ${titleBar({})}
         <div class="hah-dl-body">
           <p class="hah-dl-quiet-msg">Available when patient is marked Possible today, Likely tomorrow, or Ready.</p>
@@ -19888,9 +19897,9 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     if (cardState === 'no_draft') {
-      return `<div class="hah-dl-card">
+      return `<div class="hah-ref-widget hah-dl-card">
         ${titleBar({
-          action: `<button type="button" class="hah-dl-add-btn" data-patient-action="dl-open-editor" data-create="1" title="Generate a new discharge letter draft">+ Generate</button>`
+          action: `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="dl-open-editor" data-create="1" title="Generate a new discharge letter draft" aria-label="Generate discharge letter"><span class="hah-card-action-icon">+</span> Generate</button>`
         })}
         <div class="hah-dl-body">
           <p class="hah-dl-empty-msg">No draft yet.</p>
@@ -19919,10 +19928,10 @@ window.HAHBoard = window.HAHBoard || {};
           <button type="button" class="hah-dl-action-btn" data-patient-action="dl-export-docx" title="Download Word document">Word</button>
         </div>`;
 
-    return `<div class="hah-dl-card">
+    return `<div class="hah-ref-widget hah-dl-card">
       ${titleBar({
         badge: badgeHtml,
-        action: `<button type="button" class="hah-dl-edit-btn" data-patient-action="dl-open-editor" title="Edit this discharge letter">Edit</button>`
+        action: `<button type="button" class="hah-card-action is-pill" data-patient-action="dl-open-editor" title="Edit this discharge letter" aria-label="Edit discharge letter">Edit</button>`
       })}
       <div class="hah-dl-body">
         <p class="hah-dl-preview">${c.escapeHtml(previewText)}</p>
