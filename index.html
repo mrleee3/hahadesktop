@@ -2475,79 +2475,63 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 /* ============================================================
-   v0.8.159: standardised card action button.
-   Single base class + two shape modifiers, used across all
-   centre-pane right-column cards (ACP, Blood results, Medication
-   changes, Discharge letter). Eliminates the per-card button
-   classes (.hah-acp-edit-btn, .hah-ref-options-btn,
-   .hah-medchg-add-btn, .hah-dl-edit-btn) which drifted into four
-   different styles. The pattern that won the standardisation was
-   the Blood results "⋯" button — neutral, doesn't shout, clear
-   hit area without needing to imply a specific action via colour.
+   v0.8.161: card action buttons — restored to the v0.8.158 style.
+   The "..." button on Blood results was always the right pattern;
+   v0.8.159's attempt to "standardise" by introducing .hah-card-action
+   actually changed the dots button visually (made it a true circle,
+   different padding, different hover fill). Reverting that error and
+   matching the other cards to the original dots styling instead.
 
-     .hah-card-action               base — 26px tall, neutral pill
-     .hah-card-action.is-round      26×26 circle (icon-only, e.g. ⋯)
-     .hah-card-action.is-pill       auto-width pill with text label
-     .hah-card-action.is-pill-icon  pill with leading icon + text
-
-   Identical border, hover, and active across all variants.
+   The base rule below is identical to the pre-v0.8.159
+   .hah-ref-options-btn: padding 2px 7px, 8px radius, transparent,
+   neutral border, faint-blue tint on hover. The text-pill variants
+   inherit everything except width and add a touch of horizontal
+   padding for the label.
    ============================================================ */
 .hah-card-action {
-  height: 26px;
-  border: 1px solid rgba(0,0,0,0.15);
-  background: rgba(255,255,255,0.7);
-  color: var(--desk-text);
-  font-size: 12px;
+  padding: 2px 7px;
+  border: 1px solid var(--desk-border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 11px;
   font-weight: 500;
+  line-height: 1;
+  color: var(--desk-text-muted);
   cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  font-family: inherit;
-  /* Default to round shape so an undecorated .hah-card-action
-     gracefully falls back to icon size; .is-pill / .is-pill-icon
-     override below. */
-  width: 26px;
-  border-radius: 50%;
-  padding: 0;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
+.hah-card-action:hover,
+.hah-card-action.is-open,
+.hah-card-action[aria-expanded="true"] {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+  border-color: rgba(47,111,237,0.2);
+}
+/* Round/icon-only variant (the original "..." button case). Slightly
+ * larger glyph since it's the only thing in the slot. */
 .hah-card-action.is-round {
-  width: 26px;
-  border-radius: 50%;
-  padding: 0;
-  font-size: 13px;
+  font-size: 14px;
 }
+/* Pill with text label. Adds a hair more horizontal padding so the
+ * label has breathing room. */
 .hah-card-action.is-pill {
-  width: auto;
-  border-radius: 13px;
-  padding: 0 12px;
+  padding: 2px 10px;
 }
+/* Pill with leading icon (e.g. "+ Add"). Tiny gap, slightly larger
+ * leading character. Same overall rhythm as is-pill. */
 .hah-card-action.is-pill-icon {
-  width: auto;
-  border-radius: 13px;
-  padding: 0 11px 0 9px;
+  padding: 2px 10px 2px 8px;
   gap: 3px;
 }
 .hah-card-action.is-pill-icon .hah-card-action-icon {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 1;
-  /* Tiny optical adjustment so a "+" baseline-aligns with text */
   margin-top: -1px;
-}
-.hah-card-action:hover {
-  background: rgba(255,255,255,0.95);
-  border-color: rgba(0,0,0,0.25);
-}
-.hah-card-action:active {
-  background: rgba(0,0,0,0.05);
-}
-.hah-card-action.is-open,
-.hah-card-action[aria-expanded="true"] {
-  background: rgba(0,0,0,0.06);
-  border-color: rgba(0,0,0,0.30);
 }
 
 .hah-ref-body {
@@ -7651,9 +7635,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_160_med_change_clickable_row_release.html',
-  source: 'hospital_at_home_board_v0_8_160_med_change_clickable_row_source.zip',
-  builtAt: '2026-05-09T12:22:36.579472',
+  filename: 'hospital_at_home_board_v0_8_161_card_action_revert_release.html',
+  source: 'hospital_at_home_board_v0_8_161_card_action_revert_source.zip',
+  builtAt: '2026-05-09T12:24:39.450474',
   entry: 'desktop.html'
 };
 </script>
@@ -19073,10 +19057,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.160. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.161. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.160. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.161. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
