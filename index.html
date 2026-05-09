@@ -7610,9 +7610,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_151_discharge_letter_delete_release.html',
-  source: 'hospital_at_home_board_v0_8_151_discharge_letter_delete_source.zip',
-  builtAt: '2026-05-09T08:13:29.556005',
+  filename: 'hospital_at_home_board_v0_8_152_discharge_letter_polish2_release.html',
+  source: 'hospital_at_home_board_v0_8_152_discharge_letter_polish2_source.zip',
+  builtAt: '2026-05-09T08:32:03.164009',
   entry: 'desktop.html'
 };
 </script>
@@ -18907,10 +18907,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.151. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.152. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.151. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.152. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -18940,7 +18940,9 @@ window.HAHBoard = window.HAHBoard || {};
   function stitchInitialBody(vm, medChangeEntries) {
     const sections = [];
     const patient = vm && vm.patient ? vm.patient : {};
-    const fds = String(patient.forDischargeSummary || '').trim();
+    // v0.8.152: use the multi-source fallback helper. fds may live on
+    // operational, on the JSON record, or in a timeline entry's note.
+    const fds = getForDischargeSummary(vm);
 
     // Summary opening — placeholder for the clinician (or AI in Build B)
     // to write a paragraph about admission, course, current state.
@@ -19005,7 +19007,9 @@ window.HAHBoard = window.HAHBoard || {};
   function mergeStructuredSections(body, vm, medChangeEntries) {
     if (!body) return body;
     const patient = vm && vm.patient ? vm.patient : {};
-    const fds = String(patient.forDischargeSummary || '').trim();
+    // v0.8.152: same multi-source fallback as stitchInitialBody so a
+    // re-open of an existing letter pulls in fds wherever it lives.
+    const fds = getForDischargeSummary(vm);
 
     const blocks = body.split(/\n\s*\n/);
 
@@ -19154,6 +19158,45 @@ window.HAHBoard = window.HAHBoard || {};
     if (ucp === 'yes' || ucp === 'present') parts.push('a UCP (Universal Care Plan) is in place');
     if (!parts.length) return '';
     return parts.join(', ').replace(/^./, (ch) => ch.toUpperCase()) + '.';
+  }
+
+  // v0.8.152: the "for discharge summary" content can live in multiple
+  // places depending on whether it was written via mobile, desktop, or
+  // is captured in a timeline entry. Field-test bug: fds visible in a
+  // patient log entry's note wasn't reflected on the summary view-model
+  // even when the data was clearly there. Cause was unclear without
+  // runtime inspection; resolution is to defensively check all known
+  // sources in priority order so the letter feature works regardless of
+  // where the value lives.
+  function getForDischargeSummary(vm) {
+    const patient = vm && vm.patient ? vm.patient : {};
+
+    // 1. Hoisted summary field — the canonical desktop read path,
+    //    populated by 24-desktop-derived.js from raw.forDischargeSummary
+    //    (which comes via splitDischargeFields(operational)).
+    const fromSummary = String(patient.forDischargeSummary || '').trim();
+    if (fromSummary) return fromSummary;
+
+    // 2. Direct read from the operational block of the JSON record,
+    //    skipping any legacy-raw transformation. Defensive fallback in
+    //    case splitDischargeFields elides the value somehow.
+    const json = patient.sourcePatient && patient.sourcePatient.jsonRecord;
+    if (json && json.operational) {
+      const fromOperational = String(json.operational.forDischargeSummary || '').trim();
+      if (fromOperational) return fromOperational;
+    }
+
+    // 3. Latest timeline entry whose note carries forDischargeSummary.
+    //    Covers the case where the data was written into a clinical
+    //    review note but isn't (yet) reflected on the operational block.
+    if (json && Array.isArray(json.timeline)) {
+      const candidates = json.timeline
+        .filter((e) => e && e.note && e.note.forDischargeSummary && String(e.note.forDischargeSummary).trim())
+        .sort((a, b) => Date.parse(b.timestamp || 0) - Date.parse(a.timestamp || 0));
+      if (candidates.length) return String(candidates[0].note.forDischargeSummary).trim();
+    }
+
+    return '';
   }
 
   // ─── Filename helpers ──────────────────────────────────────────────────
@@ -19746,25 +19789,42 @@ window.HAHBoard = window.HAHBoard || {};
   // here to keep the discharge-letter module self-contained.
 
   function persistLetterPatch(api, patientId, newLetter) {
-    // api: { persistPatientPatchToJson, store, ops } — passed in from
-    // 26-desktop-patient.js to avoid circular module dependencies.
+    // Goes through the api's persistPatientPatchToJson which triggers a
+    // store.setState in its .then() — used for action handlers
+    // (mark sent, delete, open editor with merge) where we WANT the
+    // right pane / card to re-render after the write.
     if (!api || !patientId) return;
     const patch = { operational: { dischargeLetter: newLetter } };
     if (typeof api.persistPatientPatchToJson === 'function') {
       api.persistPatientPatchToJson(patientId, patch);
     }
-    // v0.8.149-hotfix2: NO store.setState() here. Triggering a re-render
-    // after each autosave caused the textarea innerHTML to be rebuilt
-    // mid-typing — visible to the user as the value reverting briefly to
-    // the just-persisted body and then catching up. The persistence path
-    // already updates the in-memory cache via patchPatientCacheRow, so the
-    // next legitimate re-render (anything else changing state) will see
-    // fresh data. The card preview snippet refreshes naturally on the
-    // next render — no need to force one purely for autosave.
-    //
-    // The live preview pane in letter editor mode updates directly via
-    // DOM manipulation in bindLetterEditor's input handler, not through
-    // the render system.
+  }
+
+  // v0.8.152: silent variant for the autosave timer. Bypasses
+  // persistPatientPatchToJson because that wrapper fires a
+  // store.setState in its .then() handler after the JSON write resolves
+  // — and that setState triggers a right-pane re-render that clobbers
+  // the user's in-progress typing. (The disappearing-text bug.)
+  //
+  // Why this is safe:
+  //   - sharedJsonStore.patchPatientRecord internally calls
+  //     patchPatientCacheRow, which updates the in-memory patient cache
+  //     synchronously. The next legitimate render reads fresh data.
+  //   - We don't notify the rest of the app via setState. The card
+  //     preview snippet (in the centre right column) won't update until
+  //     the next render that happens for any other reason — acceptable
+  //     because the snippet is informational, not interactive.
+  //
+  // Used only by the autosave timer. Action handlers (mark sent, delete)
+  // continue using persistLetterPatch so their state changes propagate.
+  function persistLetterPatchSilent(patientId, newLetter) {
+    if (!patientId) return;
+    const sharedStore = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.sharedJsonStore) || null;
+    if (!sharedStore || typeof sharedStore.patchPatientRecord !== 'function') return;
+    const patch = { operational: { dischargeLetter: newLetter } };
+    sharedStore.patchPatientRecord(String(patientId), patch).catch(function (err) {
+      console.warn('[dischargeLetter] silent JSON write failed', err);
+    });
   }
 
   // ─── Action handlers (called from 26-desktop-patient.js handleClick) ───
@@ -20067,7 +20127,10 @@ window.HAHBoard = window.HAHBoard || {};
           } else {
             updated = transitionEdit(existing, ta.value);
           }
-          persistLetterPatch(api, capturedPatientId, updated);
+          // v0.8.152: silent write to avoid re-render clobbering the
+          // textarea mid-typing. See persistLetterPatchSilent for the
+          // full reasoning.
+          persistLetterPatchSilent(capturedPatientId, updated);
           setSaveState('Saved');
         } catch (err) {
           console.error('[dischargeLetter] autosave failed', err);
@@ -20124,7 +20187,7 @@ window.HAHBoard = window.HAHBoard || {};
     // Letter spec
     buildLetterSpec, formatReLine, formatDate, formatGovernanceFooter,
     // Initial body stitching (testable)
-    stitchInitialBody, stitchMedChangeLines, stitchResusLine,
+    stitchInitialBody, stitchMedChangeLines, stitchResusLine, getForDischargeSummary,
     stitchMedSectionContent, stitchRecommendationsContent, stitchResusSectionContent,
     // Dynamic merge for re-opens
     mergeStructuredSections, isAutoRecContent,
