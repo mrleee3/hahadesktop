@@ -5171,15 +5171,27 @@ button.hah-pt-flag:active {
 
 .hah-medchg-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--desk-border);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
   font-size: 12px;
   line-height: 1.4;
   position: relative;
 }
-.hah-medchg-row:last-child { border-bottom: none; }
+/* v0.8.156: row separators moved from border-bottom (which spans the
+ * full row width including padding, so the line went edge-to-edge of
+ * the card content area) to a pseudo-element with left/right inset
+ * matching the row's horizontal padding. The line now sits between the
+ * "icon column" and the "date column" extents, which reads as a
+ * grouping separator rather than a hard divide. */
+.hah-medchg-row + .hah-medchg-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  border-top: 1px solid var(--desk-border);
+}
 .hah-medchg-row.is-editing {
   background: rgba(10,132,255,0.06);
 }
@@ -5205,16 +5217,25 @@ button.hah-pt-flag:active {
  * fixed-width slot so successive rows visually align. The card row
  * uses the icon (compact, scannable); the radio-chip composer still
  * uses the verb chip. Both share the colour palette via the chained
- * selectors below. */
+ * selectors below.
+ *
+ * v0.8.156: icon now contains inline SVG markup (set via badge.iconSvg
+ * at render time). The span sets color via .is-X class and the SVG's
+ * fill="currentColor" inherits it. Slot size matches the SVG viewBox
+ * so the icon fills the slot cleanly. */
 .hah-medchg-icon {
   flex: 0 0 auto;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 18px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 14px;
+  height: 18px;
   line-height: 1;
-  white-space: nowrap;
+}
+.hah-medchg-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 .hah-medchg-verb.is-start,  .hah-medchg-icon.is-start  { color: #1a7f37; }
 .hah-medchg-verb.is-stop,   .hah-medchg-icon.is-stop   { color: #b42318; }
@@ -5225,8 +5246,15 @@ button.hah-pt-flag:active {
 /* v0.8.147: drug name now takes flex priority. Truncates only when the
  * row genuinely runs out of space. min-width:0 needed so the flex item
  * can actually shrink below its content's intrinsic width. */
+/* v0.8.156: drug column width is shared across all rows via a CSS
+ * variable (--medchg-drug-w) set on the list at render time by
+ * fitMedChangeDrugColumns() in 26-desktop-patient.js. The variable is
+ * the rendered scrollWidth of the longest drug name, capped 80–180px.
+ * Result: doses align in a column across rows, longer drug names
+ * expand the column rather than truncating. The 110px fallback covers
+ * typical names if JS measurement hasn't run yet. */
 .hah-medchg-drug {
-  flex: 1 1 auto;
+  flex: 0 0 var(--medchg-drug-w, 110px);
   min-width: 0;
   font-weight: 600;
   color: var(--desk-text);
@@ -5235,10 +5263,19 @@ button.hah-pt-flag:active {
   text-overflow: ellipsis;
 }
 
+/* v0.8.156: transition (dose / from→to) now takes the flexible space.
+ * Was flex: 0 0 auto previously, which sat tight to the drug name and
+ * left a gap before the reason. Now it expands to fill, pushing the
+ * reason and date toward the right edge. min-width: 0 so it can
+ * shrink past content's intrinsic width and ellipsis-truncate when
+ * the row is narrow. */
 .hah-medchg-transition {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   color: var(--desk-text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hah-medchg-arrow {
   color: var(--desk-text-muted);
@@ -5246,14 +5283,18 @@ button.hah-pt-flag:active {
   padding: 0 2px;
 }
 
+/* v0.8.156: reason capped at 120px so doses+date stay alignable. Was
+ * flex: 0 1 auto, which let it grow indefinitely on entries with long
+ * reasons and pushed the date around. Truncates with ellipsis;
+ * tooltip surfaces full text. */
 .hah-medchg-reason {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  max-width: 120px;
   color: var(--desk-text-muted);
   font-style: italic;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
 }
 
 .hah-medchg-date {
@@ -5261,20 +5302,33 @@ button.hah-pt-flag:active {
   color: var(--desk-text-muted);
   font-size: 10.5px;
   white-space: nowrap;
+  text-align: right;
 }
 
 /* v0.8.147: edit pencil hover-reveal. Stays visible while the row is
- * being edited so the binding to the composer is obvious. Pencil
- * occupies fixed space at the right via flex: 0 0 auto, but its
- * opacity transitions in/out — so layout doesn't shift on hover. */
+ * being edited so the binding to the composer is obvious.
+ *
+ * v0.8.156: removed from flex flow (was flex: 0 0 auto with
+ * opacity:0). Now absolute-positioned at the row's right edge so it
+ * doesn't reserve 22px+8px gap on every row's right side — that was
+ * the source of the asymmetric L/R margin (left side was 12px to icon,
+ * right side was 12+8+22 = 42px to date). With the button absolute, the
+ * row's flex content sits flush against both 12px paddings symmetrically.
+ * On hover the button fades in and overlays the right portion of the
+ * row content (typically the date); the date is visible the rest of
+ * the time. White-ish backdrop so the button visually lifts when it
+ * appears. */
 .hah-medchg-edit-btn {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
   width: 22px;
   height: 22px;
   padding: 0;
   border-radius: 6px;
   border: 1px solid transparent;
-  background: transparent;
+  background: rgba(255,255,255,0.95);
   color: var(--desk-text-muted);
   font-size: 12px;
   cursor: pointer;
@@ -5283,6 +5337,7 @@ button.hah-pt-flag:active {
   justify-content: center;
   transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
   opacity: 0;
+  z-index: 1;
 }
 .hah-medchg-row:hover .hah-medchg-edit-btn,
 .hah-medchg-row.is-editing .hah-medchg-edit-btn,
@@ -7631,9 +7686,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_155_med_change_icons_release.html',
-  source: 'hospital_at_home_board_v0_8_155_med_change_icons_source.zip',
-  builtAt: '2026-05-09T09:35:14.210251',
+  filename: 'hospital_at_home_board_v0_8_156_med_change_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_156_med_change_polish_source.zip',
+  builtAt: '2026-05-09T10:06:14.582373',
   entry: 'desktop.html'
 };
 </script>
@@ -14605,6 +14660,53 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
   }
 
+  // v0.8.156: shared drug column width across rows. After render, walks
+  // each medication_change card, measures the natural scrollWidth of
+  // each .hah-medchg-drug span (with flex/width temporarily neutralised
+  // so the measurement reflects content, not layout constraint), takes
+  // the max, sets it as a CSS custom property on the list. The CSS rule
+  // `flex: 0 0 var(--medchg-drug-w, 110px)` then sizes every drug cell
+  // identically. Result: doses align in a column. Capped 80px–180px so
+  // an unusually long drug name doesn't shove the rest of the row off
+  // the right edge — at the cap, the offending name ellipsis-truncates
+  // (still readable in the tooltip via the title attribute, which the
+  // hover-edit button already exposes).
+  function fitMedChangeDrugColumns(pane) {
+    if (!pane) return;
+    const cards = pane.querySelectorAll('.hah-medchg-card');
+    cards.forEach((card) => {
+      const list = card.querySelector('.hah-medchg-list');
+      if (!list) return;
+      const drugs = list.querySelectorAll('.hah-medchg-drug');
+      if (!drugs.length) return;
+
+      // Snapshot inline styles, neutralise flex/width to measure
+      const orig = [];
+      drugs.forEach((el, i) => {
+        orig[i] = { flex: el.style.flex, width: el.style.width, maxWidth: el.style.maxWidth };
+        el.style.flex = '0 0 auto';
+        el.style.width = 'auto';
+        el.style.maxWidth = 'none';
+      });
+
+      let maxW = 0;
+      drugs.forEach((el) => {
+        if (el.scrollWidth > maxW) maxW = el.scrollWidth;
+      });
+
+      // Restore inline styles (CSS rule with var takes over)
+      drugs.forEach((el, i) => {
+        el.style.flex = orig[i].flex;
+        el.style.width = orig[i].width;
+        el.style.maxWidth = orig[i].maxWidth;
+      });
+
+      // 4px padding for breathing room; clamp 80–180px
+      const target = Math.min(Math.max(maxW + 4, 80), 180);
+      list.style.setProperty('--medchg-drug-w', target + 'px');
+    });
+  }
+
   function renderMedChangeRow(entry, composer, opts) {
     const f = entry.fields || {};
     const meta = getMedChangeTypeMeta(f.changeType);
@@ -14619,19 +14721,16 @@ window.HAHBoard = window.HAHBoard || {};
     const isEditing = composer.open && composer.editingId === entry.id;
     const rowClass = isEditing ? 'hah-medchg-row is-editing' : 'hah-medchg-row';
 
-    // v0.8.155: replaced coloured-text verb with a coloured icon. Saves
-    // ~6 character widths per row, easier to scan at a glance. Icon
-    // glyph + colour class come from the discharge letter module's
-    // getMedChangeBadge so card and letter share one source of truth
-    // (and adjust direction is computed once, consistently). Falls back
-    // to the type's text verb if the module isn't loaded — keeps the
-    // card functional even if discharge letter loads late or fails.
+    // v0.8.156: badge.iconSvg is full inline SVG markup. The icon span's
+    // CSS picks up the .is-X colour class and the SVG inherits it via
+    // fill="currentColor". Hidden falls-back to a coloured bullet glyph
+    // if the discharge letter module fails to load.
     const dlModule = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.dischargeLetter) || null;
     const badge = (dlModule && typeof dlModule.getMedChangeBadge === 'function')
       ? dlModule.getMedChangeBadge(entry)
-      : { icon: '•', cls: meta.cls };
-    const tooltipText = meta.verb + (f.changeType === 'adjust' && badge.verb !== 'CHANGE' ? ' (' + badge.verb.toLowerCase() + ')' : '');
-    const verbHtml = `<span class="hah-medchg-icon ${badge.cls}" title="${c.escapeHtml(tooltipText)}" aria-label="${c.escapeHtml(tooltipText)}">${badge.icon}</span>`;
+      : { iconSvg: '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>', cls: meta.cls, verb: '' };
+    const tooltipText = meta.verb + (f.changeType === 'adjust' && badge.verb !== 'CHANGE' && badge.verb ? ' (' + badge.verb.toLowerCase() + ')' : '');
+    const verbHtml = `<span class="hah-medchg-icon ${badge.cls}" title="${c.escapeHtml(tooltipText)}" aria-label="${c.escapeHtml(tooltipText)}">${badge.iconSvg}</span>`;
     const drugHtml = `<span class="hah-medchg-drug">${drug}</span>`;
     const transitionHtml = transition
       ? `<span class="hah-medchg-transition">${transition}</span>`
@@ -16089,6 +16188,12 @@ window.HAHBoard = window.HAHBoard || {};
       // and re-binds when letter mode closes.
       return;
     }
+
+    // v0.8.156: measure med-change drug column widths and set the CSS
+    // variable so doses align across rows. Cheap (one tree walk per
+    // card, microsecond-scale measurements). No-op if no medication
+    // change cards are present in the rendered pane.
+    fitMedChangeDrugColumns(pane);
 
     const type     = (state.patient && state.patient.composerType) || 'board_round';
     const scopedComposer = getScopedComposerState(state, vm.patient.id);
@@ -18943,10 +19048,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.155. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.156. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.155. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.156. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19147,20 +19252,47 @@ window.HAHBoard = window.HAHBoard || {};
   // Adjust entries are direction-aware: getAdjustDirection compares
   // numeric dose first, then frequency multiplier (OD/BD/TDS/QDS).
   // Direction-unclear adjusts get the neutral ↕ icon and CHANGE verb.
+  // v0.8.156: SVG icon markup, one constant per change-type variant.
+  // Filled solid shapes designed to read as STATE indicators rather than
+  // ACTIONS. Plus/minus glyphs were the v0.8.155 first-pass — visually
+  // they read as "+ Add" / "- Remove" buttons (because that's what the
+  // card's add button literally is) rather than as status badges. Arrows
+  // and signage iconography don't have that ambiguity:
+  //
+  //   start (green)    →  rightward arrow with shaft (introduced into regimen)
+  //   stop (red)       →  octagon stop sign (terminal action)
+  //   increase (amber) →  solid up-arrow (chunky, fills 18px well)
+  //   decrease (amber) →  solid down-arrow (mirror of increase)
+  //   change (amber)   →  bidirectional horizontal arrow (rare unclear case)
+  //   hold (grey)      →  pair of vertical bars (pause)
+  //   resume (blue)    →  solid right-pointing triangle (play)
+  //
+  // All paths use fill="currentColor" so the colour comes from the
+  // wrapping span's CSS rules (.hah-medchg-icon.is-X). Stop sign is the
+  // exception — its inner white horizontal bar is hardcoded fill="#fff"
+  // because the colour is structural to the sign's meaning, not a theme.
+  const ICON_START    = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14.5 8 8 14v-3.5H2v-5h6V2z"/></svg>';
+  const ICON_STOP     = '<svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="5.3,1 10.7,1 14.5,4.8 14.5,11.2 10.7,15 5.3,15 1.5,11.2 1.5,4.8" fill="currentColor"/><rect x="3.5" y="7.2" width="9" height="1.6" fill="#fff"/></svg>';
+  const ICON_INCREASE = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5 14 8h-3.5v6h-5V8H2z"/></svg>';
+  const ICON_DECREASE = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.5 2 8h3.5V2h5v6H14z"/></svg>';
+  const ICON_CHANGE   = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 8l4-4v3h4V4l4 4-4 4v-3H6v3z"/></svg>';
+  const ICON_HOLD     = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/></svg>';
+  const ICON_RESUME   = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3l9 5-9 5z"/></svg>';
+
   function getMedChangeBadge(entry) {
     const f = (entry && entry.fields) || {};
     const type = f.changeType;
-    if (type === 'start')  return { icon: '✓', verb: 'NEW',     cls: 'is-start'  };
-    if (type === 'stop')   return { icon: '✕', verb: 'STOP',    cls: 'is-stop'   };
-    if (type === 'hold')   return { icon: '⏸', verb: 'HOLD',    cls: 'is-hold'   };
-    if (type === 'resume') return { icon: '▶', verb: 'RESUME',  cls: 'is-resume' };
+    if (type === 'start')  return { iconSvg: ICON_START,  verb: 'NEW',    cls: 'is-start'  };
+    if (type === 'stop')   return { iconSvg: ICON_STOP,   verb: 'STOP',   cls: 'is-stop'   };
+    if (type === 'hold')   return { iconSvg: ICON_HOLD,   verb: 'HOLD',   cls: 'is-hold'   };
+    if (type === 'resume') return { iconSvg: ICON_RESUME, verb: 'RESUME', cls: 'is-resume' };
     if (type === 'adjust') {
       const direction = getAdjustDirection(f.fromValue, f.toValue);
-      if (direction === 'increase') return { icon: '↑', verb: 'INCREASE', cls: 'is-adjust' };
-      if (direction === 'decrease') return { icon: '↓', verb: 'DECREASE', cls: 'is-adjust' };
-      return { icon: '↕', verb: 'CHANGE', cls: 'is-adjust' };
+      if (direction === 'increase') return { iconSvg: ICON_INCREASE, verb: 'INCREASE', cls: 'is-adjust' };
+      if (direction === 'decrease') return { iconSvg: ICON_DECREASE, verb: 'DECREASE', cls: 'is-adjust' };
+      return { iconSvg: ICON_CHANGE, verb: 'CHANGE', cls: 'is-adjust' };
     }
-    return { icon: '•', verb: 'CHANGE', cls: '' };
+    return { iconSvg: '', verb: 'CHANGE', cls: '' };
   }
 
   // Returns 'increase' | 'decrease' | 'unclear'.
