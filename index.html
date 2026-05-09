@@ -7686,9 +7686,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_157_med_change_polish2_release.html',
-  source: 'hospital_at_home_board_v0_8_157_med_change_polish2_source.zip',
-  builtAt: '2026-05-09T12:01:42.817696',
+  filename: 'hospital_at_home_board_v0_8_158_med_change_stop_dose_release.html',
+  source: 'hospital_at_home_board_v0_8_158_med_change_stop_dose_source.zip',
+  builtAt: '2026-05-09T12:04:52.074123',
   entry: 'desktop.html'
 };
 </script>
@@ -14553,7 +14553,13 @@ window.HAHBoard = window.HAHBoard || {};
 
   const MED_CHANGE_TYPES = [
     { key: 'start',   verb: 'Started',  cls: 'is-start',   needsFrom: false, needsTo: true  },
-    { key: 'stop',    verb: 'Stopped',  cls: 'is-stop',    needsFrom: false, needsTo: false },
+    // v0.8.158: stop now captures the dose the patient was on when the
+    // medication was stopped — clinically useful (GP often needs to know
+    // what dose was halted, especially for taper-back-on or risk
+    // counselling), and consistent with adjust which also captures the
+    // pre-change dose. Stored on `fromValue` (the dose AT the moment of
+    // change, before the change), matching adjust's semantics.
+    { key: 'stop',    verb: 'Stopped',  cls: 'is-stop',    needsFrom: true,  needsTo: false },
     { key: 'adjust',  verb: 'Adjusted', cls: 'is-adjust',  needsFrom: true,  needsTo: true  },
     { key: 'hold',    verb: 'Held',     cls: 'is-hold',    needsFrom: false, needsTo: false },
     { key: 'resume',  verb: 'Resumed',  cls: 'is-resume',  needsFrom: false, needsTo: false }
@@ -14562,8 +14568,10 @@ window.HAHBoard = window.HAHBoard || {};
     return MED_CHANGE_TYPES.find((t) => t.key === key) || MED_CHANGE_TYPES[0];
   }
   // Format the transition string for an entry. 'start' → toValue alone.
-  // 'adjust' → "from → to". 'stop'/'hold' → faded "(stopped)"/"(held)".
-  // 'resume' → just the verb is enough; show toValue if provided.
+  // 'adjust' → "from → to". 'stop' → fromValue alone (the dose at which
+  // the med was stopped, captured on fromValue from v0.8.158). 'hold'
+  // emits no transition (no dose captured). 'resume' shows toValue if
+  // provided.
   function formatMedChangeTransition(fields) {
     const meta = getMedChangeTypeMeta(fields.changeType);
     const from = String(fields.fromValue || '').trim();
@@ -14572,6 +14580,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (meta.key === 'adjust' && to) return c.escapeHtml(to);
     if (meta.key === 'start'  && to) return c.escapeHtml(to);
     if (meta.key === 'resume' && to) return c.escapeHtml(to);
+    if (meta.key === 'stop'   && from) return c.escapeHtml(from);
     return '';
   }
   // Date label for a med change. Today / Yesterday / "5 May".
@@ -14787,7 +14796,7 @@ window.HAHBoard = window.HAHBoard || {};
         <div class="hah-medchg-radio-group">${typeRadios}</div>
       </div>
       ${showFrom ? `<div class="hah-medchg-comp-row">
-        <label class="hah-medchg-comp-label">From</label>
+        <label class="hah-medchg-comp-label">${meta.key === 'stop' ? 'Dose' : 'From'}</label>
         <input type="text" class="hah-medchg-comp-input" id="medChangeFromValue"
           placeholder="e.g. 5mg OD"
           value="${c.escapeHtml(composer.fromValue || '')}"
@@ -19059,10 +19068,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.157. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.158. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.157. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.158. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19363,6 +19372,12 @@ window.HAHBoard = window.HAHBoard || {};
       let line = verb + ' ' + drug;
       if (f.changeType === 'adjust' && from && to) line += ' (' + from + ' → ' + to + ')';
       else if (to && (f.changeType === 'start' || f.changeType === 'resume' || f.changeType === 'adjust')) line += ' ' + to;
+      // v0.8.158: stop entries now optionally carry the dose the patient
+      // was on (fromValue). If present, include it in the letter line so
+      // the GP knows what dose was halted — important for taper-back-on
+      // and risk counselling. Falls through silently if not present
+      // (back-compat with stop entries created before v0.8.158).
+      else if (f.changeType === 'stop' && from) line += ' ' + from;
       if (reason) line += ' — ' + reason;
       lines.push(line);
     }
