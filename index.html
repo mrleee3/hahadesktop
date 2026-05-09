@@ -5200,11 +5200,27 @@ button.hah-pt-flag:active {
   white-space: nowrap;
   letter-spacing: 0;
 }
-.hah-medchg-verb.is-start  { color: #1a7f37; }
-.hah-medchg-verb.is-stop   { color: #b42318; }
-.hah-medchg-verb.is-adjust { color: #b54708; }
-.hah-medchg-verb.is-hold   { color: #4b5563; }
-.hah-medchg-verb.is-resume { color: #0a5fa8; }
+
+/* v0.8.155: icon variant — same five colour rules, larger glyph,
+ * fixed-width slot so successive rows visually align. The card row
+ * uses the icon (compact, scannable); the radio-chip composer still
+ * uses the verb chip. Both share the colour palette via the chained
+ * selectors below. */
+.hah-medchg-icon {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hah-medchg-verb.is-start,  .hah-medchg-icon.is-start  { color: #1a7f37; }
+.hah-medchg-verb.is-stop,   .hah-medchg-icon.is-stop   { color: #b42318; }
+.hah-medchg-verb.is-adjust, .hah-medchg-icon.is-adjust { color: #b54708; }
+.hah-medchg-verb.is-hold,   .hah-medchg-icon.is-hold   { color: #4b5563; }
+.hah-medchg-verb.is-resume, .hah-medchg-icon.is-resume { color: #0a5fa8; }
 
 /* v0.8.147: drug name now takes flex priority. Truncates only when the
  * row genuinely runs out of space. min-width:0 needed so the flex item
@@ -7615,9 +7631,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_154_discharge_letter_polish3_release.html',
-  source: 'hospital_at_home_board_v0_8_154_discharge_letter_polish3_source.zip',
-  builtAt: '2026-05-09T09:21:34.034929',
+  filename: 'hospital_at_home_board_v0_8_155_med_change_icons_release.html',
+  source: 'hospital_at_home_board_v0_8_155_med_change_icons_source.zip',
+  builtAt: '2026-05-09T09:35:14.210251',
   entry: 'desktop.html'
 };
 </script>
@@ -14603,10 +14619,19 @@ window.HAHBoard = window.HAHBoard || {};
     const isEditing = composer.open && composer.editingId === entry.id;
     const rowClass = isEditing ? 'hah-medchg-row is-editing' : 'hah-medchg-row';
 
-    // v0.8.147: chip → coloured-text verb. Lighter visual weight, more
-    // horizontal space for drug + transition + reason. Verb still
-    // carries the change-type signal via colour.
-    const verbHtml = `<span class="hah-medchg-verb ${meta.cls}">${meta.verb}</span>`;
+    // v0.8.155: replaced coloured-text verb with a coloured icon. Saves
+    // ~6 character widths per row, easier to scan at a glance. Icon
+    // glyph + colour class come from the discharge letter module's
+    // getMedChangeBadge so card and letter share one source of truth
+    // (and adjust direction is computed once, consistently). Falls back
+    // to the type's text verb if the module isn't loaded — keeps the
+    // card functional even if discharge letter loads late or fails.
+    const dlModule = (typeof window !== 'undefined' && window.HAHBoard && window.HAHBoard.dischargeLetter) || null;
+    const badge = (dlModule && typeof dlModule.getMedChangeBadge === 'function')
+      ? dlModule.getMedChangeBadge(entry)
+      : { icon: '•', cls: meta.cls };
+    const tooltipText = meta.verb + (f.changeType === 'adjust' && badge.verb !== 'CHANGE' ? ' (' + badge.verb.toLowerCase() + ')' : '');
+    const verbHtml = `<span class="hah-medchg-icon ${badge.cls}" title="${c.escapeHtml(tooltipText)}" aria-label="${c.escapeHtml(tooltipText)}">${badge.icon}</span>`;
     const drugHtml = `<span class="hah-medchg-drug">${drug}</span>`;
     const transitionHtml = transition
       ? `<span class="hah-medchg-transition">${transition}</span>`
@@ -18918,10 +18943,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.154. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.155. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.154. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.155. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19111,18 +19136,75 @@ window.HAHBoard = window.HAHBoard || {};
     return false;
   }
 
+  // v0.8.155: medication change badge — single source of truth shared
+  // between the medication_change card (in 26-desktop-patient.js) and
+  // the discharge letter stitch. For each entry returns:
+  //   { icon, verb, cls }
+  // where icon is the unicode glyph for the card, verb is the all-caps
+  // label for the letter body, and cls is the colour modifier (matches
+  // the existing .hah-medchg-verb.is-X palette).
+  //
+  // Adjust entries are direction-aware: getAdjustDirection compares
+  // numeric dose first, then frequency multiplier (OD/BD/TDS/QDS).
+  // Direction-unclear adjusts get the neutral ↕ icon and CHANGE verb.
+  function getMedChangeBadge(entry) {
+    const f = (entry && entry.fields) || {};
+    const type = f.changeType;
+    if (type === 'start')  return { icon: '✓', verb: 'NEW',     cls: 'is-start'  };
+    if (type === 'stop')   return { icon: '✕', verb: 'STOP',    cls: 'is-stop'   };
+    if (type === 'hold')   return { icon: '⏸', verb: 'HOLD',    cls: 'is-hold'   };
+    if (type === 'resume') return { icon: '▶', verb: 'RESUME',  cls: 'is-resume' };
+    if (type === 'adjust') {
+      const direction = getAdjustDirection(f.fromValue, f.toValue);
+      if (direction === 'increase') return { icon: '↑', verb: 'INCREASE', cls: 'is-adjust' };
+      if (direction === 'decrease') return { icon: '↓', verb: 'DECREASE', cls: 'is-adjust' };
+      return { icon: '↕', verb: 'CHANGE', cls: 'is-adjust' };
+    }
+    return { icon: '•', verb: 'CHANGE', cls: '' };
+  }
+
+  // Returns 'increase' | 'decrease' | 'unclear'.
+  // Compares the first numeric value found in each dose string. If the
+  // numbers tie (e.g. 40mg → 40mg with a frequency change), falls back
+  // to comparing dosing frequency. If neither yields a signal, returns
+  // 'unclear' and the badge degrades to a neutral glyph + CHANGE verb.
+  function getAdjustDirection(fromValue, toValue) {
+    const fromN = parseFirstNumber(fromValue);
+    const toN = parseFirstNumber(toValue);
+    if (fromN == null || toN == null) return 'unclear';
+    if (fromN < toN) return 'increase';
+    if (fromN > toN) return 'decrease';
+    // Numbers tie — frequency multiplier breaks the tie if available.
+    const fromF = parseFrequency(fromValue);
+    const toF = parseFrequency(toValue);
+    if (fromF != null && toF != null) {
+      if (fromF < toF) return 'increase';
+      if (fromF > toF) return 'decrease';
+    }
+    return 'unclear';
+  }
+
+  function parseFirstNumber(s) {
+    const m = String(s == null ? '' : s).match(/(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  function parseFrequency(s) {
+    const lower = String(s == null ? '' : s).toLowerCase();
+    if (/\bqds\b|\bqid\b|\bfour times\b/.test(lower)) return 4;
+    if (/\btds\b|\btid\b|\bthree times\b/.test(lower)) return 3;
+    if (/\bbd\b|\bbid\b|\btwice\b|\btwo times\b/.test(lower)) return 2;
+    if (/\bod\b|\bdaily\b|\bonce a day\b|\bonce daily\b/.test(lower)) return 1;
+    return null;
+  }
+
   function stitchMedChangeLines(entries) {
-    // Returns array of formatted strings, one per medication change.
-    // Verb + drug + transition + reason. Pulls from the same fields the
-    // medication_change card uses (drug, changeType, fromValue, toValue,
-    // reason). Verb mapping kept aligned with MED_CHANGE_TYPES in
-    // 26-desktop-patient.js — duplicated here to keep this module
-    // self-contained. If the source list changes, both must update.
+    // v0.8.155: returns array of formatted lines, one per medication
+    // change. Uses the all-caps verb from getMedChangeBadge (NEW / STOP /
+    // INCREASE / DECREASE / CHANGE / HOLD / RESUME) — easier to scan in
+    // a GP-facing letter than the older Started/Stopped/Adjusted prose,
+    // and direction-aware for adjust entries.
     if (!Array.isArray(entries)) return [];
-    const verbMap = {
-      start: 'Started', stop: 'Stopped', adjust: 'Adjusted',
-      hold: 'Held', resume: 'Resumed'
-    };
     const lines = [];
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
@@ -19130,7 +19212,8 @@ window.HAHBoard = window.HAHBoard || {};
       const f = e.fields;
       const drug = String(f.drug || '').trim();
       if (!drug) continue;
-      const verb = verbMap[f.changeType] || 'Changed';
+      const badge = getMedChangeBadge(e);
+      const verb = badge.verb;
       const from = String(f.fromValue || '').trim();
       const to = String(f.toValue || '').trim();
       const reason = String(f.reason || '').trim();
@@ -20262,6 +20345,9 @@ window.HAHBoard = window.HAHBoard || {};
     // Initial body stitching (testable)
     stitchInitialBody, stitchMedChangeLines, stitchResusLine, getForDischargeSummary,
     stitchMedSectionContent, stitchRecommendationsContent, stitchResusSectionContent,
+    // v0.8.155: medication change badge — shared between letter stitch
+    // and the medication_change card in 26-desktop-patient.js
+    getMedChangeBadge, getAdjustDirection, parseFirstNumber, parseFrequency,
     // Dynamic merge for re-opens
     mergeStructuredSections, isAutoRecContent,
     // Filename
