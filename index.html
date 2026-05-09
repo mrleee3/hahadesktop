@@ -5230,10 +5230,21 @@ button.hah-pt-flag:active {
 .hah-medchg-row.is-editing {
   background: rgba(10,132,255,0.06);
 }
-/* v0.8.147: hover background for click affordance — shows the row is
- * interactive even though the click target is the pencil. */
+/* v0.8.160: row is the click target now (the inline edit pencil at the
+ * row's right edge was removed because it overlapped the date column).
+ * Cursor + hover + focus ring make the affordance discoverable; the
+ * keydown wirer in bindMedChangeRowKeyboard maps Enter/Space to click
+ * for keyboard parity. */
+.hah-medchg-row[role="button"] {
+  cursor: pointer;
+}
 .hah-medchg-row:not(.is-editing):hover {
   background: rgba(0,0,0,0.025);
+}
+.hah-medchg-row[role="button"]:focus-visible {
+  outline: 2px solid rgba(10,132,255,0.50);
+  outline-offset: -2px;
+  background: rgba(10,132,255,0.04);
 }
 
 /* v0.8.147: verb is now coloured text, no chip background. Same five
@@ -5340,50 +5351,13 @@ button.hah-pt-flag:active {
   text-align: right;
 }
 
-/* v0.8.147: edit pencil hover-reveal. Stays visible while the row is
- * being edited so the binding to the composer is obvious.
- *
- * v0.8.156: removed from flex flow (was flex: 0 0 auto with
- * opacity:0). Now absolute-positioned at the row's right edge so it
- * doesn't reserve 22px+8px gap on every row's right side — that was
- * the source of the asymmetric L/R margin (left side was 12px to icon,
- * right side was 12+8+22 = 42px to date). With the button absolute, the
- * row's flex content sits flush against both 12px paddings symmetrically.
- * On hover the button fades in and overlays the right portion of the
- * row content (typically the date); the date is visible the rest of
- * the time. White-ish backdrop so the button visually lifts when it
- * appears. */
-.hah-medchg-edit-btn {
-  position: absolute;
-  top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: rgba(255,255,255,0.95);
-  color: var(--desk-text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
-  opacity: 0;
-  z-index: 1;
-}
-.hah-medchg-row:hover .hah-medchg-edit-btn,
-.hah-medchg-row.is-editing .hah-medchg-edit-btn,
-.hah-medchg-edit-btn:focus-visible {
-  opacity: 1;
-}
-.hah-medchg-edit-btn:hover {
-  background: rgba(10,132,255,0.10);
-  color: #0a84ff;
-  border-color: rgba(10,132,255,.16);
-}
+/* v0.8.160: .hah-medchg-edit-btn rules removed — the inline edit
+ * pencil was eliminated in favour of a whole-row click target. The
+ * v0.8.156 absolute-positioned button overlapped the date column on
+ * hover (visible during real use); making the row itself clickable
+ * removes the overlap and gives a bigger, more obvious hit target.
+ * Row affordance now: cursor: pointer on the row, existing hover
+ * background tint, and a focus-visible ring for keyboard. */
 
 /* v0.8.147: quiet header hint shown when all entries are on the same
  * day. Avoids "Today · Today · Today" repetition on individual rows. */
@@ -7677,9 +7651,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_159_card_action_unification_release.html',
-  source: 'hospital_at_home_board_v0_8_159_card_action_unification_source.zip',
-  builtAt: '2026-05-09T12:15:41.596161',
+  filename: 'hospital_at_home_board_v0_8_160_med_change_clickable_row_release.html',
+  source: 'hospital_at_home_board_v0_8_160_med_change_clickable_row_source.zip',
+  builtAt: '2026-05-09T12:22:36.579472',
   entry: 'desktop.html'
 };
 </script>
@@ -14718,6 +14692,28 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
+  // v0.8.160: keyboard activation for clickable rows. Now that rows are
+  // role="button" (with the inline edit pencil removed in favour of
+  // whole-row click target), Enter and Space need to fire the action
+  // for keyboard parity with mouse. Translates the keydown into a
+  // native .click() on the row, which triggers the document-level
+  // delegated click dispatcher in the shell. Tracked via dataset flag
+  // so we don't double-bind across re-renders.
+  function bindMedChangeRowKeyboard(pane) {
+    if (!pane) return;
+    const rows = pane.querySelectorAll('.hah-medchg-row[role="button"]');
+    rows.forEach((row) => {
+      if (row.dataset.kbBound === '1') return;
+      row.dataset.kbBound = '1';
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          row.click();
+        }
+      });
+    });
+  }
+
   function renderMedChangeRow(entry, composer, opts) {
     const f = entry.fields || {};
     const meta = getMedChangeTypeMeta(f.changeType);
@@ -14756,16 +14752,22 @@ window.HAHBoard = window.HAHBoard || {};
     const dateHtml = dateLabel
       ? `<span class="hah-medchg-date">${c.escapeHtml(dateLabel)}</span>`
       : '';
-    // v0.8.147: edit pencil hover-reveal. Stays visible when row is
-    // .is-editing so the binding to the composer is clear.
-    const editBtn = `<button type="button" class="hah-medchg-edit-btn" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" title="Edit this change" aria-label="Edit this medication change">✎</button>`;
-
     // v0.8.157: row-level tooltip exposes the reason (and the change
     // type) on hover. Concatenated as "verb · reason" so the hover
     // shows the same context the row would have rendered inline.
     const rowTooltip = reason ? meta.verb + ' · ' + reason : meta.verb;
 
-    return `<div class="${rowClass}" title="${c.escapeHtml(rowTooltip)}">${verbHtml}${drugHtml}${transitionHtml}${dateHtml}${editBtn}</div>`;
+    // v0.8.160: edit affordance moved from a hover-revealed inline
+    // button to the whole row being the click target. The inline
+    // button overlapped the date column on hover (the trade-off for
+    // symmetric L/R margins in v0.8.156) — making the row itself
+    // clickable removes the overlap entirely. The hover background
+    // tint already telegraphs interactivity, and rows are sized for
+    // a comfortable click target. data-entry-id moves from button to
+    // row so the existing medchg-edit handler (target.getAttribute(
+    // 'data-entry-id')) keeps working unchanged. role="button" +
+    // tabindex make it keyboard-accessible too.
+    return `<div class="${rowClass}" data-patient-action="medchg-edit" data-entry-id="${c.escapeHtml(entry.id)}" role="button" tabindex="0" title="${c.escapeHtml(rowTooltip)}" aria-label="Edit ${c.escapeHtml(meta.verb.toLowerCase())} ${c.escapeHtml(drug)}">${verbHtml}${drugHtml}${transitionHtml}${dateHtml}</div>`;
   }
 
   function renderMedChangeComposer(composer) {
@@ -16214,6 +16216,9 @@ window.HAHBoard = window.HAHBoard || {};
     // card, microsecond-scale measurements). No-op if no medication
     // change cards are present in the rendered pane.
     fitMedChangeDrugColumns(pane);
+    // v0.8.160: bind Enter/Space keyboard activation on med-change rows
+    // (rows are role="button" now that the inline edit pencil is gone).
+    bindMedChangeRowKeyboard(pane);
 
     const type     = (state.patient && state.patient.composerType) || 'board_round';
     const scopedComposer = getScopedComposerState(state, vm.patient.id);
@@ -19068,10 +19073,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.159. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.160. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.159. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.160. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
