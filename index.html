@@ -7578,9 +7578,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_release.html',
-  source: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_source.zip',
-  builtAt: '2026-05-09T07:55:29.330064',
+  filename: 'hospital_at_home_board_v0_8_150_discharge_letter_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_150_discharge_letter_polish_source.zip',
+  builtAt: '2026-05-09T08:08:25.721484',
   entry: 'desktop.html'
 };
 </script>
@@ -18875,25 +18875,33 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.149. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.150. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.149. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.150. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
   //
-  // v0.8.149-hotfix2: when a clinician creates a fresh draft, pre-populate
-  // the body with the structured patient data already in the record.
-  // Specifically:
-  //   - "For discharge summary" textarea content (operational.forDischargeSummary)
-  //   - Medication changes from timeline (medication_change entries)
+  // v0.8.149: when a clinician creates a fresh draft, pre-populate the
+  // body with the structured patient data already in the record:
+  //   - Summary placeholder (clinician fills in)
+  //   - Medication changes from timeline
+  //   - Recommendations and follow-up — populated from operational.forDischargeSummary
+  //     (the "for discharge summary" textarea content from the board round)
   //   - Resus status if DNAR/UCP flagged on the ACP
   //
+  // v0.8.150: forDischargeSummary now maps to Recommendations and follow-up
+  // (was previously stuffed at the start as the body opening). The board
+  // round's "for discharge summary" textarea is where clinicians note GP
+  // follow-up — it should populate the recommendations section directly.
+  //
   // This is template-stitching for the *initial* body only. Once the
-  // clinician edits, we don't clobber their work. Build B's AI flow will
-  // replace this with proper prose generation; until then, the stitch
-  // gives clinicians something to edit rather than a blank textarea.
+  // clinician edits, mergeStructuredSections handles dynamic refresh of
+  // auto-generated sections (medication changes, resus) on subsequent
+  // editor opens. Build B's AI flow will replace this stitch with proper
+  // prose generation; until then, stitching gives clinicians something
+  // to edit rather than a blank textarea.
   //
   // Pure function — takes a vm and returns a string. Tested in isolation.
 
@@ -18901,33 +18909,159 @@ window.HAHBoard = window.HAHBoard || {};
     const sections = [];
     const patient = vm && vm.patient ? vm.patient : {};
     const fds = String(patient.forDischargeSummary || '').trim();
-    if (fds) {
-      sections.push(fds);
-    } else {
-      sections.push('[Summary of admission, presenting problem, key clinical events, and current state.]');
-    }
+
+    // Summary opening — placeholder for the clinician (or AI in Build B)
+    // to write a paragraph about admission, course, current state.
+    sections.push('[Summary of admission, presenting problem, key clinical events, and current state.]');
 
     // Medication changes section — render verbatim from timeline entries.
-    // Filter to in-admission entries (which will be all of them, the
-    // medication_change card collects them per-admission).
-    const medLines = stitchMedChangeLines(medChangeEntries || []);
-    if (medLines.length) {
-      sections.push('Medication changes during this admission:\n' + medLines.map((l) => '- ' + l).join('\n'));
-    }
+    const medSection = stitchMedSectionContent(medChangeEntries || []);
+    if (medSection) sections.push(medSection);
 
-    // Recommendations / follow-up — placeholder section header for the
-    // clinician to fill in. The most common request from GPs.
-    sections.push('Recommendations and follow-up:\n- [Follow-up actions for the GP — bloods to repeat, dose titrations, clinic referrals, safety-netting.]');
+    // Recommendations / follow-up — populated from forDischargeSummary,
+    // which is the board-round "for discharge summary" textarea content.
+    sections.push(stitchRecommendationsContent(fds));
 
     // Resus / ceiling of care — pulled from ACP if present.
-    const resusLine = stitchResusLine(patient);
-    if (resusLine) {
-      sections.push('Resuscitation status:\n' + resusLine);
-    }
+    const resusSection = stitchResusSectionContent(patient);
+    if (resusSection) sections.push(resusSection);
 
     sections.push('Many thanks for your continued care. Please do not hesitate to contact our team if any concerns arise.');
 
     return sections.join('\n\n');
+  }
+
+  // Section-content helpers — each returns the heading + content for a
+  // single section, joinable with \n\n. Used by both stitchInitialBody
+  // (initial create) and mergeStructuredSections (subsequent refresh).
+
+  function stitchMedSectionContent(entries) {
+    const lines = stitchMedChangeLines(entries || []);
+    if (!lines.length) return '';
+    return 'Medication changes during this admission:\n' + lines.map((l) => '- ' + l).join('\n');
+  }
+
+  function stitchRecommendationsContent(fds) {
+    const trimmed = String(fds || '').trim();
+    if (trimmed) return 'Recommendations and follow-up:\n' + trimmed;
+    return 'Recommendations and follow-up:\n- [Follow-up actions for the GP — bloods to repeat, dose titrations, clinic referrals, safety-netting.]';
+  }
+
+  function stitchResusSectionContent(patient) {
+    const line = stitchResusLine(patient);
+    if (!line) return '';
+    return 'Resuscitation status:\n' + line;
+  }
+
+  // ─── Dynamic structural section merge ──────────────────────────────────
+  //
+  // v0.8.150: when the clinician re-opens an existing draft, refresh
+  // auto-generated sections (Medication changes, Resuscitation status,
+  // Recommendations) with the current values from the record. The
+  // clinician's edits to other parts of the body are preserved. If a
+  // section was previously absent (e.g. no medication changes existed
+  // when the letter was first generated), it gets inserted at a
+  // conventional position. If a section was present and the new content
+  // would be empty (e.g. the clinician deleted all medication_change
+  // entries), the section is left as-is — we don't delete content the
+  // clinician might have manually edited.
+  //
+  // Algorithm: parse the body into paragraph blocks (split on \n\n).
+  // For each known auto-section, find the existing block by heading and
+  // replace its content. If not found, insert at conventional position.
+
+  function mergeStructuredSections(body, vm, medChangeEntries) {
+    if (!body) return body;
+    const patient = vm && vm.patient ? vm.patient : {};
+    const fds = String(patient.forDischargeSummary || '').trim();
+
+    const blocks = body.split(/\n\s*\n/);
+
+    // Compute new content for each auto-section
+    const newMedContent = stitchMedSectionContent(medChangeEntries);
+    const newRecContent = stitchRecommendationsContent(fds);
+    const newResusContent = stitchResusSectionContent(patient);
+
+    const findIdx = (prefix) => blocks.findIndex((b) => b.trim().startsWith(prefix));
+
+    // 1. Medication changes — replace if exists; insert before
+    //    Recommendations if not.
+    if (newMedContent) {
+      const idx = findIdx('Medication changes during this admission:');
+      if (idx >= 0) {
+        blocks[idx] = newMedContent;
+      } else {
+        const recIdx = findIdx('Recommendations and follow-up:');
+        if (recIdx >= 0) {
+          blocks.splice(recIdx, 0, newMedContent);
+        } else {
+          // No anchor — insert after the first block (typically the summary)
+          blocks.splice(Math.min(1, blocks.length), 0, newMedContent);
+        }
+      }
+    }
+    // (If newMedContent is empty but a section exists, leave it alone —
+    // the clinician may have manually edited that section.)
+
+    // 2. Recommendations and follow-up — replace if exists, refreshing
+    //    with current forDischargeSummary content. Always replace because
+    //    the section always has at least a placeholder.
+    {
+      const idx = findIdx('Recommendations and follow-up:');
+      if (idx >= 0) {
+        // Only refresh from forDischargeSummary if the existing block looks
+        // like the auto-stitched content (i.e., it hasn't been heavily
+        // edited by the clinician). Detect by comparing the existing block
+        // to its derivable form. If it matches what fds would produce, OR
+        // matches the empty placeholder, refresh. Otherwise leave alone —
+        // clinician may have written their own text.
+        const existing = blocks[idx].trim();
+        const wouldBe = newRecContent.trim();
+        const placeholderForm = stitchRecommendationsContent('').trim();
+        if (existing === placeholderForm || existing === wouldBe || isAutoRecContent(existing, fds)) {
+          blocks[idx] = newRecContent;
+        }
+      } else {
+        // Section missing — insert before resus if present, else before closing
+        const resusIdx = findIdx('Resuscitation status:');
+        if (resusIdx >= 0) {
+          blocks.splice(resusIdx, 0, newRecContent);
+        } else {
+          blocks.splice(Math.max(0, blocks.length - 1), 0, newRecContent);
+        }
+      }
+    }
+
+    // 3. Resus / ceiling of care — replace if exists, insert before
+    //    closing if not. Only if there's something to insert.
+    if (newResusContent) {
+      const idx = findIdx('Resuscitation status:');
+      if (idx >= 0) {
+        blocks[idx] = newResusContent;
+      } else {
+        // Insert before the closing paragraph (last block)
+        blocks.splice(Math.max(0, blocks.length - 1), 0, newResusContent);
+      }
+    }
+
+    return blocks.join('\n\n');
+  }
+
+  // Heuristic: does this Recommendations block look like it's still the
+  // auto-stitched content (rather than clinician-edited)? Returns true if
+  // the block content (after the heading) is a verbatim match of fds OR
+  // the content lines are a subset of the fds lines (meaning fds had
+  // more content added since stitching, but clinician hasn't restructured).
+  function isAutoRecContent(block, fds) {
+    const heading = 'Recommendations and follow-up:';
+    if (!block.startsWith(heading)) return false;
+    const blockContent = block.slice(heading.length).trim();
+    const fdsTrimmed = String(fds || '').trim();
+    if (blockContent === fdsTrimmed) return true;
+    // If the block is the empty placeholder, treat as still-auto
+    const placeholderContent = '- [Follow-up actions for the GP — bloods to repeat, dose titrations, clinic referrals, safety-netting.]';
+    if (blockContent === placeholderContent) return true;
+    return false;
   }
 
   function stitchMedChangeLines(entries) {
@@ -19608,20 +19742,27 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'dl-open-editor') {
       const create = target.getAttribute('data-create') === '1';
       const existing = getDischargeLetter(vm.patient);
-      // If creating fresh and there's no letter yet, create a draft
-      // pre-populated with structured stitching of the patient record.
-      // This pulls operational.forDischargeSummary content, all
-      // medication_change timeline entries, and ACP resus status into a
-      // starter body that the clinician edits. (Build B will replace
-      // this stitch with AI prose generation; until then, stitching
-      // gives clinicians something useful rather than a blank textarea.)
+      const medChanges = (typeof api.getPatientEncounterRows === 'function')
+        ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
+        : [];
+
       if (create && existing.status === null) {
-        const medChanges = (typeof api.getPatientEncounterRows === 'function')
-          ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
-          : [];
+        // Fresh create: stitch initial body from current patient data.
         const initialBody = stitchInitialBody(vm, medChanges);
         const fresh = transitionToDraft(existing, initialBody, { now: new Date().toISOString(), bumpGeneration: false });
         persistLetterPatch(api, patientId, fresh);
+      } else if (existing.status !== null) {
+        // Re-open of existing draft/sent letter: merge auto-generated
+        // sections with current patient data so newly-added medication
+        // changes pull through, ACP status updates flow into the resus
+        // line, and forDischargeSummary edits flow into the
+        // Recommendations section. The clinician's edits to other parts
+        // of the body are preserved.
+        const mergedBody = mergeStructuredSections(existing.body, vm, medChanges);
+        if (mergedBody !== existing.body) {
+          const updated = transitionEdit(existing, mergedBody);
+          persistLetterPatch(api, patientId, updated);
+        }
       }
       // Reset preview pagination on open — different patients/letters
       // start at page 1.
@@ -19726,11 +19867,12 @@ window.HAHBoard = window.HAHBoard || {};
   let dlSavePatientId = null;
   const DL_SAVE_DEBOUNCE_MS = 1400;
 
-  // v0.8.149-hotfix3: preview pagination state. Module-scoped so the
+  // v0.8.150: preview pagination state. Module-scoped so the
   // dl-preview-prev/next action handlers can flip pages without
   // re-binding the editor. Reset to 0 in handleDlAction's open path.
   let currentPreviewPage = 0;
   let dlPreviewUpdateRef = null;
+  let dlPreviewResizeObserver = null;
 
   function cancelPendingDlSave() {
     if (dlSaveTimer) {
@@ -19759,32 +19901,48 @@ window.HAHBoard = window.HAHBoard || {};
     // depth, mirroring v0.8.148 pattern).
     const capturedPatientId = ta.getAttribute('data-patient-id');
 
-    // v0.8.149-hotfix3: A4 preview measurements. Paper is rendered at
-    // "real" pt-equivalent pixels (595×842 = A4 at 72dpi) inside a frame
-    // that's CSS-scaled to fit the available width. These constants
-    // match the PDF's pageMargins so what the clinician sees in preview
-    // is what they get in the export.
+    // v0.8.150: A4 preview measurements. Paper is rendered at "real"
+    // pt-equivalent pixels (595×842 = A4 at 72dpi) inside a frame whose
+    // height is set by CSS aspect-ratio (595/842). These constants match
+    // the PDF's pageMargins so what the clinician sees in preview is
+    // what they get in the export.
     const PAPER_W = 595;
     const PAPER_H = 842;
-    const HEADER_TOP = 25;       // letterhead sits 25pt from page top
-    const HEADER_HEIGHT = 60;    // letterhead image + padding
-    const BODY_TOP = 92;         // body content starts 92pt from page top
-    const BODY_BOTTOM = 36;      // 36pt from page bottom
-    const FOOTER_HEIGHT = 30;    // footer rule + text
+    const BODY_TOP = 92;
+    const BODY_BOTTOM = 36;
     const PAGE_CONTENT_H = PAPER_H - BODY_TOP - BODY_BOTTOM; // body region height per page
 
     const updateWordCount = () => {
       if (wordCountEl) wordCountEl.textContent = countWords(ta.value) + ' words';
     };
 
-    // v0.8.149-hotfix3: live A4 preview update.
-    //  1. Re-render header/body/footer chunks from the current spec
-    //  2. Compute scale factor to fit paper into frame width
-    //  3. Measure body content overflow → compute page count
-    //  4. Update pagination controls
-    //  5. Apply current-page transform
-    const updatePreview = () => {
-      if (!previewBody || !previewHeader || !previewFooter || !previewPaper || !previewFrame) return;
+    // v0.8.150: layout updater — only runs at bind and on frame resize.
+    // Sets transform: scale on the paper to fit the frame width. Frame
+    // height is governed by CSS aspect-ratio (595/842), so no JS height
+    // setting needed. CRITICAL: nothing in updateContent below should
+    // touch frame height or trigger a layout reflow of the right pane,
+    // because the user types into the textarea and the scroll-anchoring
+    // behaviour of overflow:auto containers can throw the textarea out
+    // of view if surrounding heights change. Field-test bug from prior
+    // version: typing → preview frame height changed → right pane
+    // re-anchored scroll → textarea pushed off-screen, looked like
+    // focus loss.
+    const updateLayout = () => {
+      if (!previewFrame || !previewPaper) return;
+      const frameWidth = previewFrame.clientWidth;
+      if (frameWidth > 0) {
+        const scale = frameWidth / PAPER_W;
+        previewPaper.style.transform = 'scale(' + scale + ')';
+      }
+    };
+
+    // v0.8.150: content updater — runs on every keystroke. Rebuilds
+    // the inner HTML and updates pagination indicator. Does NOT change
+    // any heights or layout-affecting styles (transform: translate is
+    // composited and doesn't trigger layout). The previewFrame's height
+    // is fixed by CSS aspect-ratio.
+    const updateContent = () => {
+      if (!previewBody || !previewHeader || !previewFooter) return;
       try {
         const currentState = api.store.getState();
         const currentVm = api.buildVm(currentState);
@@ -19799,18 +19957,11 @@ window.HAHBoard = window.HAHBoard || {};
         previewBody.innerHTML = renderLetterPreviewBody(spec, c);
         previewFooter.innerHTML = renderLetterPreviewFooter(spec, c);
 
-        // Compute scale to fit paper (595px wide) into frame
-        const frameWidth = previewFrame.clientWidth;
-        if (frameWidth > 0) {
-          const scale = frameWidth / PAPER_W;
-          previewPaper.style.transform = 'scale(' + scale + ')';
-          // Frame height should match scaled paper height to keep aspect ratio
-          previewFrame.style.height = (PAPER_H * scale) + 'px';
-        }
-
-        // Measure body overflow → page count
-        // scrollHeight is the natural content height; if > PAGE_CONTENT_H,
-        // we have multiple pages.
+        // Measure body overflow → page count. Reading scrollHeight
+        // forces a sync layout, but since the previewBody itself has
+        // overflow:hidden and is constrained by its parent's fixed
+        // height (via CSS), this doesn't cascade into surrounding pane
+        // layout changes.
         const contentHeight = previewBody.scrollHeight;
         const pageCount = Math.max(1, Math.ceil(contentHeight / PAGE_CONTENT_H));
 
@@ -19818,11 +19969,13 @@ window.HAHBoard = window.HAHBoard || {};
         if (currentPreviewPage >= pageCount) currentPreviewPage = pageCount - 1;
         if (currentPreviewPage < 0) currentPreviewPage = 0;
 
-        // Apply translation for current page
+        // Apply translation for current page (transform — no layout impact)
         const translateY = -(currentPreviewPage * PAGE_CONTENT_H);
         previewBody.style.transform = 'translateY(' + translateY + 'px)';
 
-        // Update pagination controls
+        // Update pagination controls. Note: toggling display: none/flex
+        // can cause a small layout shift on the page-count transition.
+        // Acceptable trade-off — happens rarely vs. on every keystroke.
         if (pageCount > 1) {
           if (previewPagination) previewPagination.style.display = '';
           if (previewPageLabel) previewPageLabel.textContent = 'Page ' + (currentPreviewPage + 1) + ' of ' + pageCount;
@@ -19831,7 +19984,7 @@ window.HAHBoard = window.HAHBoard || {};
         }
       } catch (e) {
         // Preview is best-effort; never let it crash the editor
-        console.warn('[dischargeLetter] preview update failed', e);
+        console.warn('[dischargeLetter] preview content update failed', e);
       }
     };
 
@@ -19851,14 +20004,9 @@ window.HAHBoard = window.HAHBoard || {};
           const currentState = api.store.getState();
           const currentVm = api.buildVm(currentState);
           if (!currentVm || currentVm.patient.id !== capturedPatientId) {
-            // Patient switched — abandon the save (the new patient's
-            // editor will have its own state). Do nothing rather than
-            // writing this body into the wrong patient's letter.
             return;
           }
           const existing = getDischargeLetter(currentVm.patient);
-          // If the letter doesn't exist yet (status === null), create a
-          // fresh draft. Otherwise edit in place.
           let updated;
           if (existing.status === null) {
             updated = transitionToDraft(existing, ta.value);
@@ -19879,15 +20027,12 @@ window.HAHBoard = window.HAHBoard || {};
 
     ta.addEventListener('input', () => {
       updateWordCount();
-      updatePreview();
+      updateContent();
       scheduleSave();
     });
 
-    // Re-update preview when the user clicks pagination (handlers route
-    // through dl-preview-prev / dl-preview-next which mutate
-    // currentPreviewPage and re-call updatePreview via the bind reference
-    // below).
-    dlPreviewUpdateRef = updatePreview;
+    // Re-update preview when the user clicks pagination
+    dlPreviewUpdateRef = updateContent;
 
     // Set initial focus so the clinician can start typing immediately
     // (only if body is empty — don't steal focus when reopening to read).
@@ -19896,9 +20041,21 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     updateWordCount();
-    // Preview update is deferred to next paint so the frame has its real
-    // width measured correctly (offsetWidth may be 0 mid-render).
-    setTimeout(updatePreview, 0);
+    // Layout setup deferred to next paint so frame.clientWidth is measured.
+    setTimeout(() => {
+      updateLayout();
+      updateContent();
+    }, 0);
+
+    // v0.8.150: ResizeObserver for the preview frame so the scale
+    // factor adjusts on right-pane resize (window resize, layout
+    // changes, etc). Disconnect any existing observer first — bind
+    // runs fresh on every render and we'd otherwise accumulate them.
+    if (typeof ResizeObserver !== 'undefined' && previewFrame) {
+      if (dlPreviewResizeObserver) dlPreviewResizeObserver.disconnect();
+      dlPreviewResizeObserver = new ResizeObserver(() => updateLayout());
+      dlPreviewResizeObserver.observe(previewFrame);
+    }
   }
 
   // ─── Module exports ────────────────────────────────────────────────────
@@ -19914,6 +20071,9 @@ window.HAHBoard = window.HAHBoard || {};
     buildLetterSpec, formatReLine, formatDate, formatGovernanceFooter,
     // Initial body stitching (testable)
     stitchInitialBody, stitchMedChangeLines, stitchResusLine,
+    stitchMedSectionContent, stitchRecommendationsContent, stitchResusSectionContent,
+    // Dynamic merge for re-opens
+    mergeStructuredSections, isAutoRecContent,
     // Filename
     buildFilename,
     // Renderers (browser-only — gracefully no-op in Node)
