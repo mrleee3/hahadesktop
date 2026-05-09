@@ -2625,6 +2625,11 @@ body.hah-ws-connecting .hah-ws-dot {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  /* v0.8.171: separate the chips from the card title above. Without
+   * margin-top the chips are flush against "Today's board round",
+   * which felt cramped in field test. 14px matches the bottom margin
+   * for visual symmetry. */
+  margin-top: 14px;
   margin-bottom: 14px;
 }
 
@@ -2791,6 +2796,51 @@ body.hah-ws-connecting .hah-ws-dot {
   margin: 0;
   cursor: pointer;
   accent-color: var(--desk-accent, #2f6fed);
+}
+
+/* v0.8.171: pull-through checkbox row.
+ *
+ * Sits above the form fields, between Who's-on-board and Issues. Four
+ * checkboxes that control which previous-data fills the corresponding
+ * field on initial open: Issues, Bloods, Plan, For discharge summary.
+ *
+ * Visual: subtle bordered row with a label on the left and four
+ * inline checkboxes that wrap onto a new line on narrow widths. Quieter
+ * than the form fields below — the goal is "configuration" feel, not
+ * "data entry" feel. */
+.hah-cform-pull-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 10px;
+  margin: 0 0 14px 0;
+  background: rgba(15,23,42,0.025);
+  border: 1px solid var(--desk-border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.hah-cform-pull-label {
+  color: var(--desk-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  margin-right: 4px;
+}
+.hah-cform-pull-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--desk-text);
+  border-radius: 4px;
+  transition: background 120ms ease;
+}
+.hah-cform-pull-checkbox:hover {
+  background: rgba(47,111,237,0.06);
 }
 
 .hah-cform-textarea {
@@ -7944,9 +7994,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_170_create_button_always_visible_release.html',
-  source: 'hospital_at_home_board_v0_8_170_create_button_always_visible_source.zip',
-  builtAt: '2026-05-09T20:05:58.569339',
+  filename: 'hospital_at_home_board_v0_8_171_pull_through_checkboxes_release.html',
+  source: 'hospital_at_home_board_v0_8_171_pull_through_checkboxes_source.zip',
+  builtAt: '2026-05-09T20:27:44.985616',
   entry: 'desktop.html'
 };
 </script>
@@ -16220,6 +16270,25 @@ window.HAHBoard = window.HAHBoard || {};
       const pulledDischargeSummary = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
 
       return `
+        <div class="hah-cform-pull-row" role="group" aria-label="Pull through previous">
+          <span class="hah-cform-pull-label">Pull through</span>
+          <label class="hah-cform-pull-checkbox">
+            <input type="checkbox" id="cform-pull-issues" data-pull-key="issues" class="hah-cform-checkbox" checked>
+            <span>Issues</span>
+          </label>
+          <label class="hah-cform-pull-checkbox">
+            <input type="checkbox" id="cform-pull-bloods" data-pull-key="bloods" class="hah-cform-checkbox" checked>
+            <span>Bloods</span>
+          </label>
+          <label class="hah-cform-pull-checkbox">
+            <input type="checkbox" id="cform-pull-plan" data-pull-key="plan" class="hah-cform-checkbox" checked>
+            <span>Plan</span>
+          </label>
+          <label class="hah-cform-pull-checkbox">
+            <input type="checkbox" id="cform-pull-fds" data-pull-key="fds" class="hah-cform-checkbox" checked>
+            <span>For discharge summary</span>
+          </label>
+        </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Issues</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledIssues ? ' is-pulled' : ''}" id="cform-issues"
@@ -16234,10 +16303,6 @@ window.HAHBoard = window.HAHBoard || {};
           <label class="hah-cform-label">Bloods</label>
           <textarea class="hah-cform-textarea hah-autoexpand" id="cform-bloods" rows="2"
             placeholder="e.g. CRP 45  WBC 8.2  Cr 112  Na 138"></textarea>
-          <label class="hah-cform-checkbox-row">
-            <input type="checkbox" id="cform-include-prev-bloods" class="hah-cform-checkbox">
-            <span>Include previous bloods in note</span>
-          </label>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Plan</label>
@@ -16297,25 +16362,40 @@ window.HAHBoard = window.HAHBoard || {};
     function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
     function active(id) { const el = document.getElementById(id); return el ? el.dataset.active === 'true' : false; }
     function checked(id) { const el = document.getElementById(id); return el ? !!el.checked : false; }
-    if (type === 'board_round') return {
-      issues: val('cform-issues'), progress: val('cform-progress'),
-      bloods: val('cform-bloods'), plan: val('cform-plan'),
-      // Discharge summary is collected as a draft field like the others.
-      // It only commits to operational.forDischargeSummary on composer-done,
-      // not while typing — see the principle in CHANGELOG-desktop.md v0.8.125.
-      forDischargeSummary: val('cform-discharge-summary'),
-      dischargeDate: val('cform-discharge-date'),
-      dischargeReady: active('cform-ready-chip'),
-      // Per-round opt-in to include previous bloods (last 5 from the bloods
-      // card, deduped against today's textarea value if any) in the note
-      // preview. Default off; lives in the encounter draft like every
-      // other composer field.
-      includePrevBloods: checked('cform-include-prev-bloods'),
-      dnar: active('cform-dnar'),
-      acp:  active('cform-acp'),
-      boardMembers: loadBoardSelectionToday().members,
-      boardOtherText: loadBoardSelectionToday().otherText
-    };
+    if (type === 'board_round') {
+      // v0.8.171: pull-through checkboxes — pullIssues / pullBloods /
+      // pullPlan / pullDischargeSummary. All default true. The
+      // 'pullBloods' field controls "include previous bloods in note"
+      // (the prior includePrevBloods semantic — kept as alias for
+      // existing code paths in renderClinicalNote etc).
+      const pullIssuesVal = checked('cform-pull-issues');
+      const pullBloodsVal = checked('cform-pull-bloods');
+      const pullPlanVal   = checked('cform-pull-plan');
+      const pullFdsVal    = checked('cform-pull-fds');
+      return {
+        issues: val('cform-issues'), progress: val('cform-progress'),
+        bloods: val('cform-bloods'), plan: val('cform-plan'),
+        // Discharge summary is collected as a draft field like the others.
+        // It only commits to operational.forDischargeSummary on composer-done,
+        // not while typing — see the principle in CHANGELOG-desktop.md v0.8.125.
+        forDischargeSummary: val('cform-discharge-summary'),
+        dischargeDate: val('cform-discharge-date'),
+        dischargeReady: active('cform-ready-chip'),
+        // Pull-through controls (v0.8.171).
+        pullIssues: pullIssuesVal,
+        pullBloods: pullBloodsVal,
+        pullPlan: pullPlanVal,
+        pullDischargeSummary: pullFdsVal,
+        // Legacy alias — pullBloods carries the prior includePrevBloods
+        // meaning. Kept so refreshPreview, renderClinicalNote, and any
+        // mobile-side reader that looks at this field continue to work.
+        includePrevBloods: pullBloodsVal,
+        dnar: active('cform-dnar'),
+        acp:  active('cform-acp'),
+        boardMembers: loadBoardSelectionToday().members,
+        boardOtherText: loadBoardSelectionToday().otherText
+      };
+    }
     if (type === 'micro_mdm') return { question: val('cform-question'), recommendation: val('cform-recommendation'), followUp: val('cform-followup') };
     if (type === 'resp_mdm')  return { summary: val('cform-summary'),   recommendation: val('cform-recommendation'), action:   val('cform-action') };
     return { source: val('cform-source'), note: val('cform-note') };
@@ -16622,6 +16702,9 @@ window.HAHBoard = window.HAHBoard || {};
       // controls.
       pane.querySelectorAll('.hah-cform-checkbox').forEach((cb) => { cb.disabled = true; });
       pane.querySelectorAll('.hah-cform-checkbox-row').forEach((row) => { row.classList.add('is-locked'); });
+      // v0.8.171: pull-through checkboxes use a different wrapper class
+      // (.hah-cform-pull-checkbox). Dim them too when the round is locked.
+      pane.querySelectorAll('.hah-cform-pull-checkbox').forEach((row) => { row.classList.add('is-locked'); });
       refreshPreview(vm, type);
       bindCopyBtn(pane);
       return;
@@ -16657,12 +16740,66 @@ window.HAHBoard = window.HAHBoard || {};
       });
     });
 
-    // Include-previous-bloods checkbox: refresh the note preview
-    // immediately on change (so the user sees what gets included), then
-    // save the draft via the same path as field input.
-    const includePrevBloodsCb = pane.querySelector('#cform-include-prev-bloods');
-    if (includePrevBloodsCb) {
-      includePrevBloodsCb.addEventListener('change', () => {
+    // v0.8.171: pull-through checkboxes — Issues / Bloods / Plan / FDS.
+    // Delegated listener on the row. Toggle on → fill the corresponding
+    // field with its pulled value. Toggle off → clear the field. Both
+    // refresh the preview and trigger autosave so the draft captures
+    // the new state.
+    //
+    // Bloods toggle keeps its prior semantic (include previous bloods
+    // in the rendered note) — toggling it doesn't fill or clear the
+    // Bloods textarea, only affects refreshPreview's note builder.
+    const pullRow = pane.querySelector('.hah-cform-pull-row');
+    if (pullRow) {
+      pullRow.addEventListener('change', (e) => {
+        const cb = e.target.closest('input[type="checkbox"][data-pull-key]');
+        if (!cb) return;
+        const key = cb.dataset.pullKey;
+        // Compute the pulled value for this key (same logic as
+        // renderComposerForm / restoreFields). Fresh on every toggle so
+        // the source-of-truth is current — last round may have changed
+        // since the composer opened.
+        const liveVm = d.buildPatientWorkspaceModel(store.getState());
+        const lastRound = liveVm ? getLastBoardTemplateEntry(liveVm.patient) : null;
+        const lastF = lastRound && lastRound.fields;
+        let pulledValue = '';
+        let targetId = '';
+        if (key === 'issues') {
+          targetId = 'cform-issues';
+          pulledValue = lastF
+            ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
+                ? lastF.issueLines.map((l, i) => (i + 1) + '. ' + l).join('\n')
+                : String(lastF.issues || '').trim())
+            : '';
+        } else if (key === 'plan') {
+          targetId = 'cform-plan';
+          pulledValue = lastF ? String(lastF.plan || '').trim() : '';
+        } else if (key === 'fds') {
+          targetId = 'cform-discharge-summary';
+          pulledValue = liveVm && liveVm.patient && liveVm.patient.forDischargeSummary
+            ? String(liveVm.patient.forDischargeSummary).trim() : '';
+        } else if (key === 'bloods') {
+          // Bloods is note-output only — no field to fill or clear here.
+          refreshPreview(vm, type);
+          cancelPendingSaveTimer();
+          pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
+          return;
+        }
+        const target = targetId ? pane.querySelector('#' + targetId) : null;
+        if (target) {
+          if (cb.checked) {
+            // Fill with pulled value (or empty if there isn't one).
+            target.value = pulledValue;
+            if (pulledValue) target.classList.add('is-pulled');
+            else target.classList.remove('is-pulled');
+          } else {
+            // Clear the field.
+            target.value = '';
+            target.classList.remove('is-pulled');
+          }
+          // Trigger autoexpand so the textarea height re-fits the new content.
+          target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         refreshPreview(vm, type);
         cancelPendingSaveTimer();
         pendingSaveTimer = setTimeout(() => guardedSaveDraft(capturedPatientId, type, pane), 1400);
@@ -16944,9 +17081,20 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function restoreFields(fields, type) {
-    // Pulled values from the last round (same computation as renderComposerForm)
+    // Pulled values from the last round (same computation as renderComposerForm).
+    //
+    // v0.8.171: switched from getLastBoardRoundEntry to
+    // getLastBoardTemplateEntry — initial render uses the latter
+    // (board_round OR mobile_clinical_review), and the asymmetry was
+    // wiping pulled values for patients whose most-recent template
+    // entry is a mobile clinical review. Field-test bug from a JSON
+    // patient: composer rendered with pulled issues/plan from the last
+    // mobile review, then the first autosave restore (computing
+    // pulledIssues from board_round only — no board rounds existed)
+    // resolved to empty, set the textareas to "", clobbering the pulled
+    // values. Aligning the two paths fixes it.
     const vm = d.buildPatientWorkspaceModel(store.getState());
-    const lastRound = vm ? getLastBoardRoundEntry(vm.patient) : null;
+    const lastRound = vm ? getLastBoardTemplateEntry(vm.patient) : null;
     const lastF     = lastRound && lastRound.fields;
     const pulledIssues = lastF
       ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
@@ -16994,6 +17142,13 @@ window.HAHBoard = window.HAHBoard || {};
       if (!el) return;
       el.checked = v === true || v === 'true';
     }
+    // v0.8.171: pull-through checkboxes default to true. Treat undefined
+    // as "use the default" (checked) — only explicit false unchecks.
+    function setPullCheckbox(id, v) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.checked = v !== false && v !== 'false';
+    }
     if (type === 'board_round') {
       set('cform-issues', fields.issues, pulledIssues); set('cform-progress', fields.progress);
       set('cform-bloods', fields.bloods); set('cform-plan', fields.plan, pulledPlan);
@@ -17002,7 +17157,23 @@ window.HAHBoard = window.HAHBoard || {};
       setChip('cform-ready-chip', fields.dischargeReady);
       setChip('cform-dnar', fields.dnar);
       setChip('cform-acp', fields.acp);
-      setCheckbox('cform-include-prev-bloods', fields.includePrevBloods);
+      // v0.8.171: pull-through checkboxes (default checked). For backward
+      // compat, pullBloods falls back to legacy includePrevBloods if
+      // present in the draft — but the legacy field defaulted to FALSE
+      // (unchecked), so we only respect it when explicitly set. The
+      // distinction matters for old drafts: a pre-v0.8.171 draft had no
+      // pullBloods key and includePrevBloods was the user's last choice
+      // (true/false). Treating it as the source of truth preserves user
+      // intent across the upgrade.
+      setPullCheckbox('cform-pull-issues', fields.pullIssues);
+      const pullBloodsRestore = (fields.pullBloods !== undefined && fields.pullBloods !== null)
+        ? fields.pullBloods
+        : (fields.includePrevBloods !== undefined && fields.includePrevBloods !== null
+            ? fields.includePrevBloods
+            : undefined);
+      setPullCheckbox('cform-pull-bloods', pullBloodsRestore);
+      setPullCheckbox('cform-pull-plan', fields.pullPlan);
+      setPullCheckbox('cform-pull-fds', fields.pullDischargeSummary);
     }
     if (type === 'micro_mdm') { set('cform-question', fields.question); set('cform-recommendation', fields.recommendation); set('cform-followup', fields.followUp); }
     if (type === 'resp_mdm')  { set('cform-summary', fields.summary);   set('cform-recommendation', fields.recommendation); set('cform-action', fields.action); }
@@ -19700,10 +19871,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.170. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.171. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.170. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.171. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
