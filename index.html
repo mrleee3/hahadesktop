@@ -7359,7 +7359,8 @@ button.hah-pt-flag:active {
 
 /* ============================================================
    Live preview pane (letter editor mode)
-   v0.8.149-hotfix2
+   v0.8.149-hotfix3: A4-shaped paper at scaled-down size, with
+   pagination controls if content runs over one page.
    ============================================================ */
 
 .hah-dl-preview-pane {
@@ -7368,41 +7369,142 @@ button.hah-pt-flag:active {
   background: #f4f5f7;
 }
 
+.hah-dl-preview-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .hah-dl-preview-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #888;
-  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.hah-dl-preview-paper {
-  background: #fff;
-  border: 1px solid #e0e0e0;
+.hah-dl-preview-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hah-dl-preview-page-btn {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 2px 9px;
+  font-size: 13px;
   border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  padding: 24px 22px;
-  font-family: 'Calibri', 'Carlito', 'Segoe UI', sans-serif;
+  cursor: pointer;
+  font-family: inherit;
+  color: #444;
+  line-height: 1;
+}
+
+.hah-dl-preview-page-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.hah-dl-preview-page-label {
   font-size: 11px;
-  line-height: 1.45;
+  color: #555;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* The visible frame — A4 aspect ratio (1:√2), holds the scaled paper. */
+.hah-dl-preview-frame {
+  position: relative;
+  width: 100%;
+  /* Height set dynamically by JS to (frameWidth * 842/595) so the scaled
+     paper fits exactly. Aspect ratio fallback for browsers reading CSS
+     before JS runs. */
+  aspect-ratio: 595 / 842;
+  background: #d8d8d8;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* The "real-sized" A4 paper, rendered at 595×842 px (≈A4 at 72dpi).
+   Scaled via JS-applied transform to fit the frame. Content inside is
+   positioned in absolute pt-equivalent pixels matching the PDF margins. */
+.hah-dl-preview-paper {
+  width: 595px;
+  height: 842px;
+  background: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  /* transform: scale(...) set via JS based on frame width */
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', sans-serif;
+  font-size: 10.5px;
+  line-height: 1.4;
   color: #1a1a1a;
 }
 
-.hah-dl-prev-letterhead {
+/* Letterhead region: top of paper, fixed across pages.
+   25pt from top, extending nearly full width per the PDF spec. */
+.hah-dl-prev-header {
+  position: absolute;
+  top: 25px;
+  left: 30px;
+  right: 30px;
   text-align: center;
-  margin: -12px -22px 14px -22px;
-  border-bottom: 1px solid #888;
-  padding: 0 0 6px 0;
+  height: 60px;
 }
 
-.hah-dl-prev-letterhead img {
+.hah-dl-prev-letterhead-img {
   max-width: 100%;
+  max-height: 60px;
   height: auto;
   display: block;
   margin: 0 auto;
 }
 
+/* Body content area: clipped to one page-content-height, with the body
+   content inside translated by -pageIdx*pageContentHeight to navigate
+   between pages. Margins match the PDF: 65pt left/right. */
+.hah-dl-prev-body-area {
+  position: absolute;
+  top: 92px;
+  left: 65px;
+  right: 65px;
+  bottom: 36px;
+  overflow: hidden;
+}
+
+.hah-dl-prev-body-content {
+  /* Natural-flow content, taller than the visible body-area when over one page.
+     transform: translateY() applied via JS for page navigation. */
+  width: 100%;
+  transform-origin: top left;
+  transition: transform 0.18s ease-out;
+}
+
+/* Footer region: bottom of paper, fixed across pages. */
+.hah-dl-prev-footer {
+  position: absolute;
+  bottom: 12px;
+  left: 65px;
+  right: 65px;
+}
+
+.hah-dl-prev-footer-line {
+  border-top: 1px dotted #aaa;
+  margin-bottom: 4px;
+}
+
+.hah-dl-prev-footer-text {
+  font-size: 7.5px;
+  color: #777;
+  font-style: italic;
+}
+
+/* Letter content elements within the body region. */
 .hah-dl-prev-sender {
   text-align: right;
   margin-bottom: 8px;
@@ -7446,12 +7548,11 @@ button.hah-pt-flag:active {
   line-height: 1.3;
 }
 
-.hah-dl-prev-footer {
-  margin-top: 14px;
-  padding-top: 4px;
-  border-top: 1px dotted #aaa;
-  font-size: 9px;
-  color: #777;
+/* Spacer between salutation and clinician name. Replaces the empty
+   string in signOffLines that was rendering as &nbsp;<br> and creating
+   an extra blank line in field test. */
+.hah-dl-prev-signoff-name {
+  margin-top: 18px;
 }
 
 </style>
@@ -7479,7 +7580,7 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_release.html',
   source: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_source.zip',
-  builtAt: '2026-05-09T07:16:19.757768',
+  builtAt: '2026-05-09T07:55:29.330064',
   entry: 'desktop.html'
 };
 </script>
@@ -19205,18 +19306,18 @@ window.HAHBoard = window.HAHBoard || {};
   // they're producing without leaving editor mode. Updates on every
   // keystroke (cheap; just builds an HTML string).
   //
-  // Letterhead is shown as the inlined data URL image (same one used in
-  // docx/PDF generation), if available. Falls back to text if not.
+  // v0.8.149-hotfix3: split into header/body/footer chunks so the A4-
+  // shaped preview pane can position them as fixed regions with
+  // page-flowable body in between. Letterhead sits at top of every page
+  // (matches PDF page-header behaviour); footer sits at bottom of every
+  // page; body content overflow drives multi-page navigation.
 
-  function renderLetterPreviewHtml(spec, opts) {
-    opts = opts || {};
-    const c = opts.escape || function (s) {
-      return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-    };
-
+  function renderLetterPreviewHeader(spec, c) {
     const letterheadUrl = (typeof window !== 'undefined' && window.HAHBoard__LETTERHEAD_DATA_URL) || 'assets/lk_medica_letterhead.png';
-    const letterheadHtml = `<div class="hah-dl-prev-letterhead"><img src="${c(letterheadUrl)}" alt="Letterhead"></div>`;
+    return `<img class="hah-dl-prev-letterhead-img" src="${c(letterheadUrl)}" alt="Letterhead">`;
+  }
 
+  function renderLetterPreviewBody(spec, c) {
     const senderHtml = `<div class="hah-dl-prev-sender">${spec.senderBlock.map((l) => c(l)).join('<br>')}</div>`;
     const dateHtml = `<div class="hah-dl-prev-date">${c(spec.dateLine)}</div>`;
     const recipientHtml = `<div class="hah-dl-prev-recipient">${spec.recipient.map((l) => c(l)).join('<br>')}</div>`;
@@ -19236,10 +19337,42 @@ window.HAHBoard = window.HAHBoard || {};
       bodyHtml = `<div class="hah-dl-prev-body">${paragraphs}</div>`;
     }
 
-    const signOffHtml = `<div class="hah-dl-prev-signoff">${spec.signOffLines.map((l) => l ? c(l) : '&nbsp;').join('<br>')}</div>`;
-    const footerHtml = `<div class="hah-dl-prev-footer"><em>${c(spec.footerLine)}</em></div>`;
+    // Sign-off: filter out empty strings (the empty entry was creating an
+    // extra blank line in the rendered HTML — visible in field test).
+    // The visual gap between salutation and the name block now comes from
+    // CSS margin-top on the name block, not from an in-string empty line.
+    const signOffNonEmpty = spec.signOffLines.filter((l) => l && l.trim().length > 0);
+    let signOffHtml = '';
+    if (signOffNonEmpty.length > 0) {
+      const salutation = c(signOffNonEmpty[0]);
+      const rest = signOffNonEmpty.slice(1).map((l) => c(l)).join('<br>');
+      signOffHtml = `<div class="hah-dl-prev-signoff">
+        <div class="hah-dl-prev-signoff-salutation">${salutation}</div>
+        ${rest ? `<div class="hah-dl-prev-signoff-name">${rest}</div>` : ''}
+      </div>`;
+    }
 
-    return [letterheadHtml, senderHtml, dateHtml, recipientHtml, salutationHtml, reHtml, bodyHtml, signOffHtml, footerHtml].join('');
+    return [senderHtml, dateHtml, recipientHtml, salutationHtml, reHtml, bodyHtml, signOffHtml].join('');
+  }
+
+  function renderLetterPreviewFooter(spec, c) {
+    return `<div class="hah-dl-prev-footer-line"></div>
+      <div class="hah-dl-prev-footer-text"><em>${c(spec.footerLine)}</em></div>`;
+  }
+
+  function renderLetterPreviewHtml(spec, opts) {
+    // Combined renderer kept for backwards compat / for tests that just
+    // want one chunk of HTML. The A4 paper layout in the editor uses the
+    // split renderers above directly.
+    opts = opts || {};
+    const c = opts.escape || function (s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    };
+    return [
+      renderLetterPreviewHeader(spec, c),
+      renderLetterPreviewBody(spec, c),
+      renderLetterPreviewFooter(spec, c)
+    ].join('');
   }
 
   function renderDischargeLetterCard(vm, state, helpers) {
@@ -19403,9 +19536,26 @@ window.HAHBoard = window.HAHBoard || {};
         </div>
       </div>
       <div class="hah-dl-preview-pane" id="hahDlPreviewPane" aria-label="Live letter preview">
-        <div class="hah-dl-preview-label">Preview</div>
-        <div class="hah-dl-preview-paper" id="hahDlPreviewPaper">
-          <!-- Populated by bindLetterEditor on initial render and on every input -->
+        <div class="hah-dl-preview-label-row">
+          <span class="hah-dl-preview-label">Preview</span>
+          <div class="hah-dl-preview-pagination" id="hahDlPreviewPagination" style="display:none">
+            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-prev" title="Previous page" aria-label="Previous page">‹</button>
+            <span class="hah-dl-preview-page-label" id="hahDlPreviewPageLabel">Page 1 of 1</span>
+            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-next" title="Next page" aria-label="Next page">›</button>
+          </div>
+        </div>
+        <div class="hah-dl-preview-frame" id="hahDlPreviewFrame">
+          <!-- A4-aspect frame; the paper inside is rendered at "real" 595x842 px
+               and CSS-scaled via transform to fit. Header (letterhead) sits
+               fixed at top of every page, footer fixed at bottom of every page,
+               body content in between drives pagination via translateY. -->
+          <div class="hah-dl-preview-paper" id="hahDlPreviewPaper">
+            <div class="hah-dl-prev-header" id="hahDlPrevHeader"></div>
+            <div class="hah-dl-prev-body-area">
+              <div class="hah-dl-prev-body-content" id="hahDlPrevBodyContent"></div>
+            </div>
+            <div class="hah-dl-prev-footer" id="hahDlPrevFooter"></div>
+          </div>
         </div>
       </div>
       <div class="hah-dl-pane-actions">
@@ -19473,12 +19623,30 @@ window.HAHBoard = window.HAHBoard || {};
         const fresh = transitionToDraft(existing, initialBody, { now: new Date().toISOString(), bumpGeneration: false });
         persistLetterPatch(api, patientId, fresh);
       }
+      // Reset preview pagination on open — different patients/letters
+      // start at page 1.
+      currentPreviewPage = 0;
       api.store.setState({ patient: { dischargeLetterMode: true, dischargeLetterPatientId: patientId } });
       return true;
     }
 
     if (action === 'dl-close-editor') {
+      currentPreviewPage = 0;
+      dlPreviewUpdateRef = null;
       api.store.setState({ patient: { dischargeLetterMode: false, dischargeLetterPatientId: null } });
+      return true;
+    }
+
+    if (action === 'dl-preview-prev') {
+      if (currentPreviewPage > 0) currentPreviewPage--;
+      if (typeof dlPreviewUpdateRef === 'function') dlPreviewUpdateRef();
+      return true;
+    }
+
+    if (action === 'dl-preview-next') {
+      currentPreviewPage++;
+      // updatePreview clamps to valid range based on actual page count
+      if (typeof dlPreviewUpdateRef === 'function') dlPreviewUpdateRef();
       return true;
     }
 
@@ -19558,6 +19726,12 @@ window.HAHBoard = window.HAHBoard || {};
   let dlSavePatientId = null;
   const DL_SAVE_DEBOUNCE_MS = 1400;
 
+  // v0.8.149-hotfix3: preview pagination state. Module-scoped so the
+  // dl-preview-prev/next action handlers can flip pages without
+  // re-binding the editor. Reset to 0 in handleDlAction's open path.
+  let currentPreviewPage = 0;
+  let dlPreviewUpdateRef = null;
+
   function cancelPendingDlSave() {
     if (dlSaveTimer) {
       clearTimeout(dlSaveTimer);
@@ -19572,35 +19746,89 @@ window.HAHBoard = window.HAHBoard || {};
 
     const wordCountEl = pane.querySelector('#hahDlWordCount');
     const saveStateEl = pane.querySelector('#hahDlSaveState');
-    const previewEl   = pane.querySelector('#hahDlPreviewPaper');
+    const previewFrame    = pane.querySelector('#hahDlPreviewFrame');
+    const previewPaper    = pane.querySelector('#hahDlPreviewPaper');
+    const previewHeader   = pane.querySelector('#hahDlPrevHeader');
+    const previewBody     = pane.querySelector('#hahDlPrevBodyContent');
+    const previewFooter   = pane.querySelector('#hahDlPrevFooter');
+    const previewPagination = pane.querySelector('#hahDlPreviewPagination');
+    const previewPageLabel  = pane.querySelector('#hahDlPreviewPageLabel');
 
     // Capture the patient id at bind time. The save function checks the
     // current patient at fire time and bails if it's changed (defense in
     // depth, mirroring v0.8.148 pattern).
     const capturedPatientId = ta.getAttribute('data-patient-id');
 
+    // v0.8.149-hotfix3: A4 preview measurements. Paper is rendered at
+    // "real" pt-equivalent pixels (595×842 = A4 at 72dpi) inside a frame
+    // that's CSS-scaled to fit the available width. These constants
+    // match the PDF's pageMargins so what the clinician sees in preview
+    // is what they get in the export.
+    const PAPER_W = 595;
+    const PAPER_H = 842;
+    const HEADER_TOP = 25;       // letterhead sits 25pt from page top
+    const HEADER_HEIGHT = 60;    // letterhead image + padding
+    const BODY_TOP = 92;         // body content starts 92pt from page top
+    const BODY_BOTTOM = 36;      // 36pt from page bottom
+    const FOOTER_HEIGHT = 30;    // footer rule + text
+    const PAGE_CONTENT_H = PAPER_H - BODY_TOP - BODY_BOTTOM; // body region height per page
+
     const updateWordCount = () => {
       if (wordCountEl) wordCountEl.textContent = countWords(ta.value) + ' words';
     };
 
-    // v0.8.149-hotfix2: live preview update. Builds spec from current vm
-    // (re-read each time so identifier changes flow through) plus the
-    // current textarea value, renders to HTML, swaps preview innerHTML.
-    // Cheap operation — just string building. No throttle needed.
+    // v0.8.149-hotfix3: live A4 preview update.
+    //  1. Re-render header/body/footer chunks from the current spec
+    //  2. Compute scale factor to fit paper into frame width
+    //  3. Measure body content overflow → compute page count
+    //  4. Update pagination controls
+    //  5. Apply current-page transform
     const updatePreview = () => {
-      if (!previewEl) return;
+      if (!previewBody || !previewHeader || !previewFooter || !previewPaper || !previewFrame) return;
       try {
         const currentState = api.store.getState();
         const currentVm = api.buildVm(currentState);
         if (!currentVm) return;
-        // Construct a "live" letter object reflecting the current textarea
-        // value, even before autosave has persisted it. The persisted
-        // letter is used for generatedAt/updatedAt; the body comes from
-        // the textarea.
         const persisted = getDischargeLetter(currentVm.patient);
         const liveLetter = Object.assign({}, persisted, { body: ta.value });
         const spec = buildLetterSpec(currentVm, liveLetter);
-        previewEl.innerHTML = renderLetterPreviewHtml(spec);
+
+        const c = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+        previewHeader.innerHTML = renderLetterPreviewHeader(spec, c);
+        previewBody.innerHTML = renderLetterPreviewBody(spec, c);
+        previewFooter.innerHTML = renderLetterPreviewFooter(spec, c);
+
+        // Compute scale to fit paper (595px wide) into frame
+        const frameWidth = previewFrame.clientWidth;
+        if (frameWidth > 0) {
+          const scale = frameWidth / PAPER_W;
+          previewPaper.style.transform = 'scale(' + scale + ')';
+          // Frame height should match scaled paper height to keep aspect ratio
+          previewFrame.style.height = (PAPER_H * scale) + 'px';
+        }
+
+        // Measure body overflow → page count
+        // scrollHeight is the natural content height; if > PAGE_CONTENT_H,
+        // we have multiple pages.
+        const contentHeight = previewBody.scrollHeight;
+        const pageCount = Math.max(1, Math.ceil(contentHeight / PAGE_CONTENT_H));
+
+        // Clamp current page to valid range
+        if (currentPreviewPage >= pageCount) currentPreviewPage = pageCount - 1;
+        if (currentPreviewPage < 0) currentPreviewPage = 0;
+
+        // Apply translation for current page
+        const translateY = -(currentPreviewPage * PAGE_CONTENT_H);
+        previewBody.style.transform = 'translateY(' + translateY + 'px)';
+
+        // Update pagination controls
+        if (pageCount > 1) {
+          if (previewPagination) previewPagination.style.display = '';
+          if (previewPageLabel) previewPageLabel.textContent = 'Page ' + (currentPreviewPage + 1) + ' of ' + pageCount;
+        } else {
+          if (previewPagination) previewPagination.style.display = 'none';
+        }
       } catch (e) {
         // Preview is best-effort; never let it crash the editor
         console.warn('[dischargeLetter] preview update failed', e);
@@ -19655,6 +19883,12 @@ window.HAHBoard = window.HAHBoard || {};
       scheduleSave();
     });
 
+    // Re-update preview when the user clicks pagination (handlers route
+    // through dl-preview-prev / dl-preview-next which mutate
+    // currentPreviewPage and re-call updatePreview via the bind reference
+    // below).
+    dlPreviewUpdateRef = updatePreview;
+
     // Set initial focus so the clinician can start typing immediately
     // (only if body is empty — don't steal focus when reopening to read).
     if (!ta.value) {
@@ -19662,7 +19896,9 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     updateWordCount();
-    updatePreview();
+    // Preview update is deferred to next paint so the frame has its real
+    // width measured correctly (offsetWidth may be 0 mid-render).
+    setTimeout(updatePreview, 0);
   }
 
   // ─── Module exports ────────────────────────────────────────────────────
