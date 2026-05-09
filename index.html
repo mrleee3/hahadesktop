@@ -7236,34 +7236,25 @@ button.hah-pt-flag:active {
   color: #888;
 }
 
-.hah-dl-badge {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.hah-dl-badge.is-draft {
-  background: #fef3c7;
-  color: #854f0b;
-}
-
-.hah-dl-badge.is-sent {
-  background: #ecfccb;
-  color: #3f6212;
-}
-
-/* v0.8.159: .hah-dl-add-btn and .hah-dl-edit-btn rules removed —
- * dl card now uses the standardised .hah-card-action.is-pill /
- * .is-pill-icon pattern in markup. */
-
-.hah-dl-body {
-  padding: 10px 12px;
-}
+/* v0.8.167: card body rewrite. Row-based "list of files" layout
+ * replaced the preview-snippet + button-row body. Each row is a
+ * file: filename + status badge + right-aligned icon strip. Whole
+ * row is the click target (opens PDF); icons stop propagation via
+ * the closest()-walking dispatcher.
+ *
+ * Empty / not_ready states keep the .hah-dl-quiet-msg /
+ * .hah-dl-empty-msg styles below. The pre-v0.8.167 .hah-dl-body,
+ * .hah-dl-preview, .hah-dl-meta, .hah-dl-meta-sep, .hah-dl-actions,
+ * .hah-dl-action-btn rules are no longer used by the card markup
+ * but are kept in case future surfaces reuse them.
+ *
+ * .hah-dl-badge (used in card head pre-v0.8.167) is replaced by
+ * .hah-dl-row-badge inside the row; the old class survives in case
+ * any other view still consumes it. */
 
 .hah-dl-quiet-msg,
 .hah-dl-empty-msg {
+  padding: 12px 14px;
   margin: 0;
   font-size: 12px;
   color: #888;
@@ -7274,6 +7265,131 @@ button.hah-pt-flag:active {
   color: #999;
 }
 
+/* Row layout — single source for both option-A (one row) and the
+ * future option-B (history list). Borrows the medication-change
+ * row's hover + focus pattern so the two cards feel like the same
+ * family. */
+.hah-dl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-top: 1px solid var(--desk-border);
+  transition: background 120ms ease;
+}
+.hah-dl-row:first-child {
+  border-top: none;
+}
+.hah-dl-row:hover {
+  background: rgba(0,0,0,0.025);
+}
+.hah-dl-row[role="button"]:focus-visible {
+  outline: 2px solid rgba(10,132,255,0.50);
+  outline-offset: -2px;
+  background: rgba(10,132,255,0.04);
+}
+
+.hah-dl-row-fileicon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--desk-text-muted);
+}
+.hah-dl-row-fileicon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hah-dl-row-name {
+  flex: 0 1 auto;
+  font-size: 12.5px;
+  color: var(--desk-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.hah-dl-row-badge {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.hah-dl-row-badge.is-draft {
+  background: #fef3c7;
+  color: #854f0b;
+}
+.hah-dl-row-badge.is-sent {
+  background: #ecfccb;
+  color: #3f6212;
+}
+
+.hah-dl-row-spacer {
+  flex: 1 1 auto;
+}
+
+.hah-dl-row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.hah-dl-row-icon-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--desk-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  transition: background 120ms ease, color 120ms ease;
+}
+.hah-dl-row-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.hah-dl-row-icon-btn:hover {
+  background: rgba(47,111,237,0.08);
+  color: rgba(47,111,237,0.95);
+}
+
+/* Pre-v0.8.167 card body styles — kept for any consumer outside the
+ * dl card that still references them; the dl card itself no longer
+ * uses .hah-dl-body / .hah-dl-preview / .hah-dl-meta / .hah-dl-actions /
+ * .hah-dl-action-btn (but the editor pane's action row at the bottom
+ * still uses .hah-dl-action-btn — those rules are below the editor
+ * section). */
+.hah-dl-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.hah-dl-badge.is-draft {
+  background: #fef3c7;
+  color: #854f0b;
+}
+.hah-dl-badge.is-sent {
+  background: #ecfccb;
+  color: #3f6212;
+}
+.hah-dl-body { padding: 10px 12px; }
 .hah-dl-preview {
   margin: 0 0 6px;
   font-size: 12px;
@@ -7281,7 +7397,6 @@ button.hah-pt-flag:active {
   font-style: italic;
   line-height: 1.5;
 }
-
 .hah-dl-meta {
   font-size: 11px;
   color: #888;
@@ -7290,10 +7405,7 @@ button.hah-pt-flag:active {
   align-items: center;
   flex-wrap: wrap;
 }
-
-.hah-dl-meta-sep {
-  color: #d1d5db;
-}
+.hah-dl-meta-sep { color: #d1d5db; }
 
 .hah-dl-actions {
   display: flex;
@@ -7315,7 +7427,6 @@ button.hah-pt-flag:active {
   font-family: inherit;
   transition: background-color 0.12s, border-color 0.12s;
 }
-
 .hah-dl-action-btn:hover {
   background: #f3f4f6;
   border-color: #b8bcc4;
@@ -7829,9 +7940,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_166_rich_text_editor_release.html',
-  source: 'hospital_at_home_board_v0_8_166_rich_text_editor_source.zip',
-  builtAt: '2026-05-09T17:22:35.300464',
+  filename: 'hospital_at_home_board_v0_8_167_dl_card_file_list_release.html',
+  source: 'hospital_at_home_board_v0_8_167_dl_card_file_list_source.zip',
+  builtAt: '2026-05-09T17:41:39.735984',
   entry: 'desktop.html'
 };
 </script>
@@ -14878,8 +14989,12 @@ window.HAHBoard = window.HAHBoard || {};
   // delegated click dispatcher in the shell. Tracked via dataset flag
   // so we don't double-bind across re-renders.
   function bindMedChangeRowKeyboard(pane) {
+    // v0.8.167: also covers dl-card rows. Both use role="button" + click
+    // delegation; the binding is identical, so a single pass over both
+    // selectors keeps things simple.
     if (!pane) return;
-    const rows = pane.querySelectorAll('.hah-medchg-row[role="button"]');
+    const selector = '.hah-medchg-row[role="button"], .hah-dl-row[role="button"]';
+    const rows = pane.querySelectorAll(selector);
     rows.forEach((row) => {
       if (row.dataset.kbBound === '1') return;
       row.dataset.kbBound = '1';
@@ -19576,10 +19691,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.166. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.167. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.166. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.167. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -20773,77 +20888,105 @@ window.HAHBoard = window.HAHBoard || {};
     const dischargeReadiness = (patient && patient.dischargeReadiness) || '';
     const cardState = getCardState(letter, dischargeReadiness);
 
-    const previewText = previewSnippet(letter.body);
-    const wordCount = countWords(letter.body);
+    // v0.8.167: card rewritten as a list-of-files layout. The previous
+    // preview-snippet body added little real information (the letter is
+    // one click away) and didn't scale to multiple letters. Rows are
+    // future-shaped for re-admission history; for now there's only
+    // ever one row (option A in the design discussion — list-of-one,
+    // schema stays single dischargeLetter).
+    //
+    // Per-row click target: opens the PDF. Per-row icon buttons:
+    //   Draft  → Edit | Word | Email | Mark sent
+    //   Sent   → Word | Email
+    // Filename format: "Discharge summary — D MMM YYYY". Date is the
+    // letter's generatedAt (when it was first created), not updatedAt
+    // (which would shift every keystroke).
 
-    // v0.8.159: dl card head switched from bespoke .hah-dl-card /
-    // .hah-dl-head / .hah-dl-title to the canonical .hah-ref-widget /
-    // .hah-ref-head / .hah-ref-label so it sits in the same visual
-    // family as ACP, Blood results, and Medication changes. Action
-    // buttons (+ Generate, Edit) switched to .hah-card-action pills.
-    // The .hah-dl-card class is kept alongside .hah-ref-widget so the
-    // card body, action row, badge, and preview rules continue to apply.
-    // The is-quiet variant is preserved on the card and now affects
-    // appearance via existing rules .hah-dl-card.is-quiet *.
     const titleBar = (extras) => `<div class="hah-ref-head">
-      <div class="hah-dl-head-left">
-        <span class="hah-ref-label">Discharge letter</span>
-        ${extras.badge || ''}
-      </div>
+      <span class="hah-ref-label">Discharge letter</span>
+      <span class="hah-dl-head-spacer"></span>
       ${extras.action || ''}
     </div>`;
 
     if (cardState === 'not_ready') {
       return `<div class="hah-ref-widget hah-dl-card is-quiet">
         ${titleBar({})}
-        <div class="hah-dl-body">
-          <p class="hah-dl-quiet-msg">Available when patient is marked Possible today, Likely tomorrow, or Ready.</p>
-        </div>
+        <div class="hah-dl-quiet-msg">Available when patient is marked Possible today, Likely tomorrow, or Ready.</div>
       </div>`;
     }
+
+    // "+ Create" head action — same label across no_draft / draft / sent
+    // states. Was three different labels before (+ Generate, Edit, etc).
+    // Click creates a fresh draft when there isn't one (cardState ===
+    // 'no_draft'); otherwise it's a no-op for option A (single letter)
+    // and would seed a new entry in option B (history). The data-create
+    // attribute signals "fresh create" to dl-open-editor — when there's
+    // already a draft, this attribute is the difference between editing
+    // the existing one vs starting over.
+    //
+    // For option A (current), having + Create on a card that already
+    // has a draft would be confusing — what should it do? The mockup's
+    // intent was "+ Create starts a new admission's letter." Until
+    // history support exists, we hide the head action when there's
+    // already an active letter and surface Edit on the row instead.
+    const headActionHtml = (cardState === 'no_draft')
+      ? `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="dl-open-editor" data-create="1" title="Create a new discharge letter draft" aria-label="Create discharge letter"><span class="hah-card-action-icon">+</span> Create</button>`
+      : '';
 
     if (cardState === 'no_draft') {
       return `<div class="hah-ref-widget hah-dl-card">
-        ${titleBar({
-          action: `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="dl-open-editor" data-create="1" title="Generate a new discharge letter draft" aria-label="Generate discharge letter"><span class="hah-card-action-icon">+</span> Generate</button>`
-        })}
-        <div class="hah-dl-body">
-          <p class="hah-dl-empty-msg">No draft yet.</p>
-        </div>
+        ${titleBar({ action: headActionHtml })}
+        <div class="hah-dl-empty-msg">No letters yet.</div>
       </div>`;
     }
 
-    // draft or sent
+    // draft or sent — render as a single-row file list. The row markup
+    // anticipates the option B (history) layout: a list of rows, each
+    // with its own click target and icon strip. Option A just renders
+    // one row.
     const isDraft = cardState === 'draft';
+    const dateLabel = formatDate(new Date(letter.generatedAt || letter.updatedAt || Date.now()));
+    const filename = 'Discharge summary — ' + dateLabel;
+
     const badgeHtml = isDraft
-      ? `<span class="hah-dl-badge is-draft">Draft</span>`
-      : `<span class="hah-dl-badge is-sent">✓ Sent</span>`;
+      ? `<span class="hah-dl-row-badge is-draft">Draft</span>`
+      : `<span class="hah-dl-row-badge is-sent">Sent</span>`;
 
-    const meta = isDraft
-      ? `<span>${wordCount} words</span><span class="hah-dl-meta-sep">·</span><span>${c.escapeHtml(formatRelativeTime(letter.updatedAt) || 'just now')}</span>`
-      : `<span>${c.escapeHtml('Sent ' + (formatRelativeTime(letter.sentAt) || ''))}</span>`;
+    // Row click → open PDF. Icon buttons stop propagation (handler in
+    // 26-desktop-patient.js's delegated click already walks closest()
+    // to find the [data-patient-action] target, so an icon click resolves
+    // to the icon's action, not the row's).
+    //
+    // SVG icons inline so they style with currentColor and don't need a
+    // webfont. Sized to 16×16 fitting comfortably in the 26×26 button.
+    const iconSvg = {
+      edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2z"/><path d="M10 4l2 2"/></svg>',
+      word: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h6L13 5v9.5h-9.5z"/><path d="M9 1.5V5h4"/><path d="M5.5 9l1 4 1.5-3 1.5 3 1-4"/></svg>',
+      email: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1"/><path d="M2.5 4.5l5.5 4 5.5-4"/></svg>',
+      sent: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>',
+      file: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h6L13 5v9.5h-9.5z"/><path d="M9 1.5V5h4"/><path d="M5.5 8h5"/><path d="M5.5 10.5h5"/></svg>'
+    };
 
-    const actionRow = isDraft
-      ? `<div class="hah-dl-actions">
-          <button type="button" class="hah-dl-action-btn" data-patient-action="dl-export-pdf" title="Open as PDF">PDF</button>
-          <button type="button" class="hah-dl-action-btn" data-patient-action="dl-export-docx" title="Download Word document">Word</button>
-          <button type="button" class="hah-dl-action-btn" data-patient-action="dl-mark-sent" title="Mark this letter as sent">Sent</button>
-        </div>`
-      : `<div class="hah-dl-actions">
-          <button type="button" class="hah-dl-action-btn" data-patient-action="dl-export-pdf" title="Open as PDF">PDF</button>
-          <button type="button" class="hah-dl-action-btn" data-patient-action="dl-export-docx" title="Download Word document">Word</button>
-        </div>`;
+    const iconBtn = (action, title, glyph) =>
+      `<button type="button" class="hah-dl-row-icon-btn" data-patient-action="${action}" title="${c.escapeHtml(title)}" aria-label="${c.escapeHtml(title)}">${glyph}</button>`;
+
+    const iconStrip = isDraft
+      ? iconBtn('dl-open-editor', 'Edit', iconSvg.edit)
+        + iconBtn('dl-export-docx', 'Open as Word', iconSvg.word)
+        + iconBtn('dl-export-email', 'Email with Word attachment', iconSvg.email)
+        + iconBtn('dl-mark-sent', 'Mark as sent', iconSvg.sent)
+      : iconBtn('dl-export-docx', 'Open as Word', iconSvg.word)
+        + iconBtn('dl-export-email', 'Email with Word attachment', iconSvg.email);
 
     return `<div class="hah-ref-widget hah-dl-card">
-      ${titleBar({
-        badge: badgeHtml,
-        action: `<button type="button" class="hah-card-action is-pill" data-patient-action="dl-open-editor" title="Edit this discharge letter" aria-label="Edit discharge letter">Edit</button>`
-      })}
-      <div class="hah-dl-body">
-        <p class="hah-dl-preview">${c.escapeHtml(previewText)}</p>
-        <div class="hah-dl-meta">${meta}</div>
+      ${titleBar({ action: headActionHtml })}
+      <div class="hah-dl-row" data-patient-action="dl-export-pdf" role="button" tabindex="0" title="Open as PDF" aria-label="Open ${c.escapeHtml(filename)} as PDF">
+        <span class="hah-dl-row-fileicon">${iconSvg.file}</span>
+        <span class="hah-dl-row-name">${c.escapeHtml(filename)}</span>
+        ${badgeHtml}
+        <span class="hah-dl-row-spacer"></span>
+        <div class="hah-dl-row-actions">${iconStrip}</div>
       </div>
-      ${actionRow}
     </div>`;
   }
 
@@ -21137,6 +21280,61 @@ window.HAHBoard = window.HAHBoard || {};
         console.error('[dischargeLetter] DOCX generation failed', err);
         if (typeof api.showToast === 'function') api.showToast('Word doc generation failed: ' + (err && err.message ? err.message : err));
         else window.alert('Word doc generation failed: ' + (err && err.message ? err.message : err));
+      });
+      return true;
+    }
+
+    if (action === 'dl-export-email') {
+      // v0.8.167: email workflow. The web platform doesn't permit
+      // attaching files to a mailto: launch — that's a security
+      // restriction every browser enforces. The closest practical
+      // workflow:
+      //   1. Generate the Word doc and trigger its download
+      //   2. Open the user's mail client via mailto: with subject and
+      //      a brief body prefilled
+      //   3. The user drags the downloaded Word doc into the email
+      //
+      // Two-step but smooth in practice. The Word doc lands in the
+      // browser's downloads area (typically Downloads folder) and the
+      // email window opens with most of the work done.
+      const letter = getDischargeLetter(vm.patient);
+      const spec = buildLetterSpec(vm, letter);
+      const patientName = (vm.patient && vm.patient.name)
+        || (vm.patient && vm.patient.identity && vm.patient.identity.name)
+        || 'patient';
+      const dateLabel = formatDate(new Date(letter.generatedAt || Date.now()));
+      const subject = 'Discharge summary — ' + patientName + ' — ' + dateLabel;
+      const body =
+        'Dear GP,\n\n' +
+        'Please find attached the discharge summary for ' + patientName + '.\n\n' +
+        'Kind regards,\n[Clinician name]\nHospital at Home Service';
+      // Generate the Word doc first; once it lands, fire the mailto.
+      // Sequencing matters — if we open the mailto first, the download
+      // dialog may steal focus or the file's still generating when the
+      // user starts composing.
+      renderDocx(spec).then((blob) => {
+        triggerDownload(blob, buildFilename(vm, 'docx'));
+        // Brief delay so the download notification appears before the
+        // email window — better UX than both popping at once.
+        setTimeout(() => {
+          const url = 'mailto:?subject=' + encodeURIComponent(subject)
+            + '&body=' + encodeURIComponent(body);
+          // window.location.href is the canonical way to launch a
+          // mail client from a web page. The OS handles the mailto:
+          // scheme; the page itself doesn't navigate.
+          window.location.href = url;
+        }, 300);
+      }).catch((err) => {
+        console.error('[dischargeLetter] Email export — Word generation failed', err);
+        // If the doc fails, still open the mailto so the user can
+        // compose with subject + body and figure out the attachment
+        // separately. Better than a silent failure.
+        const url = 'mailto:?subject=' + encodeURIComponent(subject)
+          + '&body=' + encodeURIComponent(body);
+        window.location.href = url;
+        if (typeof api.showToast === 'function') {
+          api.showToast('Word doc could not be generated; email opened without attachment');
+        }
       });
       return true;
     }
