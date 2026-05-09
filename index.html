@@ -2798,27 +2798,25 @@ body.hah-ws-connecting .hah-ws-dot {
   accent-color: var(--desk-accent, #2f6fed);
 }
 
-/* v0.8.171: pull-through checkbox row.
+/* v0.8.171 / v0.8.172: pull-through section.
  *
  * Sits above the form fields, between Who's-on-board and Issues. Four
  * checkboxes that control which previous-data fills the corresponding
  * field on initial open: Issues, Bloods, Plan, For discharge summary.
  *
- * Visual: subtle bordered row with a label on the left and four
- * inline checkboxes that wrap onto a new line on narrow widths. Quieter
- * than the form fields below — the goal is "configuration" feel, not
- * "data entry" feel. */
-.hah-cform-pull-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  padding: 8px 10px;
+ * v0.8.172 layout: "Pull through" is a quiet header above its own row
+ * of checkboxes — gives the four checkboxes the full row width so the
+ * longest label ("For discharge summary") fits on one line at typical
+ * column widths. The label header matches the visual treatment of
+ * other form labels ("Issues", "Plan") so the section feels native to
+ * the form.
+ */
+.hah-cform-pull-section {
   margin: 0 0 14px 0;
+  padding: 8px 10px 10px;
   background: rgba(15,23,42,0.025);
   border: 1px solid var(--desk-border);
   border-radius: 8px;
-  font-size: 12px;
 }
 .hah-cform-pull-label {
   color: var(--desk-text-muted);
@@ -2826,7 +2824,14 @@ body.hah-ws-connecting .hah-ws-dot {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   font-size: 10.5px;
-  margin-right: 4px;
+  margin: 0 0 6px 2px;
+}
+.hah-cform-pull-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 12px;
 }
 .hah-cform-pull-checkbox {
   display: inline-flex;
@@ -2841,6 +2846,13 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 .hah-cform-pull-checkbox:hover {
   background: rgba(47,111,237,0.06);
+}
+/* Locked-state visual treatment when round committed, matches other
+ * locked controls. */
+.hah-cform-pull-checkbox.is-locked {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
 }
 
 .hah-cform-textarea {
@@ -7994,9 +8006,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_171_pull_through_checkboxes_release.html',
-  source: 'hospital_at_home_board_v0_8_171_pull_through_checkboxes_source.zip',
-  builtAt: '2026-05-09T20:27:44.985616',
+  filename: 'hospital_at_home_board_v0_8_172_pull_through_layout_release.html',
+  source: 'hospital_at_home_board_v0_8_172_pull_through_layout_source.zip',
+  builtAt: '2026-05-09T20:37:10.989938',
   entry: 'desktop.html'
 };
 </script>
@@ -16262,32 +16274,40 @@ window.HAHBoard = window.HAHBoard || {};
         : fallbackIssues;
       const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
       const prevDate   = lastF ? (lastF.dischargeDate || '') : '';
-      // Discharge summary: render with the patient's persisted value on
-      // initial mount. Like Issues and Plan, this gets overwritten by
-      // restoreFields() if the encounter draft has a value (including
-      // empty string after a Clear). The markup is the "no draft" default;
-      // restoreFields applies "draft says X" on top.
-      const pulledDischargeSummary = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
+      // v0.8.172: pulled discharge summary — primary source is the
+      // patient's operational.forDischargeSummary (the canonical
+      // "current state" field that round-saves overwrite), with a
+      // fallback to the last template entry's fields.forDischargeSummary
+      // when operational is empty. Field-test bug: a mobile clinical
+      // review wrote to its own timeline entry's fields.forDischargeSummary
+      // but didn't update the operational mirror, so the desktop
+      // composer's FDS pull rendered empty even though the data was
+      // present on the most recent entry.
+      const pulledFromOperational = String(vm && vm.patient && vm.patient.forDischargeSummary || '').trim();
+      const pulledFromLastEntry   = lastF ? String(lastF.forDischargeSummary || '').trim() : '';
+      const pulledDischargeSummary = pulledFromOperational || pulledFromLastEntry;
 
       return `
-        <div class="hah-cform-pull-row" role="group" aria-label="Pull through previous">
-          <span class="hah-cform-pull-label">Pull through</span>
-          <label class="hah-cform-pull-checkbox">
-            <input type="checkbox" id="cform-pull-issues" data-pull-key="issues" class="hah-cform-checkbox" checked>
-            <span>Issues</span>
-          </label>
-          <label class="hah-cform-pull-checkbox">
-            <input type="checkbox" id="cform-pull-bloods" data-pull-key="bloods" class="hah-cform-checkbox" checked>
-            <span>Bloods</span>
-          </label>
-          <label class="hah-cform-pull-checkbox">
-            <input type="checkbox" id="cform-pull-plan" data-pull-key="plan" class="hah-cform-checkbox" checked>
-            <span>Plan</span>
-          </label>
-          <label class="hah-cform-pull-checkbox">
-            <input type="checkbox" id="cform-pull-fds" data-pull-key="fds" class="hah-cform-checkbox" checked>
-            <span>For discharge summary</span>
-          </label>
+        <div class="hah-cform-pull-section">
+          <div class="hah-cform-pull-label">Pull through</div>
+          <div class="hah-cform-pull-row" role="group" aria-label="Pull through previous">
+            <label class="hah-cform-pull-checkbox">
+              <input type="checkbox" id="cform-pull-issues" data-pull-key="issues" class="hah-cform-checkbox" checked>
+              <span>Issues</span>
+            </label>
+            <label class="hah-cform-pull-checkbox">
+              <input type="checkbox" id="cform-pull-bloods" data-pull-key="bloods" class="hah-cform-checkbox" checked>
+              <span>Bloods</span>
+            </label>
+            <label class="hah-cform-pull-checkbox">
+              <input type="checkbox" id="cform-pull-plan" data-pull-key="plan" class="hah-cform-checkbox" checked>
+              <span>Plan</span>
+            </label>
+            <label class="hah-cform-pull-checkbox">
+              <input type="checkbox" id="cform-pull-fds" data-pull-key="fds" class="hah-cform-checkbox" checked>
+              <span>For discharge summary</span>
+            </label>
+          </div>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Issues</label>
@@ -16776,8 +16796,12 @@ window.HAHBoard = window.HAHBoard || {};
           pulledValue = lastF ? String(lastF.plan || '').trim() : '';
         } else if (key === 'fds') {
           targetId = 'cform-discharge-summary';
-          pulledValue = liveVm && liveVm.patient && liveVm.patient.forDischargeSummary
+          // v0.8.172: same fallback chain as renderComposerForm /
+          // restoreFields — operational first, then last entry.
+          const op = liveVm && liveVm.patient && liveVm.patient.forDischargeSummary
             ? String(liveVm.patient.forDischargeSummary).trim() : '';
+          const fromEntry = lastF ? String(lastF.forDischargeSummary || '').trim() : '';
+          pulledValue = op || fromEntry;
         } else if (key === 'bloods') {
           // Bloods is note-output only — no field to fill or clear here.
           refreshPreview(vm, type);
@@ -17102,8 +17126,14 @@ window.HAHBoard = window.HAHBoard || {};
           : String(lastF.issues || '').trim())
       : '';
     const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
-    const pulledDischarge = vm && vm.patient && vm.patient.forDischargeSummary
+    // v0.8.172: same fallback as renderComposerForm — operational first,
+    // then last template entry. Without the fallback, a patient whose
+    // FDS lives on a mobile review entry (not on operational) would
+    // get a stale empty restore.
+    const pulledFromOperational = vm && vm.patient && vm.patient.forDischargeSummary
       ? String(vm.patient.forDischargeSummary).trim() : '';
+    const pulledFromLastEntry = lastF ? String(lastF.forDischargeSummary || '').trim() : '';
+    const pulledDischarge = pulledFromOperational || pulledFromLastEntry;
 
     function set(id, v, pulledValue) {
       const el = document.getElementById(id);
@@ -19871,10 +19901,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.171. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.172. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.171. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.172. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
