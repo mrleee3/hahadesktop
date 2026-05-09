@@ -7944,9 +7944,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_169_dl_card_filename_link_release.html',
-  source: 'hospital_at_home_board_v0_8_169_dl_card_filename_link_source.zip',
-  builtAt: '2026-05-09T17:52:11.179018',
+  filename: 'hospital_at_home_board_v0_8_170_create_button_always_visible_release.html',
+  source: 'hospital_at_home_board_v0_8_170_create_button_always_visible_source.zip',
+  builtAt: '2026-05-09T20:05:58.569339',
   entry: 'desktop.html'
 };
 </script>
@@ -19700,10 +19700,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.169. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.170. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.169. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.170. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -20924,23 +20924,22 @@ window.HAHBoard = window.HAHBoard || {};
       </div>`;
     }
 
-    // "+ Create" head action — same label across no_draft / draft / sent
-    // states. Was three different labels before (+ Generate, Edit, etc).
-    // Click creates a fresh draft when there isn't one (cardState ===
-    // 'no_draft'); otherwise it's a no-op for option A (single letter)
-    // and would seed a new entry in option B (history). The data-create
-    // attribute signals "fresh create" to dl-open-editor — when there's
-    // already a draft, this attribute is the difference between editing
-    // the existing one vs starting over.
+    // "+ Create" head action — always visible across no_draft / draft /
+    // sent states. Click behaviour depends on what's currently there:
     //
-    // For option A (current), having + Create on a card that already
-    // has a draft would be confusing — what should it do? The mockup's
-    // intent was "+ Create starts a new admission's letter." Until
-    // history support exists, we hide the head action when there's
-    // already an active letter and surface Edit on the row instead.
-    const headActionHtml = (cardState === 'no_draft')
-      ? `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="dl-open-editor" data-create="1" title="Create a new discharge letter draft" aria-label="Create discharge letter"><span class="hah-card-action-icon">+</span> Create</button>`
-      : '';
+    //   no_draft:  fresh stitch from patient data, transition to draft
+    //   draft:     window.confirm to replace current draft, then fresh
+    //   sent:      window.confirm to start a new letter (re-admission),
+    //              then fresh — overwrites the sent letter in option A
+    //              since there's no archive yet. Option B (history)
+    //              would archive the sent letter into a history array
+    //              and seed a new draft alongside it.
+    //
+    // The confirm dialog protects against accidental overwrites. Same
+    // friction level as dl-delete (also window.confirm). When option B
+    // history support lands, the confirm goes away — + Create on sent
+    // archives + creates new in one step, no destructive overwrite.
+    const headActionHtml = `<button type="button" class="hah-card-action is-pill-icon" data-patient-action="dl-open-editor" data-create="1" title="Create a new discharge letter" aria-label="Create discharge letter"><span class="hah-card-action-icon">+</span> Create</button>`;
 
     if (cardState === 'no_draft') {
       return `<div class="hah-ref-widget hah-dl-card">
@@ -21188,12 +21187,38 @@ window.HAHBoard = window.HAHBoard || {};
         : [];
 
       if (create && existing.status === null) {
-        // Fresh create: stitch initial body from current patient data.
+        // Fresh create on a card that has no letter yet. No confirm —
+        // this is the no_draft → draft transition the empty card invites.
         const initialBody = stitchInitialBody(vm, medChanges);
-        const fresh = transitionToDraft(existing, initialBody, { now: new Date().toISOString(), bumpGeneration: false });
+        const fresh = transitionToDraft(emptyLetter(), initialBody, { now: new Date().toISOString(), bumpGeneration: false });
+        persistLetterPatch(api, patientId, fresh);
+      } else if (create && existing.status !== null) {
+        // v0.8.170: + Create clicked on a card that already has a letter
+        // (draft or sent). Confirm before overwriting — option A has no
+        // history archive, so a fresh create destroys the existing
+        // letter. The confirm wording adapts to status so a re-admission
+        // scenario (sent letter) reads naturally.
+        const isSent = existing.status === 'sent';
+        const message = isSent
+          ? 'Start a new discharge letter for this patient?\n\n'
+            + 'This will replace the previously sent letter on this card. '
+            + 'You will lose the record of when it was sent and its body. '
+            + '(History support for previous letters is planned but not yet available.)'
+          : 'Replace the current draft with a new discharge letter?\n\n'
+            + 'Your current draft will be lost.';
+        if (!window.confirm(message)) {
+          return true; // user cancelled — keep existing letter intact
+        }
+        // Fresh stitch from current patient data, persisted as a new
+        // draft. transitionToDraft from emptyLetter() resets
+        // generatedAt to now (preserving from existing would carry the
+        // old letter's date forward, which would be misleading).
+        const initialBody = stitchInitialBody(vm, medChanges);
+        const fresh = transitionToDraft(emptyLetter(), initialBody, { now: new Date().toISOString(), bumpGeneration: false });
         persistLetterPatch(api, patientId, fresh);
       } else if (existing.status !== null) {
-        // Re-open of existing draft/sent letter.
+        // Re-open of existing draft/sent letter (no create flag — came
+        // via the row's filename-link or the ✎ Edit icon).
         //
         // v0.8.166: lazy migration. If the persisted letter is still
         // plain-text format, convert it to HTML before merging — the
