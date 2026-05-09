@@ -7357,6 +7357,103 @@ button.hah-pt-flag:active {
   border-color: #0c447c;
 }
 
+/* ============================================================
+   Live preview pane (letter editor mode)
+   v0.8.149-hotfix2
+   ============================================================ */
+
+.hah-dl-preview-pane {
+  border-top: 1px solid #f0f0f0;
+  padding: 12px 14px;
+  background: #f4f5f7;
+}
+
+.hah-dl-preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.hah-dl-preview-paper {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 24px 22px;
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+
+.hah-dl-prev-letterhead {
+  text-align: center;
+  margin: -12px -22px 14px -22px;
+  border-bottom: 1px solid #888;
+  padding: 0 0 6px 0;
+}
+
+.hah-dl-prev-letterhead img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.hah-dl-prev-sender {
+  text-align: right;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.hah-dl-prev-date {
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+.hah-dl-prev-recipient {
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.hah-dl-prev-salutation {
+  margin-bottom: 6px;
+}
+
+.hah-dl-prev-re {
+  margin-bottom: 8px;
+}
+
+.hah-dl-prev-body {
+  text-align: justify;
+  margin-bottom: 8px;
+}
+
+.hah-dl-prev-body p {
+  margin: 0 0 6px 0;
+}
+
+.hah-dl-prev-empty {
+  color: #999;
+  font-style: italic;
+}
+
+.hah-dl-prev-signoff {
+  margin-top: 10px;
+  line-height: 1.3;
+}
+
+.hah-dl-prev-footer {
+  margin-top: 14px;
+  padding-top: 4px;
+  border-top: 1px dotted #aaa;
+  font-size: 9px;
+  color: #777;
+}
+
 </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
@@ -7382,7 +7479,7 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_release.html',
   source: 'hospital_at_home_board_v0_8_149_discharge_letter_foundation_source.zip',
-  builtAt: '2026-05-08T22:46:32.027949',
+  builtAt: '2026-05-09T07:16:19.757768',
   entry: 'desktop.html'
 };
 </script>
@@ -16386,6 +16483,7 @@ window.HAHBoard = window.HAHBoard || {};
         ops: ops,
         buildVm: d.buildPatientWorkspaceModel,
         persistPatientPatchToJson: persistPatientPatchToJson,
+        getPatientEncounterRows: getPatientEncounterRows,
         showToast: function (text) { showToast(document.querySelector('.hah-pt-rightpane') || document.body, text); }
       });
       if (handled) return true;
@@ -18682,6 +18780,115 @@ window.HAHBoard = window.HAHBoard || {};
     return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.149. Reviewed and edited by [clinician].';
   }
 
+  // ─── Initial body stitching ────────────────────────────────────────────
+  //
+  // v0.8.149-hotfix2: when a clinician creates a fresh draft, pre-populate
+  // the body with the structured patient data already in the record.
+  // Specifically:
+  //   - "For discharge summary" textarea content (operational.forDischargeSummary)
+  //   - Medication changes from timeline (medication_change entries)
+  //   - Resus status if DNAR/UCP flagged on the ACP
+  //
+  // This is template-stitching for the *initial* body only. Once the
+  // clinician edits, we don't clobber their work. Build B's AI flow will
+  // replace this with proper prose generation; until then, the stitch
+  // gives clinicians something to edit rather than a blank textarea.
+  //
+  // Pure function — takes a vm and returns a string. Tested in isolation.
+
+  function stitchInitialBody(vm, medChangeEntries) {
+    const sections = [];
+    const patient = vm && vm.patient ? vm.patient : {};
+    const fds = String(patient.forDischargeSummary || '').trim();
+    if (fds) {
+      sections.push(fds);
+    } else {
+      sections.push('[Summary of admission, presenting problem, key clinical events, and current state.]');
+    }
+
+    // Medication changes section — render verbatim from timeline entries.
+    // Filter to in-admission entries (which will be all of them, the
+    // medication_change card collects them per-admission).
+    const medLines = stitchMedChangeLines(medChangeEntries || []);
+    if (medLines.length) {
+      sections.push('Medication changes during this admission:\n' + medLines.map((l) => '- ' + l).join('\n'));
+    }
+
+    // Recommendations / follow-up — placeholder section header for the
+    // clinician to fill in. The most common request from GPs.
+    sections.push('Recommendations and follow-up:\n- [Follow-up actions for the GP — bloods to repeat, dose titrations, clinic referrals, safety-netting.]');
+
+    // Resus / ceiling of care — pulled from ACP if present.
+    const resusLine = stitchResusLine(patient);
+    if (resusLine) {
+      sections.push('Resuscitation status:\n' + resusLine);
+    }
+
+    sections.push('Many thanks for your continued care. Please do not hesitate to contact our team if any concerns arise.');
+
+    return sections.join('\n\n');
+  }
+
+  function stitchMedChangeLines(entries) {
+    // Returns array of formatted strings, one per medication change.
+    // Verb + drug + transition + reason. Pulls from the same fields the
+    // medication_change card uses (drug, changeType, fromValue, toValue,
+    // reason). Verb mapping kept aligned with MED_CHANGE_TYPES in
+    // 26-desktop-patient.js — duplicated here to keep this module
+    // self-contained. If the source list changes, both must update.
+    if (!Array.isArray(entries)) return [];
+    const verbMap = {
+      start: 'Started', stop: 'Stopped', adjust: 'Adjusted',
+      hold: 'Held', resume: 'Resumed'
+    };
+    const lines = [];
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (!e || !e.fields) continue;
+      const f = e.fields;
+      const drug = String(f.drug || '').trim();
+      if (!drug) continue;
+      const verb = verbMap[f.changeType] || 'Changed';
+      const from = String(f.fromValue || '').trim();
+      const to = String(f.toValue || '').trim();
+      const reason = String(f.reason || '').trim();
+      let line = verb + ' ' + drug;
+      if (f.changeType === 'adjust' && from && to) line += ' (' + from + ' → ' + to + ')';
+      else if (to && (f.changeType === 'start' || f.changeType === 'resume' || f.changeType === 'adjust')) line += ' ' + to;
+      if (reason) line += ' — ' + reason;
+      lines.push(line);
+    }
+    // Sort chronologically (oldest first) so the letter reads as a
+    // narrative arc through the admission. Encounter rows come back
+    // newest-first by default.
+    return lines.reverse();
+  }
+
+  function stitchResusLine(patient) {
+    // Pulls from patient.sourcePatient.jsonRecord.clinical.acp if present
+    // (browser path), or directly from patient.clinical.acp (test path).
+    const json = (patient && patient.sourcePatient && patient.sourcePatient.jsonRecord) || patient || {};
+    const clinical = json.clinical || {};
+    const acp = clinical.acp || {};
+    const dnacpr = String(acp.dnacprStatus || '').toLowerCase();
+    const tep = String(acp.tepStatus || acp.tep || '').toLowerCase();
+    const ucp = String(acp.ucp || acp.universalCarePlan || '').toLowerCase();
+    const ceiling = String(acp.ceilingOfCare || '').trim();
+
+    // Only auto-populate when there's something concrete to say. Otherwise
+    // leave the section out entirely — letting the clinician decide
+    // whether to add it manually.
+    if (dnacpr !== 'yes' && !tep && !ucp && !ceiling) return '';
+
+    const parts = [];
+    if (dnacpr === 'yes') parts.push('A DNACPR decision has been made');
+    if (ceiling) parts.push('the ceiling of care has been agreed as ' + ceiling);
+    if (tep === 'yes' || tep === 'present') parts.push('a TEP form is in place');
+    if (ucp === 'yes' || ucp === 'present') parts.push('a UCP (Universal Care Plan) is in place');
+    if (!parts.length) return '';
+    return parts.join(', ').replace(/^./, (ch) => ch.toUpperCase()) + '.';
+  }
+
   // ─── Filename helpers ──────────────────────────────────────────────────
 
   function buildFilename(vm, ext) {
@@ -18910,14 +19117,26 @@ window.HAHBoard = window.HAHBoard || {};
   function renderPdf(spec) {
     const pdfMake = ensurePdfMakeLibrary();
     return loadLetterheadDataUrl().then((logoDataUrl) => {
+      // v0.8.149-hotfix2: tightened margins and font size to match the
+      // mock proportions we settled on in scoping. The previous values
+      // (95pt top, 11pt body, lineHeight 1.18) read as visibly looser
+      // than the docx output. Mock target was 0.5" top, 0.9" sides, 0.5"
+      // bottom — translates to ~36pt top body, 65pt sides, 36pt bottom.
+      // Header sits at ~25pt from page edge with the letterhead extending
+      // beyond body content margins via wider negative margin.
+      //
+      // Font: pdfmake bundles Roboto, not Calibri. Roboto's metrics are
+      // slightly larger than Calibri at the same point size, so a 10.5pt
+      // Roboto reads as approximately 11pt Calibri. Dropping lineHeight
+      // multiplier — pdfmake's default leading produces tighter spacing
+      // than the explicit 1.18 we had.
       const docDef = {
         pageSize: 'A4',
-        pageMargins: [65, 95, 65, 50], // [left, top, right, bottom] in points
-        defaultStyle: { fontSize: 11, lineHeight: 1.18 },
+        pageMargins: [65, 92, 65, 36], // [left, top, right, bottom] in points (top accommodates ~25pt header + 27pt header-to-body gap matching the mock)
+        defaultStyle: { fontSize: 10.5 },
         header: function (currentPage, pageCount, pageSize) {
-          // Letterhead spans full page width (negative-margin equivalent).
           const pageWidthPt = pageSize.width;
-          const imageWidth = pageWidthPt - 60; // 30pt each side
+          const imageWidth = pageWidthPt - 60; // 30pt each side, extends beyond body's 65pt margins
           return {
             margin: [30, 25, 30, 0],
             image: logoDataUrl,
@@ -18926,33 +19145,33 @@ window.HAHBoard = window.HAHBoard || {};
         },
         footer: function (currentPage, pageCount) {
           return {
-            margin: [65, 10, 65, 0],
+            margin: [65, 6, 65, 0],
             stack: [
               { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 470, y2: 0, dash: { length: 1, space: 2 }, lineColor: '#AAAAAA' }] },
-              { text: spec.footerLine, italics: true, fontSize: 8, color: '#777777', margin: [0, 4, 0, 0] }
+              { text: spec.footerLine, italics: true, fontSize: 7.5, color: '#777777', margin: [0, 3, 0, 0] }
             ]
           };
         },
         content: [].concat(
-          // Sender block (right-aligned)
+          // Sender block (right-aligned, tight)
           spec.senderBlock.map((line, i) => ({
             text: line, alignment: 'right',
-            margin: [0, 0, 0, i === spec.senderBlock.length - 1 ? 10 : 0]
+            margin: [0, 0, 0, i === spec.senderBlock.length - 1 ? 8 : 0]
           })),
           // Date
-          [{ text: spec.dateLine, alignment: 'right', margin: [0, 0, 0, 10] }],
+          [{ text: spec.dateLine, alignment: 'right', margin: [0, 0, 0, 8] }],
           // Recipient
           spec.recipient.map((line, i) => ({
             text: line,
-            margin: [0, 0, 0, i === spec.recipient.length - 1 ? 8 : 1]
+            margin: [0, 0, 0, i === spec.recipient.length - 1 ? 6 : 1]
           })),
           // Salutation + Re
-          [{ text: spec.salutation, margin: [0, 0, 0, 6] }],
-          [{ text: spec.reLine, bold: true, margin: [0, 0, 0, 8] }],
+          [{ text: spec.salutation, margin: [0, 0, 0, 5] }],
+          [{ text: spec.reLine, bold: true, margin: [0, 0, 0, 7] }],
           // Body
           bodyToPdfMake(spec.body),
           // Sign-off
-          [{ text: '', margin: [0, 4, 0, 0] }],
+          [{ text: '', margin: [0, 3, 0, 0] }],
           spec.signOffLines.map((line) => ({ text: line || ' ', margin: [0, 0, 0, 1] }))
         )
       };
@@ -18969,16 +19188,59 @@ window.HAHBoard = window.HAHBoard || {};
   function bodyToPdfMake(body) {
     const text = String(body || '').trim();
     if (!text) {
-      return [{ text: '[Letter body — type or generate to populate]', italics: true, color: '#999999', margin: [0, 0, 0, 8] }];
+      return [{ text: '[Letter body — type or generate to populate]', italics: true, color: '#999999', margin: [0, 0, 0, 6] }];
     }
     return text.split(/\n\s*\n/).map((p) => ({
       text: p,
       alignment: 'justify',
-      margin: [0, 0, 0, 8]
+      margin: [0, 0, 0, 6]
     }));
   }
 
-  // ─── Card render (centre-pane right column) ────────────────────────────
+  // ─── HTML preview renderer (live preview in letter editor mode) ────────
+  //
+  // v0.8.149-hotfix2: renders the letter as styled HTML for the live
+  // preview pane below the textarea. Approximates the docx/PDF layout
+  // visually without trying to be pixel-perfect — clinicians see what
+  // they're producing without leaving editor mode. Updates on every
+  // keystroke (cheap; just builds an HTML string).
+  //
+  // Letterhead is shown as the inlined data URL image (same one used in
+  // docx/PDF generation), if available. Falls back to text if not.
+
+  function renderLetterPreviewHtml(spec, opts) {
+    opts = opts || {};
+    const c = opts.escape || function (s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    };
+
+    const letterheadUrl = (typeof window !== 'undefined' && window.HAHBoard__LETTERHEAD_DATA_URL) || 'assets/lk_medica_letterhead.png';
+    const letterheadHtml = `<div class="hah-dl-prev-letterhead"><img src="${c(letterheadUrl)}" alt="Letterhead"></div>`;
+
+    const senderHtml = `<div class="hah-dl-prev-sender">${spec.senderBlock.map((l) => c(l)).join('<br>')}</div>`;
+    const dateHtml = `<div class="hah-dl-prev-date">${c(spec.dateLine)}</div>`;
+    const recipientHtml = `<div class="hah-dl-prev-recipient">${spec.recipient.map((l) => c(l)).join('<br>')}</div>`;
+    const salutationHtml = `<div class="hah-dl-prev-salutation">${c(spec.salutation)}</div>`;
+    const reHtml = `<div class="hah-dl-prev-re"><strong>${c(spec.reLine)}</strong></div>`;
+
+    // Body: split on double newlines, escape, render as paragraphs.
+    // Within a paragraph, single newlines become <br>.
+    const bodyText = String(spec.body || '').trim();
+    let bodyHtml;
+    if (!bodyText) {
+      bodyHtml = `<div class="hah-dl-prev-body"><p class="hah-dl-prev-empty">[Letter body — type or generate to populate]</p></div>`;
+    } else {
+      const paragraphs = bodyText.split(/\n\s*\n/).map((p) => {
+        return '<p>' + p.split(/\n/).map((line) => c(line)).join('<br>') + '</p>';
+      }).join('');
+      bodyHtml = `<div class="hah-dl-prev-body">${paragraphs}</div>`;
+    }
+
+    const signOffHtml = `<div class="hah-dl-prev-signoff">${spec.signOffLines.map((l) => l ? c(l) : '&nbsp;').join('<br>')}</div>`;
+    const footerHtml = `<div class="hah-dl-prev-footer"><em>${c(spec.footerLine)}</em></div>`;
+
+    return [letterheadHtml, senderHtml, dateHtml, recipientHtml, salutationHtml, reHtml, bodyHtml, signOffHtml, footerHtml].join('');
+  }
 
   function renderDischargeLetterCard(vm, state, helpers) {
     // helpers passes the c (components) object from 26-desktop-patient.js
@@ -19140,6 +19402,12 @@ window.HAHBoard = window.HAHBoard || {};
           <span class="hah-dl-savestate" id="hahDlSaveState">Saved</span>
         </div>
       </div>
+      <div class="hah-dl-preview-pane" id="hahDlPreviewPane" aria-label="Live letter preview">
+        <div class="hah-dl-preview-label">Preview</div>
+        <div class="hah-dl-preview-paper" id="hahDlPreviewPaper">
+          <!-- Populated by bindLetterEditor on initial render and on every input -->
+        </div>
+      </div>
       <div class="hah-dl-pane-actions">
         <button type="button" class="hah-dl-action-btn is-primary" data-patient-action="dl-export-pdf">
           📄 Open as PDF
@@ -19166,11 +19434,18 @@ window.HAHBoard = window.HAHBoard || {};
     if (typeof api.persistPatientPatchToJson === 'function') {
       api.persistPatientPatchToJson(patientId, patch);
     }
-    // Trigger a re-render by bumping the store. The store-and-ops merging
-    // logic in 26 takes care of the rest.
-    if (api.store && typeof api.store.setState === 'function') {
-      api.store.setState({ patient: { _dlPatchAt: Date.now() } });
-    }
+    // v0.8.149-hotfix2: NO store.setState() here. Triggering a re-render
+    // after each autosave caused the textarea innerHTML to be rebuilt
+    // mid-typing — visible to the user as the value reverting briefly to
+    // the just-persisted body and then catching up. The persistence path
+    // already updates the in-memory cache via patchPatientCacheRow, so the
+    // next legitimate re-render (anything else changing state) will see
+    // fresh data. The card preview snippet refreshes naturally on the
+    // next render — no need to force one purely for autosave.
+    //
+    // The live preview pane in letter editor mode updates directly via
+    // DOM manipulation in bindLetterEditor's input handler, not through
+    // the render system.
   }
 
   // ─── Action handlers (called from 26-desktop-patient.js handleClick) ───
@@ -19183,12 +19458,19 @@ window.HAHBoard = window.HAHBoard || {};
     if (action === 'dl-open-editor') {
       const create = target.getAttribute('data-create') === '1';
       const existing = getDischargeLetter(vm.patient);
-      // If creating fresh and there's no letter yet, create an empty draft
-      // immediately so the editor opens with a valid letter object. Body
-      // starts empty; clinician types into it. (Build B will wrap this in
-      // the AI question→generation flow.)
+      // If creating fresh and there's no letter yet, create a draft
+      // pre-populated with structured stitching of the patient record.
+      // This pulls operational.forDischargeSummary content, all
+      // medication_change timeline entries, and ACP resus status into a
+      // starter body that the clinician edits. (Build B will replace
+      // this stitch with AI prose generation; until then, stitching
+      // gives clinicians something useful rather than a blank textarea.)
       if (create && existing.status === null) {
-        const fresh = transitionToDraft(existing, '', { now: new Date().toISOString(), bumpGeneration: false });
+        const medChanges = (typeof api.getPatientEncounterRows === 'function')
+          ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
+          : [];
+        const initialBody = stitchInitialBody(vm, medChanges);
+        const fresh = transitionToDraft(existing, initialBody, { now: new Date().toISOString(), bumpGeneration: false });
         persistLetterPatch(api, patientId, fresh);
       }
       api.store.setState({ patient: { dischargeLetterMode: true, dischargeLetterPatientId: patientId } });
@@ -19290,6 +19572,7 @@ window.HAHBoard = window.HAHBoard || {};
 
     const wordCountEl = pane.querySelector('#hahDlWordCount');
     const saveStateEl = pane.querySelector('#hahDlSaveState');
+    const previewEl   = pane.querySelector('#hahDlPreviewPaper');
 
     // Capture the patient id at bind time. The save function checks the
     // current patient at fire time and bails if it's changed (defense in
@@ -19298,6 +19581,30 @@ window.HAHBoard = window.HAHBoard || {};
 
     const updateWordCount = () => {
       if (wordCountEl) wordCountEl.textContent = countWords(ta.value) + ' words';
+    };
+
+    // v0.8.149-hotfix2: live preview update. Builds spec from current vm
+    // (re-read each time so identifier changes flow through) plus the
+    // current textarea value, renders to HTML, swaps preview innerHTML.
+    // Cheap operation — just string building. No throttle needed.
+    const updatePreview = () => {
+      if (!previewEl) return;
+      try {
+        const currentState = api.store.getState();
+        const currentVm = api.buildVm(currentState);
+        if (!currentVm) return;
+        // Construct a "live" letter object reflecting the current textarea
+        // value, even before autosave has persisted it. The persisted
+        // letter is used for generatedAt/updatedAt; the body comes from
+        // the textarea.
+        const persisted = getDischargeLetter(currentVm.patient);
+        const liveLetter = Object.assign({}, persisted, { body: ta.value });
+        const spec = buildLetterSpec(currentVm, liveLetter);
+        previewEl.innerHTML = renderLetterPreviewHtml(spec);
+      } catch (e) {
+        // Preview is best-effort; never let it crash the editor
+        console.warn('[dischargeLetter] preview update failed', e);
+      }
     };
 
     const setSaveState = (label, modifier) => {
@@ -19344,6 +19651,7 @@ window.HAHBoard = window.HAHBoard || {};
 
     ta.addEventListener('input', () => {
       updateWordCount();
+      updatePreview();
       scheduleSave();
     });
 
@@ -19354,6 +19662,7 @@ window.HAHBoard = window.HAHBoard || {};
     }
 
     updateWordCount();
+    updatePreview();
   }
 
   // ─── Module exports ────────────────────────────────────────────────────
@@ -19367,12 +19676,14 @@ window.HAHBoard = window.HAHBoard || {};
     transitionToDraft, transitionEdit, transitionToSent,
     // Letter spec
     buildLetterSpec, formatReLine, formatDate, formatGovernanceFooter,
+    // Initial body stitching (testable)
+    stitchInitialBody, stitchMedChangeLines, stitchResusLine,
     // Filename
     buildFilename,
     // Renderers (browser-only — gracefully no-op in Node)
     renderDocx, renderPdf,
     // UI
-    renderDischargeLetterCard, renderLetterPane,
+    renderDischargeLetterCard, renderLetterPane, renderLetterPreviewHtml,
     // Action plumbing (called from 26-desktop-patient.js)
     handleDlAction, bindLetterEditor, cancelPendingDlSave,
     // Helpers (testable)
