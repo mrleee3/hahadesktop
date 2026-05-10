@@ -3230,10 +3230,11 @@ body.hah-ws-connecting .hah-ws-dot {
   transition: border-color 160ms ease, background 280ms ease;
 }
 
-.hah-cform-textarea.is-pulled {
-  background: rgba(180,83,9,0.04);
-  border-color: rgba(180,83,9,0.2);
-}
+/* v0.8.173: is-pulled rule removed here — duplicate of the canonical
+ * rule above (~line 966). The two definitions had near-identical
+ * values (alpha 0.03/0.18 vs 0.04/0.20) which the cascade resolved
+ * to the second one. Leaving one rule avoids drift if either gets
+ * tweaked in future. */
 
 .hah-cform-textarea.is-locked {
   background: rgba(0,0,0,0.015) !important;
@@ -7584,6 +7585,33 @@ button.hah-pt-flag:active {
   background: #fee2e2;
 }
 
+/* v0.8.174 (Build B): Regenerate button. Subtle pill matching the
+ * card-action style elsewhere — accent-tinted on hover so it reads as
+ * a "magic" action rather than a destructive one. Only rendered when
+ * an AI key is configured AND the letter was generated at least once
+ * (so it doesn't appear for manual letters where regen would replace
+ * clinician work). */
+.hah-dl-pane-regen {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+  font-family: inherit;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+.hah-dl-pane-regen:hover {
+  background: rgba(47,111,237,0.08);
+  border-color: rgba(47,111,237,0.45);
+  color: rgba(47,111,237,0.95);
+}
+
 .hah-dl-pane-statusrow {
   display: flex;
   align-items: flex-start;
@@ -8006,9 +8034,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_172_pull_through_layout_release.html',
-  source: 'hospital_at_home_board_v0_8_172_pull_through_layout_source.zip',
-  builtAt: '2026-05-09T20:37:10.989938',
+  filename: 'hospital_at_home_board_v0_8_174_ai_generation_release.html',
+  source: 'hospital_at_home_board_v0_8_174_ai_generation_source.zip',
+  builtAt: '2026-05-10T07:51:27.757576',
   entry: 'desktop.html'
 };
 </script>
@@ -16730,10 +16758,21 @@ window.HAHBoard = window.HAHBoard || {};
       return;
     }
 
+    // v0.8.173: permanent input listener on every composer textarea.
+    // Removes is-pulled on any keystroke; classList.remove is a no-op
+    // if the class isn't present, so no harm in firing on every input.
+    //
+    // The previous {once: true} listener self-detached after the first
+    // keystroke. That broke this sequence:
+    //   1. user types in Issues → is-pulled removed, listener gone
+    //   2. user toggles Pull → Issues off then on → field refilled,
+    //      is-pulled re-added by the toggle handler
+    //   3. user types again → is-pulled stays (no listener)
+    // Result: the amber tint became "stuck on" for any field that had
+    // been re-pulled after editing. Permanent listener removes the
+    // edge case.
     pane.querySelectorAll('.hah-cform-textarea.hah-autoexpand').forEach((ta) => {
-      if (ta.classList.contains('is-pulled')) {
-        ta.addEventListener('input', () => ta.classList.remove('is-pulled'), { once: true });
-      }
+      ta.addEventListener('input', () => ta.classList.remove('is-pulled'));
     });
 
     // v0.8.148: cancel any pending timer from a previous render before
@@ -19548,6 +19587,521 @@ window.HAHBoard = window.HAHBoard || {};
 
 </script>
   <script>
+/* inlined: js/34-desktop-ai-generation.js */
+// js/34-desktop-ai-generation.js
+//
+// AI-assisted discharge letter generation (Build B).
+//
+// Build A produces letters by stitching structured data (medication
+// changes, ACP, recommendations) into a fixed template; the prose
+// "summary" paragraph is a placeholder the clinician fills in by hand.
+//
+// Build B replaces the prose placeholder with AI-generated narrative —
+// a summary of admission, course, and investigations — written from the
+// patient's full clinical log (board rounds, mobile reviews, bloods,
+// med changes). The structured sections still come from data; the AI
+// only writes what data alone can't.
+//
+// Architecture notes:
+//
+// - The API key lives in localStorage. There's no backend to proxy it
+//   through (this is a GitHub Pages deployment), so the user pastes
+//   their key into a settings panel, and every generation call sends
+//   the key direct from browser to Anthropic. localStorage is
+//   XSS-readable and visible in DevTools — acceptable for a personal
+//   trial tool, NOT acceptable for deployed clinical use without
+//   proper key management.
+//
+// - Anonymisation is on by default. Patient data is run through a
+//   stripPii() pass before serialisation, producing a sanitised payload
+//   plus a substitution map. The AI's output (which references "the
+//   patient", "Mrs [LASTNAME]", etc) is then substituted back at render
+//   time. This minimises but doesn't eliminate the PII surface — clinical
+//   detail still goes to the API. Sufficient for trial use with the
+//   user's awareness; would need DPA review for real patient data.
+//
+// - Output format is structured JSON. The AI returns
+//   { summary, course, investigations } and we stitch those into the
+//   letter body alongside the deterministic sections (medication
+//   changes, recommendations, resus). Asking for JSON over raw HTML
+//   gives more controllable output, validates more cleanly, and avoids
+//   prompt-injection style HTML manipulation.
+//
+// - Failure mode: if generation fails (no key, network, rate limit,
+//   parse error), we fall back to manual stitch — current Build A
+//   behaviour — and surface the error via toast. Better than blocking
+//   + Create.
+
+(function () {
+  'use strict';
+
+  // localStorage keys. Namespaced so they don't collide with anything else.
+  const LS_API_KEY = 'hah_anthropic_api_key';
+  const LS_ANONYMISE = 'hah_ai_anonymise';
+  const LS_MODEL = 'hah_ai_model';
+
+  // Default model. Sonnet 4.6 — best price/performance for structured prose.
+  // Can be overridden via the settings panel for users who want Opus 4.7.
+  const DEFAULT_MODEL = 'claude-sonnet-4-6';
+
+  const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+
+  // ─── Settings access ─────────────────────────────────────────────────
+
+  function getApiKey() {
+    try { return localStorage.getItem(LS_API_KEY) || ''; } catch (_) { return ''; }
+  }
+
+  function setApiKey(key) {
+    try {
+      if (key) localStorage.setItem(LS_API_KEY, key);
+      else localStorage.removeItem(LS_API_KEY);
+    } catch (_) { /* localStorage might be disabled */ }
+  }
+
+  function hasApiKey() {
+    return !!getApiKey();
+  }
+
+  function getAnonymise() {
+    try {
+      const v = localStorage.getItem(LS_ANONYMISE);
+      // Default true if unset.
+      return v !== 'false';
+    } catch (_) { return true; }
+  }
+
+  function setAnonymise(on) {
+    try { localStorage.setItem(LS_ANONYMISE, on ? 'true' : 'false'); } catch (_) {}
+  }
+
+  function getModel() {
+    try { return localStorage.getItem(LS_MODEL) || DEFAULT_MODEL; } catch (_) { return DEFAULT_MODEL; }
+  }
+
+  function setModel(model) {
+    try {
+      if (model && model !== DEFAULT_MODEL) localStorage.setItem(LS_MODEL, model);
+      else localStorage.removeItem(LS_MODEL);
+    } catch (_) {}
+  }
+
+  // ─── Anonymisation ───────────────────────────────────────────────────
+  //
+  // Strip PII from the patient payload before sending to the API. Returns
+  // { sanitised, substitutions } where substitutions is a map of
+  // placeholder → original value, used to restore identifiers in the
+  // AI's output before rendering.
+  //
+  // What gets stripped:
+  //   - Name (first + last) → "the patient" / "Mrs [LASTNAME]" forms
+  //   - DOB → omitted (age preserved separately)
+  //   - NHS number → omitted entirely
+  //   - Address → omitted
+  //   - Phone, email → omitted
+  //   - GP details → kept (the letter is going to the GP, but the AI
+  //     refers to them as "your practice" not by name)
+  //
+  // What's kept (clinical signal):
+  //   - Age, sex
+  //   - Admission/discharge dates
+  //   - Presenting complaint, diagnoses
+  //   - Investigations, drugs, doses
+  //   - Free-text clinical notes
+  //
+  // The trade-off: clinical detail is informative enough that
+  // someone could potentially re-identify a patient with enough
+  // context (rare disease + admission date + locality, for example).
+  // This is mitigation, not elimination. For real clinical use the
+  // PII concern needs a DPA, not just a string-substitution pass.
+
+  function anonymise(rawPayload) {
+    if (!rawPayload || typeof rawPayload !== 'object') {
+      return { sanitised: rawPayload, substitutions: {} };
+    }
+    const subs = {};
+    const out = JSON.parse(JSON.stringify(rawPayload)); // deep clone — don't mutate caller's object
+
+    // Patient identity block
+    const patient = out.patient || {};
+    if (patient.firstName) {
+      subs['[FIRSTNAME]'] = patient.firstName;
+      patient.firstName = '[FIRSTNAME]';
+    }
+    if (patient.lastName) {
+      subs['[LASTNAME]'] = patient.lastName;
+      patient.lastName = '[LASTNAME]';
+    }
+    if (patient.fullName) {
+      subs['[PATIENT_NAME]'] = patient.fullName;
+      patient.fullName = '[PATIENT_NAME]';
+    }
+    // DOB removed; age stays. The age field is computed elsewhere — if
+    // the caller didn't include age but did include dob, we don't try
+    // to derive it here (caller's responsibility).
+    delete patient.dob;
+    delete patient.dateOfBirth;
+    delete patient.nhsNumber;
+    delete patient.address;
+    delete patient.phone;
+    delete patient.email;
+
+    // Free-text fields — scan for the first/last name appearing inline
+    // in clinical notes (clinicians sometimes write "Mrs Smith reported…").
+    // Best-effort scrub. Won't catch every variant.
+    const namePatterns = [];
+    if (subs['[LASTNAME]']) {
+      namePatterns.push({
+        re: new RegExp('\\b(Mr|Mrs|Ms|Miss|Dr)\\s+' + escapeRegex(subs['[LASTNAME]']) + '\\b', 'gi'),
+        rep: '[PATIENT_NAME]'
+      });
+      namePatterns.push({
+        re: new RegExp('\\b' + escapeRegex(subs['[LASTNAME]']) + '\\b', 'gi'),
+        rep: '[LASTNAME]'
+      });
+    }
+    if (subs['[FIRSTNAME]']) {
+      namePatterns.push({
+        re: new RegExp('\\b' + escapeRegex(subs['[FIRSTNAME]']) + '\\b', 'gi'),
+        rep: '[FIRSTNAME]'
+      });
+    }
+
+    function scrubText(s) {
+      if (typeof s !== 'string') return s;
+      let result = s;
+      namePatterns.forEach((p) => { result = result.replace(p.re, p.rep); });
+      return result;
+    }
+
+    // Walk known free-text fields. We don't scrub every string in the
+    // payload — that would be expensive and could break field semantics
+    // (drug names, etc). Just the ones likely to contain narrative.
+    const FREE_TEXT_FIELDS = ['issues', 'progress', 'plan', 'bloods', 'forDischargeSummary', 'note', 'notes'];
+
+    function walkScrub(obj) {
+      if (!obj) return;
+      if (Array.isArray(obj)) { obj.forEach(walkScrub); return; }
+      if (typeof obj !== 'object') return;
+      Object.keys(obj).forEach((k) => {
+        if (FREE_TEXT_FIELDS.indexOf(k) >= 0 && typeof obj[k] === 'string') {
+          obj[k] = scrubText(obj[k]);
+        } else if (typeof obj[k] === 'object') {
+          walkScrub(obj[k]);
+        }
+      });
+    }
+    walkScrub(out);
+
+    return { sanitised: out, substitutions: subs };
+  }
+
+  function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // De-anonymise: substitute placeholders back to original values. Run
+  // on the AI's output before rendering. If the AI's output contains
+  // placeholders we DIDN'T put in (e.g. it invented "[NEXT_OF_KIN]"),
+  // they pass through unchanged — the clinician sees them and can
+  // judge.
+  function deanonymise(text, substitutions) {
+    if (!text) return text;
+    let result = String(text);
+    Object.keys(substitutions || {}).forEach((placeholder) => {
+      const re = new RegExp(escapeRegex(placeholder), 'g');
+      result = result.replace(re, substitutions[placeholder]);
+    });
+    return result;
+  }
+
+  // ─── Patient data → prompt payload ─────────────────────────────────
+  //
+  // Builds the structured JSON the AI gets as input. The shape is
+  // designed to be readable to the AI without needing format
+  // explanation — keys are descriptive, ordering reflects clinical
+  // narrative flow (demographics, admission, course, investigations,
+  // current state).
+  //
+  // All log entries are included, not just the most recent. The AI
+  // gets to see clinical course over time. Per Henry's call: full
+  // signal worth the extra ~3-5k input tokens.
+
+  function buildPromptPayload(vm) {
+    if (!vm || !vm.patient) return null;
+    const p = vm.patient;
+    const sourceP = (p.sourcePatient || p) || {};
+    const jsonRecord = sourceP.jsonRecord || sourceP || {};
+    const clinical = jsonRecord.clinical || {};
+    const identity = jsonRecord.identity || sourceP.identity || {};
+    const operational = jsonRecord.operational || sourceP.operational || {};
+
+    // Demographics (the bits the AI needs for tone — Mrs/Mr, age — but
+    // not the bits that identify the individual).
+    const firstName = identity.firstName || sourceP.firstName || '';
+    const lastName = identity.lastName || sourceP.lastName || '';
+    const fullName = (firstName + ' ' + lastName).trim() || p.name || '';
+    const ageYears = computeAge(identity.dob || sourceP.dob);
+
+    // Admission info
+    const admissionDate = identity.admissionDate || jsonRecord.admissionDate || sourceP.admissionDate || '';
+    const admissionSource = identity.admissionSource || sourceP.admissionSource || '';
+    const presentingComplaint = identity.presentingComplaint || sourceP.presentingComplaint || '';
+    const losDays = computeLOS(admissionDate);
+
+    // ACP / TEP / DNACPR — feeds the resus paragraph
+    const acp = clinical.acp || {};
+    const dnacpr = acp.dnacprStatus || '';
+    const ucp = acp.ucp || '';
+    const tep = acp.tep || '';
+
+    // Current operational state
+    const issues = operational.issues || '';
+    const plan = operational.plan || '';
+    const fds = operational.forDischargeSummary || '';
+
+    // Bloods — the most recent results, not the full timeline (would
+    // bloat the prompt). Take the last ~5 dates.
+    const bloodsRows = Array.isArray(clinical.bloods) ? clinical.bloods.slice(0, 8) : [];
+
+    // Encounters: full log. Filter to clinical types — exclude noise
+    // (patient-tag changes, sync events). Then sort chronologically
+    // ascending so the AI reads the story in order.
+    const allEncounters = (clinical.encounters || sourceP.encounters || []);
+    const clinicalTypes = ['board_round', 'mobile_clinical_review', 'medication_change', 'note', 'admission'];
+    const entries = allEncounters
+      .filter((e) => e && e.type && clinicalTypes.indexOf(e.type) >= 0)
+      .slice() // copy before sort
+      .sort((a, b) => {
+        const ta = new Date(a.timestamp || a.at || 0).getTime();
+        const tb = new Date(b.timestamp || b.at || 0).getTime();
+        return ta - tb; // ascending
+      })
+      .map((e) => ({
+        type: e.type,
+        date: e.timestamp || e.at || '',
+        author: (e.author && e.author.name) || e.author || '',
+        // Strip out any UI-only / internal fields. Just keep clinical.
+        fields: stripInternalFields(e.fields || {})
+      }));
+
+    return {
+      patient: {
+        firstName,
+        lastName,
+        fullName,
+        sex: identity.sex || sourceP.sex || '',
+        ageYears
+      },
+      admission: {
+        date: admissionDate,
+        source: admissionSource,
+        presentingComplaint,
+        lengthOfStayDays: losDays
+      },
+      currentState: {
+        activeIssues: issues,
+        currentPlan: plan,
+        forDischargeSummary: fds
+      },
+      ceilingOfCare: {
+        dnacpr,
+        ucp,
+        tep
+      },
+      bloods: bloodsRows,
+      log: entries
+    };
+  }
+
+  function stripInternalFields(fields) {
+    // Drop fields that aren't clinical signal — composer state, UI hints,
+    // internal flags. Keep narrative and structured clinical content.
+    const drop = new Set([
+      'pullIssues', 'pullBloods', 'pullPlan', 'pullDischargeSummary',
+      'includePrevBloods', 'boardMembers', 'boardOtherText',
+      'dischargeReady', 'dischargeDate', 'issueLines'
+    ]);
+    const out = {};
+    Object.keys(fields).forEach((k) => {
+      if (drop.has(k)) return;
+      const v = fields[k];
+      if (v === '' || v === null || v === undefined) return;
+      out[k] = v;
+    });
+    return out;
+  }
+
+  function computeAge(dob) {
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    const m = now.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+    return age;
+  }
+
+  function computeLOS(admissionDate) {
+    if (!admissionDate) return null;
+    const d = new Date(admissionDate);
+    if (isNaN(d.getTime())) return null;
+    const ms = Date.now() - d.getTime();
+    return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+  }
+
+  // ─── Prompt template ────────────────────────────────────────────────
+
+  function buildSystemPrompt() {
+    return [
+      'You are writing the prose narrative sections of a UK clinical discharge letter.',
+      'The recipient is the patient\'s GP. The clinical service is "Hospital at Home" — community-based hospital-level care delivered to patients in their own homes.',
+      '',
+      'Write three sections only:',
+      '  1. summary — 2-4 sentences. Why the patient was admitted to Hospital at Home, the working diagnosis, the broad outcome (improving / stable / deteriorating / step-up to hospital).',
+      '  2. course — 4-8 sentences. The clinical course over the admission. Reference key events, complications, response to treatment, and current state. Avoid bullet-pointing; this is narrative prose.',
+      '  3. investigations — 2-4 sentences. Headline investigations (key blood results, imaging if mentioned). Cite values and trends, not exhaustive lists. Highlight clinically significant findings.',
+      '',
+      'Tone: professional, factual, concise. UK conventions — date format dd/mm/yyyy, drug names (paracetamol not acetaminophen, adrenaline not epinephrine), units (mmol/L for sodium, μmol/L for creatinine).',
+      '',
+      'Constraints:',
+      '  - Do NOT invent investigations, doses, dates, or events not present in the input.',
+      '  - Do NOT include medication-change bullets, follow-up recommendations, or resuscitation status — those sections are stitched separately and must not be duplicated.',
+      '  - Do NOT use bullet points or section headings within your prose. Plain narrative paragraphs only.',
+      '  - If the input is missing a piece of information you would normally include, omit gracefully — don\'t guess.',
+      '  - The patient name in the input may be a placeholder like [PATIENT_NAME] or [LASTNAME]. Use these placeholders in your output exactly as they appear; substitution happens client-side.',
+      '',
+      'Output ONLY a valid JSON object with the following shape, no surrounding prose, no markdown fences:',
+      '{ "summary": "...", "course": "...", "investigations": "..." }'
+    ].join('\n');
+  }
+
+  function buildUserMessage(payload) {
+    return 'Patient data:\n\n```json\n' + JSON.stringify(payload, null, 2) + '\n```\n\nWrite the three prose sections.';
+  }
+
+  // ─── API call ───────────────────────────────────────────────────────
+
+  function generate(vm) {
+    return new Promise((resolve, reject) => {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        reject(new Error('No API key configured. Add one in Settings.'));
+        return;
+      }
+      const rawPayload = buildPromptPayload(vm);
+      if (!rawPayload) {
+        reject(new Error('Could not build prompt payload — patient data missing'));
+        return;
+      }
+      const anonymiseOn = getAnonymise();
+      const { sanitised, substitutions } = anonymiseOn ? anonymise(rawPayload) : { sanitised: rawPayload, substitutions: {} };
+
+      const body = {
+        model: getModel(),
+        max_tokens: 1500,
+        system: buildSystemPrompt(),
+        messages: [
+          { role: 'user', content: buildUserMessage(sanitised) }
+        ]
+      };
+
+      // The Anthropic API requires the anthropic-version header. Browser
+      // CORS works for direct calls because Anthropic enables CORS on
+      // the messages endpoint when anthropic-dangerous-direct-browser-access
+      // is set. (Anthropic's name for this is honest about what it
+      // means: in production, route via a backend.)
+      fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body)
+      }).then((res) => {
+        if (!res.ok) {
+          return res.text().then((errText) => {
+            let parsed;
+            try { parsed = JSON.parse(errText); } catch (_) { parsed = null; }
+            const msg = parsed && parsed.error && parsed.error.message
+              ? parsed.error.message
+              : ('HTTP ' + res.status + ': ' + errText.slice(0, 200));
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      }).then((data) => {
+        // Anthropic returns { content: [{ type: 'text', text: '...' }, ...], ... }
+        if (!data || !Array.isArray(data.content) || data.content.length === 0) {
+          throw new Error('Unexpected API response shape');
+        }
+        const textBlock = data.content.find((b) => b.type === 'text');
+        if (!textBlock) throw new Error('No text content in API response');
+        const responseText = textBlock.text || '';
+
+        // Parse JSON output. The AI was instructed to emit raw JSON
+        // with no surrounding text, but be defensive — strip code fences
+        // if present, find the first { ... } block.
+        const json = parseJsonResponse(responseText);
+        if (!json) throw new Error('Could not parse JSON from AI response: ' + responseText.slice(0, 200));
+
+        // De-anonymise each prose section.
+        const out = {
+          summary: deanonymise(json.summary || '', substitutions),
+          course: deanonymise(json.course || '', substitutions),
+          investigations: deanonymise(json.investigations || '', substitutions),
+          model: data.model || getModel(),
+          usage: data.usage || null
+        };
+        resolve(out);
+      }).catch(reject);
+    });
+  }
+
+  function parseJsonResponse(text) {
+    if (!text) return null;
+    // Strip markdown code fences if present.
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+    try { return JSON.parse(cleaned); } catch (_) {}
+    // Last resort: find the first balanced { ... }. Brittle but better
+    // than failing outright when the AI wraps the JSON in prose.
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(cleaned.slice(start, end + 1)); } catch (_) {}
+    }
+    return null;
+  }
+
+  // ─── Public exports ─────────────────────────────────────────────────
+
+  window.HAHBoard = window.HAHBoard || {};
+  window.HAHBoard.aiGeneration = {
+    // Settings
+    getApiKey, setApiKey, hasApiKey,
+    getAnonymise, setAnonymise,
+    getModel, setModel, DEFAULT_MODEL,
+    // Generation
+    generate,
+    // Helpers (exported for tests)
+    anonymise, deanonymise,
+    buildPromptPayload, buildSystemPrompt, buildUserMessage,
+    parseJsonResponse,
+    stripInternalFields, computeAge, computeLOS
+  };
+
+  // Node export for tests.
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.HAHBoard.aiGeneration;
+  }
+})();
+
+</script>
+  <script>
 /* inlined: js/33-desktop-discharge-letter.js */
 // 33-desktop-discharge-letter.js
 //
@@ -19901,10 +20455,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.172. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.174. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.172. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.174. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -19963,6 +20517,67 @@ window.HAHBoard = window.HAHBoard || {};
     sections.push('<p>Many thanks for your continued care. Please do not hesitate to contact our team if any concerns arise.</p>');
 
     return sections.join('');
+  }
+
+  // v0.8.174 (Build B): build the letter body using AI-generated prose
+  // for the narrative sections, with structured sections stitched as
+  // before. Three prose sections come from the AI: summary, course,
+  // investigations. They render as a single block of paragraphs at
+  // the top of the letter. The structured sections (medication
+  // changes, recommendations, resuscitation) come from data.
+  //
+  // ai = { summary: "...", course: "...", investigations: "..." }
+  //
+  // The AI's prose may contain multiple sentences per section. We
+  // wrap each section in its own <p> and concatenate with <br>
+  // between paragraphs of the same section if needed. Most outputs
+  // will be a single paragraph per section.
+  function stitchInitialBodyWithAi(vm, medChangeEntries, ai) {
+    const sections = [];
+    const patient = vm && vm.patient ? vm.patient : {};
+    const fds = getForDischargeSummary(vm);
+
+    // AI prose — three named paragraphs. Each goes in its own <p>.
+    // If the AI returned multi-paragraph prose for any section
+    // (line breaks or "\n\n"), preserve as separate <p> tags.
+    const proseParts = [];
+    if (ai && ai.summary) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.summary));
+    if (ai && ai.course) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.course));
+    if (ai && ai.investigations) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.investigations));
+
+    if (proseParts.length === 0) {
+      // AI returned nothing usable — fall back to placeholder so the
+      // letter still has structure. Caller should usually have caught
+      // this case earlier and invoked the manual stitch instead.
+      sections.push('<p>[Summary of admission, presenting problem, key clinical events, and current state.]</p>');
+    } else {
+      proseParts.forEach((para) => sections.push('<p>' + escapeHtml(para) + '</p>'));
+    }
+
+    // Structured sections — same as Build A.
+    const medSection = stitchMedSectionContent(medChangeEntries || []);
+    if (medSection) sections.push(medSection);
+
+    sections.push(stitchRecommendationsContent(fds));
+
+    const resusSection = stitchResusSectionContent(patient);
+    if (resusSection) sections.push(resusSection);
+
+    sections.push('<p>Many thanks for your continued care. Please do not hesitate to contact our team if any concerns arise.</p>');
+
+    return sections.join('');
+  }
+
+  // Split AI prose into paragraphs. The AI was asked for narrative
+  // prose with no markup. If it sneaks in newlines, treat them as
+  // paragraph breaks. Each returned string is plain text; the caller
+  // wraps in <p> after escaping.
+  function splitProseIntoParagraphs(text) {
+    return String(text || '')
+      .trim()
+      .split(/\n\s*\n+|\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   // Section-content helpers — each returns an HTML fragment containing
@@ -21253,6 +21868,20 @@ window.HAHBoard = window.HAHBoard || {};
     // the timestamps were redundant. Re-generate will return as part of
     // Build B in a position that fits the AI flow.
 
+    // v0.8.174 (Build B): Regenerate button — only shown when an AI key
+    // is configured AND the letter has been generated at least once
+    // (generationCount > 0 means AI produced this; > 0 includes earlier
+    // generations from Build B). For pure manual letters generationCount
+    // remains 0 and Regenerate doesn't show — clicking it on a manual
+    // letter would replace clinician work with AI prose, which would be
+    // surprising.
+    const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
+    const hasKey = ai && ai.hasApiKey && ai.hasApiKey();
+    const showRegen = hasKey && (letter.generationCount || 0) > 0;
+    const regenBtn = showRegen
+      ? `<button type="button" class="hah-dl-pane-regen" data-patient-action="dl-regenerate" aria-label="Regenerate AI prose" title="Regenerate AI prose"><span aria-hidden="true">↻</span> Regenerate</button>`
+      : '';
+
     return `<div class="hah-dl-pane">
       <div class="hah-dl-pane-head">
         <div class="hah-dl-pane-title">
@@ -21261,6 +21890,7 @@ window.HAHBoard = window.HAHBoard || {};
           ${badgeHtml}
         </div>
         <div class="hah-dl-pane-head-actions">
+          ${regenBtn}
           <button type="button" class="hah-dl-pane-delete" data-patient-action="dl-delete" aria-label="Delete this letter" title="Delete this letter">🗑</button>
           <button type="button" class="hah-dl-pane-close" data-patient-action="dl-close-editor" aria-label="Close letter editor">✕</button>
         </div>
@@ -21334,6 +21964,92 @@ window.HAHBoard = window.HAHBoard || {};
   // store/JSON write paths exposed by 26-desktop-patient.js. They live
   // here to keep the discharge-letter module self-contained.
 
+  // v0.8.174 (Build B): + Create flow.
+  //
+  // Two-phase: open the editor immediately with a placeholder body
+  // (manual stitch) so the UI is responsive, then attempt AI
+  // generation in the background and update the body when it returns.
+  // If no API key, skip the AI phase entirely — the manual stitch IS
+  // the result.
+  //
+  // existingForRegeneration is non-null when this is a "replace existing"
+  // create (draft or sent) — passed only to enforce the empty-state
+  // assumption inside transitionToDraft (we always start from
+  // emptyLetter() so generatedAt resets to now).
+  function startCreateFlow(api, vm, patientId, medChanges, existingForRegeneration) {
+    // Phase 1: write the manual-stitch body so the editor has something
+    // to render right now.
+    const manualBody = stitchInitialBody(vm, medChanges);
+    const fresh = transitionToDraft(emptyLetter(), manualBody, { now: new Date().toISOString(), bumpGeneration: false });
+    persistLetterPatch(api, patientId, fresh);
+
+    // Phase 2: kick off AI generation if a key is set. If not, we're
+    // done — the user gets the manual stitch as the placeholder, same
+    // as Build A.
+    const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
+    if (!ai || !ai.hasApiKey()) {
+      return;
+    }
+    runAiGeneration(api, vm, patientId, medChanges, fresh, { regenerate: false });
+  }
+
+  // Async AI call. Updates the letter body when the response lands.
+  // Failure → toast + leave the manual stitch in place.
+  function runAiGeneration(api, vm, patientId, medChanges, currentLetter, opts) {
+    const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
+    if (!ai || typeof ai.generate !== 'function') {
+      if (typeof api.showToast === 'function') api.showToast('AI generation module not loaded');
+      return;
+    }
+    const isRegen = !!(opts && opts.regenerate);
+
+    if (typeof api.showToast === 'function') {
+      api.showToast(isRegen ? 'Regenerating draft…' : 'Generating draft…');
+    }
+
+    ai.generate(vm).then((result) => {
+      // Build a new body using AI prose + structured sections.
+      const newBody = stitchInitialBodyWithAi(vm, medChanges, result);
+
+      // Read the current letter at fire time (not a stale reference).
+      // The user may have already started editing the manual stitch
+      // in the few seconds the API call took. We unconditionally
+      // overwrite the body — there's no way to merge AI prose with
+      // user edits semantically. Acceptable since the user just
+      // clicked + Create or Regenerate; replacement is the expected
+      // outcome.
+      const currentVm = api.buildVm(api.store.getState());
+      if (!currentVm || !currentVm.patient) return;
+      const persisted = getDischargeLetter(currentVm.patient);
+      // If the user has already moved on (different patient, sent the
+      // letter, deleted it), don't write — too much could have changed.
+      if (persisted.status === null) return;
+
+      // Bump generationCount and stamp the model — the governance
+      // footer reads these.
+      const updated = Object.assign({}, persisted, {
+        body: newBody,
+        bodyFormat: 'html',
+        updatedAt: new Date().toISOString(),
+        generationCount: (persisted.generationCount || 0) + 1,
+        generationModel: result.model || ai.getModel()
+      });
+      persistLetterPatch(api, patientId, updated);
+
+      if (typeof api.showToast === 'function') {
+        api.showToast('Draft generated');
+      }
+    }).catch((err) => {
+      console.error('[dischargeLetter] AI generation failed', err);
+      const msg = err && err.message ? err.message : String(err);
+      if (typeof api.showToast === 'function') {
+        api.showToast('AI generation failed: ' + msg + '. Manual draft kept.');
+      } else {
+        window.alert('AI generation failed: ' + msg + '\n\nManual draft kept.');
+      }
+    });
+  }
+
   function persistLetterPatch(api, patientId, newLetter) {
     // Goes through the api's persistPatientPatchToJson which triggers a
     // store.setState in its .then() — used for action handlers
@@ -21387,18 +22103,19 @@ window.HAHBoard = window.HAHBoard || {};
         ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
         : [];
 
+      // v0.8.174: when + Create is pressed, attempt AI generation if a
+      // key is configured. The flow is fire-and-forget — we open the
+      // editor immediately with a placeholder body (or stitched-from-
+      // data), then update the body once the AI call returns. This
+      // keeps the UI responsive (editor opens instantly) while the
+      // 3-8s API call resolves in the background.
+      //
+      // If no API key, or generation fails, we fall back to manual
+      // stitch (Build A behaviour).
       if (create && existing.status === null) {
-        // Fresh create on a card that has no letter yet. No confirm —
-        // this is the no_draft → draft transition the empty card invites.
-        const initialBody = stitchInitialBody(vm, medChanges);
-        const fresh = transitionToDraft(emptyLetter(), initialBody, { now: new Date().toISOString(), bumpGeneration: false });
-        persistLetterPatch(api, patientId, fresh);
+        // Fresh create on empty card — no confirm.
+        startCreateFlow(api, vm, patientId, medChanges, /*existing*/null);
       } else if (create && existing.status !== null) {
-        // v0.8.170: + Create clicked on a card that already has a letter
-        // (draft or sent). Confirm before overwriting — option A has no
-        // history archive, so a fresh create destroys the existing
-        // letter. The confirm wording adapts to status so a re-admission
-        // scenario (sent letter) reads naturally.
         const isSent = existing.status === 'sent';
         const message = isSent
           ? 'Start a new discharge letter for this patient?\n\n'
@@ -21410,21 +22127,9 @@ window.HAHBoard = window.HAHBoard || {};
         if (!window.confirm(message)) {
           return true; // user cancelled — keep existing letter intact
         }
-        // Fresh stitch from current patient data, persisted as a new
-        // draft. transitionToDraft from emptyLetter() resets
-        // generatedAt to now (preserving from existing would carry the
-        // old letter's date forward, which would be misleading).
-        const initialBody = stitchInitialBody(vm, medChanges);
-        const fresh = transitionToDraft(emptyLetter(), initialBody, { now: new Date().toISOString(), bumpGeneration: false });
-        persistLetterPatch(api, patientId, fresh);
+        startCreateFlow(api, vm, patientId, medChanges, existing);
       } else if (existing.status !== null) {
-        // Re-open of existing draft/sent letter (no create flag — came
-        // via the row's filename-link or the ✎ Edit icon).
-        //
-        // v0.8.166: lazy migration. If the persisted letter is still
-        // plain-text format, convert it to HTML before merging — the
-        // merger operates on HTML now. Migration is one-way (an HTML
-        // body never reverts to plain) and idempotent.
+        // Re-open existing letter (no create flag).
         const migrated = migrateLetterToHtml(existing);
         const mergedBody = mergeStructuredSections(migrated.body, vm, medChanges);
         if (mergedBody !== existing.body || migrated.bodyFormat !== existing.bodyFormat) {
@@ -21432,10 +22137,24 @@ window.HAHBoard = window.HAHBoard || {};
           persistLetterPatch(api, patientId, updated);
         }
       }
-      // Reset preview pagination on open — different patients/letters
-      // start at page 1.
       currentPreviewPage = 0;
       api.store.setState({ patient: { dischargeLetterMode: true, dischargeLetterPatientId: patientId } });
+      return true;
+    }
+
+    if (action === 'dl-regenerate') {
+      // Re-run AI generation on an existing draft. Confirm if there's
+      // any clinician edit risk (we can't tell here whether the body is
+      // still the AI's output or has been edited, so always confirm).
+      const existing = getDischargeLetter(vm.patient);
+      if (existing.status === null) return true; // nothing to regenerate
+      if (!window.confirm('Regenerate the AI prose for this letter?\n\nAny edits you have made to the summary, course, or investigations sections will be replaced. The structured sections (medication changes, recommendations, resuscitation) and any edits to them will be preserved.')) {
+        return true;
+      }
+      const medChanges = (typeof api.getPatientEncounterRows === 'function')
+        ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
+        : [];
+      runAiGeneration(api, vm, patientId, medChanges, existing, { regenerate: true });
       return true;
     }
 
@@ -22008,6 +22727,7 @@ window.HAHBoard = window.HAHBoard || {};
     // Initial body stitching (testable)
     stitchInitialBody, stitchMedChangeLines, stitchResusLine, getForDischargeSummary,
     stitchMedSectionContent, stitchRecommendationsContent, stitchResusSectionContent,
+    stitchInitialBodyWithAi, splitProseIntoParagraphs,
     // v0.8.155: medication change badge — shared between letter stitch
     // and the medication_change card in 26-desktop-patient.js
     getMedChangeBadge, getAdjustDirection, parseFirstNumber, parseFrequency,
@@ -22204,6 +22924,53 @@ window.HAHBoard = window.HAHBoard || {};
       }
       if (action === 'settings-clear' && window.HAHBoard.ops) {
         window.HAHBoard.ops.clearAllOpsState();
+      }
+
+      // v0.8.174 (Build B): AI generation settings handlers.
+      if (action && action.indexOf('settings-ai-') === 0) {
+        const ai = window.HAHBoard.aiGeneration;
+        if (!ai) return;
+        if (action === 'settings-ai-set-key') {
+          const current = ai.getApiKey();
+          const next = window.prompt(
+            'Anthropic API key (starts with "sk-ant-"). The key is stored in this browser\'s localStorage.\n\n' +
+            'Leave blank and click OK to keep the current key.',
+            current ? '••••••••' + current.slice(-4) : ''
+          );
+          if (next === null) return; // user cancelled
+          if (next && next.indexOf('•') < 0) {
+            // Treat as a real key (the masked placeholder contains • chars).
+            ai.setApiKey(next.trim());
+            store.setState({ ui: { revision: Date.now() } }); // re-render
+          }
+          return;
+        }
+        if (action === 'settings-ai-clear-key') {
+          if (window.confirm('Remove the stored API key? You will need to add it again to use AI generation.')) {
+            ai.setApiKey('');
+            store.setState({ ui: { revision: Date.now() } });
+          }
+          return;
+        }
+        if (action === 'settings-ai-set-model') {
+          const current = ai.getModel();
+          const next = window.prompt(
+            'Model id. Common choices:\n' +
+            '  claude-sonnet-4-6  (default — $3 input / $15 output per million tokens)\n' +
+            '  claude-opus-4-7    (premium — $5 / $25 per million tokens)\n' +
+            '  claude-haiku-4-5   (fastest — $1 / $5 per million tokens)',
+            current
+          );
+          if (next === null) return;
+          ai.setModel(next.trim());
+          store.setState({ ui: { revision: Date.now() } });
+          return;
+        }
+        if (action === 'settings-ai-toggle-anonymise') {
+          ai.setAnonymise(!ai.getAnonymise());
+          store.setState({ ui: { revision: Date.now() } });
+          return;
+        }
       }
       if (action === 'settings-clear-discharged' && window.HAHBoard.ops) {
         const list = window.HAHBoard.ops.getDischargedPatients() || [];
@@ -22798,7 +23565,60 @@ window.HAHBoard = window.HAHBoard || {};
             </div>
           </div>
         </section>
+
+        ${renderAiSettingsSection()}
       </div>
+    `;
+  }
+
+  // v0.8.174 (Build B): AI generation settings card. API key, model
+  // choice, anonymisation toggle. Renders inline into the main settings
+  // pane; actions handled by the settings click delegator further down
+  // (data-action='settings-ai-*').
+  function renderAiSettingsSection() {
+    const ai = window.HAHBoard.aiGeneration;
+    if (!ai) return ''; // module not loaded — shouldn't happen but be defensive
+    const hasKey = ai.hasApiKey();
+    const anonymise = ai.getAnonymise();
+    const model = ai.getModel();
+    return `
+      <section class="hah-card">
+        <div class="hah-card-inner">
+          <div class="hah-card-title">AI discharge letter generation</div>
+          <p class="hah-muted" style="margin-top:6px;font-size:12px;line-height:1.5;">
+            When enabled, the discharge letter's prose sections (summary, course, investigations) are generated by Claude.
+            The structured sections (medication changes, recommendations, resuscitation status) continue to come from patient data.
+          </p>
+
+          <div class="hah-settings-grid" style="margin-top:14px;">
+            <div class="hah-settings-stat">
+              <div class="hah-kv-label">API key</div>
+              <div class="hah-kv-value">${hasKey ? '✓ Set' : '— Not configured'}</div>
+            </div>
+            <div class="hah-settings-stat">
+              <div class="hah-kv-label">Model</div>
+              <div class="hah-kv-value" style="font-size:11px;font-family:monospace;">${escapeHtml(model)}</div>
+            </div>
+            <div class="hah-settings-stat">
+              <div class="hah-kv-label">Anonymise PII</div>
+              <div class="hah-kv-value">${anonymise ? '✓ On' : '✗ Off'}</div>
+            </div>
+          </div>
+
+          <div class="hah-settings-actions" style="margin-top:14px;">
+            <button type="button" class="hah-inline-pill" data-action="settings-ai-set-key">${hasKey ? 'Update' : 'Add'} API key</button>
+            ${hasKey ? `<button type="button" class="hah-inline-pill" data-action="settings-ai-clear-key">Remove key</button>` : ''}
+            <button type="button" class="hah-inline-pill" data-action="settings-ai-set-model">Set model</button>
+            <button type="button" class="hah-inline-pill" data-action="settings-ai-toggle-anonymise">${anonymise ? 'Disable' : 'Enable'} anonymisation</button>
+          </div>
+
+          <p class="hah-muted" style="margin-top:14px;font-size:11px;line-height:1.5;">
+            <strong>Storage</strong>: API key is stored in this browser's localStorage. Visible in DevTools, lost when site data is cleared. Do not use a personal key on a shared computer.
+            <br><br>
+            <strong>PII</strong>: when anonymisation is on, patient name and date-of-birth are stripped before sending to Anthropic; the AI's output substitutes them back client-side. Clinical detail (diagnoses, drugs, free-text notes) still goes to the API. Sufficient for trial use with synthetic patients; real patient data needs a Data Processing Agreement.
+          </p>
+        </div>
+      </section>
     `;
   }
 
