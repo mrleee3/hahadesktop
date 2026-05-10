@@ -5763,7 +5763,7 @@ button.hah-pt-flag:active {
 }
 .hah-composer-card .hah-card-title {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--desk-text);
 }
@@ -5862,13 +5862,20 @@ button.hah-pt-flag:active {
  * hover entirely, which is the right semantic: "I'm already chosen,
  * hovering me doesn't change anything".
  *
- * Also applied to .hah-dchip (Estimated discharge: Possible today /
- * Tomorrow / Ready) and .hah-plan-preset-chip (Common actions:
- * GP HF F/U / HF MON) so chip behaviour is consistent across the
- * whole composer. */
+ * v0.8.186 (within the v0.8.185 session): fixed a selector typo —
+ * the class is `.hah-board-member-chip` (singular), not
+ * `.hah-board-members-chip` (plural). The plural matched the parent
+ * container's class but not the chips inside. Member chips weren't
+ * picking up the hover treatment as a result.
+ *
+ * Also excluded `.hah-dchip-ready` from the grey-fill scoped rule —
+ * the Ready chip has a green hover variant (defined in the unscoped
+ * .hah-dchip-ready:hover rule). My scoped grey-fill rule was winning
+ * on specificity and overriding it. Restoring the green-on-hover for
+ * Ready specifically. */
 .hah-composer-card .hah-composer-tab:hover:not(.is-active),
-.hah-composer-card .hah-board-members-chip:hover:not(.is-active),
-.hah-composer-card .hah-dchip:hover:not(.is-active),
+.hah-composer-card .hah-board-member-chip:hover:not(.is-active),
+.hah-composer-card .hah-dchip:not(.hah-dchip-ready):hover:not(.is-active),
 .hah-composer-card .hah-plan-preset-chip:hover {
   background: rgba(15, 23, 42, 0.04);
 }
@@ -8582,9 +8589,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_185_chip_rebalance_release.html',
-  source: 'hospital_at_home_board_v0_8_185_chip_rebalance_source.zip',
-  builtAt: '2026-05-10T21:18:42.738502',
+  filename: 'hospital_at_home_board_v0_8_186_chip_fixes_release.html',
+  source: 'hospital_at_home_board_v0_8_186_chip_fixes_source.zip',
+  builtAt: '2026-05-10T21:34:18.608569',
   entry: 'desktop.html'
 };
 </script>
@@ -21312,10 +21319,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.185. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.186. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.185. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.186. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
