@@ -5686,6 +5686,24 @@ button.hah-pt-flag:active {
  * touched. This is a scoped test pass on the composer to see if the
  * tighter aesthetic feels right before committing to a wider design-
  * system pass.
+ *
+ * v0.8.183 — first round of field-test feedback:
+ *  - Header text was reading as editable (Word-doc title) due to
+ *    white background. Added subtle tint matching the pull-through
+ *    section so the header reads as "header zone", not "type here".
+ *  - Saved indicator was over-styled as a pill — reverted to subtle
+ *    muted text in the header right slot.
+ *  - Pull-through section had asymmetric gaps above and below; both
+ *    equalised.
+ *  - Clinical note preview card brought to 12px corners to match
+ *    the composer (they're visually paired in the right pane;
+ *    mismatched radii were loud).
+ *  - Chip hover state got a stronger border alpha — outline-only
+ *    preserves chip-vs-button affordance, but the previous hover
+ *    was too faint to read.
+ *  - All placeholder text removed from composer fields (Issues,
+ *    Progress, Bloods, Plan, FDS, Discharge date). Clinicians know
+ *    what these fields are from the labels.
  */
 
 /* Outer card: slight tighten from --desk-radius-xl (20px) to 12px.
@@ -5695,16 +5713,24 @@ button.hah-pt-flag:active {
   border-radius: 12px;
 }
 
-/* Header: title + headerRight cluster + bottom separator. The
- * separator gives the form a defined start, mirroring the
- * .hah-dl-pane-head + body pattern in the discharge editor. */
+/* Header: title + headerRight cluster + bottom separator + subtle
+ * background tint. The separator gives the form a defined start; the
+ * tint makes the header zone visually distinct from the editable
+ * surfaces below (without the tint, the white-on-white between
+ * header text and textareas was reading as a continuous editable
+ * region — like a Word doc title bar).
+ *
+ * The tint matches .hah-cform-pull-section, which signals
+ * "non-editable container with information inside". */
 .hah-composer-card .hah-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  margin: -20px -24px 16px;
+  background: rgba(15, 23, 42, 0.025);
   border-bottom: 1px solid var(--desk-border);
+  border-radius: 12px 12px 0 0;
 }
 .hah-composer-card .hah-card-title {
   font-size: 15px;
@@ -5776,27 +5802,45 @@ button.hah-pt-flag:active {
 /* Round-type chips and Who's-on-board chips KEEP their rounder
  * appearance — they are state indicators, not action buttons. No
  * override needed; they retain their existing border-radius via the
- * unscoped rules. Documented here so future-me doesn't try to
- * "tighten the radii to match" without remembering why. */
-
-/* Composer-specific pull-through section: slight radius tighten to
- * match the form-field feel. */
-.hah-composer-card .hah-cform-pull-section {
-  border-radius: 6px;
+ * unscoped rules.
+ *
+ * v0.8.183: bump hover border alpha from 0.2 to 0.4 so the hover
+ * state reads more clearly. Outline-only on hover preserves the
+ * "fill = active state" affordance — a hover fill would muddy the
+ * distinction between hovered and selected. */
+.hah-composer-card .hah-composer-tab:hover,
+.hah-composer-card .hah-board-members-chip:hover {
+  border-color: rgba(25, 45, 72, 0.4);
 }
 
-/* Header autosave indicator: lives in the header right slot. Restyled
- * as a quiet status pill rather than a faded text snippet. Mirrors the
- * Draft badge in the discharge editor — small, contained, with subtle
- * background tint. */
+/* Composer-specific pull-through section: slight radius tighten to
+ * match the form-field feel.
+ *
+ * v0.8.183: equalise vertical margin — was inheriting different gaps
+ * above vs below. The board-members section above has its own
+ * bottom margin, plus the cform-pull-section had its own top margin,
+ * which compounded the gap above. Tighten both. */
+.hah-composer-card .hah-cform-pull-section {
+  border-radius: 6px;
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+.hah-composer-card .hah-board-members {
+  margin-bottom: 14px;
+}
+
+/* Header autosave indicator: lives in the header right slot.
+ *
+ * v0.8.183: reverted to subtle muted text. The previous version
+ * styled it as a pill (background tint + border + padding) which was
+ * over-emphasising what's just an autosave confirmation. The
+ * discharge editor's Draft badge has a similar pill treatment but
+ * earns it — Draft vs Sent is a critical lifecycle distinction.
+ * "Saved 21:47" is just feedback that the autosave fired; quiet text
+ * is the right weight. */
 .hah-composer-card .hah-section-head .hah-autosave-indicator {
   font-size: 11px;
-  font-weight: 500;
   color: var(--desk-text-muted);
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid var(--desk-border);
   letter-spacing: -0.005em;
 }
 
@@ -5808,6 +5852,18 @@ button.hah-pt-flag:active {
    * change. The buttons were already right-aligned; the indicator
    * was the left-anchored item via margin-right: auto. With it
    * gone, the buttons retain their right alignment. */
+}
+
+/* v0.8.183: clinical note preview corners brought into agreement
+ * with the composer card. They're vertically adjacent in the right
+ * pane (composer on top, preview below), and the radius disagreement
+ * was the most visible "different design system" tell on the screen.
+ *
+ * The internal styling of the preview (monospace text, copy button,
+ * heading style) is unchanged — Henry confirmed that the inside of
+ * the preview is fine. Only the outer card corner radius changes. */
+.hah-note-preview {
+  border-radius: 12px;
 }
 
 /* ─── End of composer card visual refresh ─────────────────────────── */
@@ -8485,9 +8541,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_182_composer_restyle_release.html',
-  source: 'hospital_at_home_board_v0_8_182_composer_restyle_source.zip',
-  builtAt: '2026-05-10T20:33:37.300620',
+  filename: 'hospital_at_home_board_v0_8_183_composer_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_183_composer_polish_source.zip',
+  builtAt: '2026-05-10T20:55:13.073445',
   entry: 'desktop.html'
 };
 </script>
@@ -16795,23 +16851,19 @@ window.HAHBoard = window.HAHBoard || {};
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Issues</label>
-          <textarea class="hah-cform-textarea hah-autoexpand${pulledIssues ? ' is-pulled' : ''}" id="cform-issues"
-            placeholder="1. Issue one&#10;2. Issue two">${c.escapeHtml(pulledIssues)}</textarea>
+          <textarea class="hah-cform-textarea hah-autoexpand${pulledIssues ? ' is-pulled' : ''}" id="cform-issues">${c.escapeHtml(pulledIssues)}</textarea>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Progress</label>
-          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-progress" rows="2"
-            placeholder="Clinical progress since last review…"></textarea>
+          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-progress" rows="2"></textarea>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Bloods</label>
-          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-bloods" rows="2"
-            placeholder="e.g. CRP 45  WBC 8.2  Cr 112  Na 138"></textarea>
+          <textarea class="hah-cform-textarea hah-autoexpand" id="cform-bloods" rows="2"></textarea>
         </div>
         <div class="hah-cform-field">
           <label class="hah-cform-label">Plan</label>
-          <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3"
-            placeholder="Today's plan…">${c.escapeHtml(pulledPlan)}</textarea>
+          <textarea class="hah-cform-textarea hah-autoexpand${pulledPlan ? ' is-pulled' : ''}" id="cform-plan" rows="3">${c.escapeHtml(pulledPlan)}</textarea>
           <div class="hah-plan-presets">
             <div class="hah-plan-presets-label">Common actions</div>
             <div class="hah-plan-presets-chips">
@@ -16826,7 +16878,6 @@ window.HAHBoard = window.HAHBoard || {};
             <button type="button" class="hah-dchip" data-discharge-quick="tomorrow" id="cform-chip-tomorrow">Tomorrow</button>
             <button type="button" class="hah-dchip hah-dchip-ready" id="cform-ready-chip" data-discharge-quick="ready">Ready</button>
             <input type="date" id="cform-discharge-date" class="hah-date-input"
-              placeholder="Select date"
               min="${todayIso()}"
               data-pulled-date="${c.escapeHtml(prevDate)}">
           </div>
@@ -16834,32 +16885,31 @@ window.HAHBoard = window.HAHBoard || {};
         <div class="hah-cform-field">
           <label class="hah-cform-label">For discharge summary</label>
           <textarea class="hah-cform-textarea hah-autoexpand${pulledDischargeSummary ? ' is-pulled' : ''}" id="cform-discharge-summary" rows="3"
-            data-pulled-value="${c.escapeHtml(pulledDischargeSummary)}"
-            placeholder="Notes that will feed into the eventual discharge summary…">${c.escapeHtml(pulledDischargeSummary)}</textarea>
+            data-pulled-value="${c.escapeHtml(pulledDischargeSummary)}">${c.escapeHtml(pulledDischargeSummary)}</textarea>
         </div>`;
     }
 
     if (type === 'micro_mdm') return `
       <div class="hah-cform-field"><label class="hah-cform-label">Question</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-question" rows="2" placeholder="Question posed to microbiology…"></textarea></div>
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-question" rows="2"></textarea></div>
       <div class="hah-cform-field"><label class="hah-cform-label">Recommendation</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-recommendation" rows="3" placeholder="Advice given…"></textarea></div>
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-recommendation" rows="3"></textarea></div>
       <div class="hah-cform-field"><label class="hah-cform-label">Follow-up</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-followup" rows="2" placeholder="Review triggers / actions…"></textarea></div>`;
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-followup" rows="2"></textarea></div>`;
 
     if (type === 'resp_mdm') return `
       <div class="hah-cform-field"><label class="hah-cform-label">Summary presented</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-summary" rows="2" placeholder="Brief clinical summary for MDM…"></textarea></div>
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-summary" rows="2"></textarea></div>
       <div class="hah-cform-field"><label class="hah-cform-label">Recommendation</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-recommendation" rows="3" placeholder="Resp MDM recommendation…"></textarea></div>
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-recommendation" rows="3"></textarea></div>
       <div class="hah-cform-field"><label class="hah-cform-label">Action</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-action" rows="2" placeholder="What follows from this review…"></textarea></div>`;
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-action" rows="2"></textarea></div>`;
 
     return `
       <div class="hah-cform-field"><label class="hah-cform-label">Source</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-source" rows="1" placeholder="e.g. Palliative care, Dietetics, Family discussion…"></textarea></div>
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-source" rows="1"></textarea></div>
       <div class="hah-cform-field"><label class="hah-cform-label">Note</label>
-        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-note" rows="5" placeholder="Free text…"></textarea></div>`;
+        <textarea class="hah-cform-textarea hah-autoexpand" id="cform-note" rows="5"></textarea></div>`;
   }
 
   function collectComposerFields(type) {
@@ -21217,10 +21267,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.182. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.183. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.182. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.183. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
