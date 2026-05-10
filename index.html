@@ -3270,6 +3270,23 @@ body.hah-ws-connecting .hah-ws-dot {
   transform: translateX(-50%) translateY(0);
 }
 
+/* v0.8.177: global toasts attach to body and use position: fixed so
+ * they survive pane re-renders. Used for AI generation status (3-8s
+ * operations that span multiple state changes). Anchors to bottom-
+ * centre of the viewport, slightly higher than the pane-attached
+ * variant to avoid overlapping with editor footer actions. */
+.hah-composer-toast.is-global {
+  position: fixed;
+  bottom: 32px;
+  z-index: 1300;
+  background: var(--desk-text);
+  /* Slightly larger / more prominent than the pane variant. */
+  padding: 9px 22px;
+  font-size: 13px;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.20);
+}
+
 /* ─── Discharge button ───────────────────────────────────────────────── */
 
 .hah-discharge-btn {
@@ -7611,6 +7628,53 @@ button.hah-pt-flag:active {
   gap: 4px;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
+
+/* v0.8.178: AI generation status pill, lives in the editor head next
+ * to the "Editing discharge letter" title. Visible immediately on
+ * Generate / Regenerate / + Create press; updates as state progresses;
+ * auto-clears 2.5s after success or 4s after error. State-driven so
+ * it can't be hidden by a re-render (the pill IS part of the head's
+ * rendered HTML). */
+.hah-dl-ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 12px;
+  margin-left: 4px;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+.hah-dl-ai-status.is-busy {
+  background: rgba(47,111,237,0.10);
+  color: rgba(47,111,237,0.95);
+  border: 1px solid rgba(47,111,237,0.35);
+}
+.hah-dl-ai-status.is-success {
+  background: rgba(16,148,82,0.10);
+  color: rgba(16,148,82,0.95);
+  border: 1px solid rgba(16,148,82,0.35);
+}
+.hah-dl-ai-status.is-error {
+  background: rgba(220,38,38,0.10);
+  color: rgba(220,38,38,0.95);
+  border: 1px solid rgba(220,38,38,0.35);
+}
+.hah-dl-ai-status-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(47,111,237,0.30);
+  border-top-color: rgba(47,111,237,0.95);
+  border-radius: 50%;
+  display: inline-block;
+  animation: hah-dl-ai-spin 700ms linear infinite;
+}
+@keyframes hah-dl-ai-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* v0.8.176: clarifying-questions modal. Renders over the discharge
  * letter editor (the editor pane stays visible behind a dimmed
  * backdrop). Borrows the visual language of the board's add-patient
@@ -7716,7 +7780,11 @@ button.hah-pt-flag:active {
   color: var(--desk-text);
   font-family: inherit;
   line-height: 1.3;
-  transition: all 120ms ease;
+  /* v0.8.177: explicit properties (not 'all') so font-weight changes
+   * don't transition — and we don't change font-weight on .is-active
+   * either. Width-changing transitions read as a flicker on adjacent
+   * options when one is picked. */
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 .hah-dl-clarify-option:hover {
   background: rgba(47,111,237,0.06);
@@ -7726,7 +7794,8 @@ button.hah-pt-flag:active {
   background: rgba(47,111,237,0.12);
   border-color: rgba(47,111,237,0.95);
   color: rgba(47,111,237,0.95);
-  font-weight: 500;
+  /* No font-weight change — would shift width and cause adjacent
+   * options to reflow, which reads as flicker on click. */
 }
 .hah-dl-clarify-freetext-row {
   display: flex;
@@ -8244,9 +8313,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_177_clarify_polish_release.html',
-  source: 'hospital_at_home_board_v0_8_177_clarify_polish_source.zip',
-  builtAt: '2026-05-10T08:45:26.388532',
+  filename: 'hospital_at_home_board_v0_8_178_status_pill_release.html',
+  source: 'hospital_at_home_board_v0_8_178_status_pill_source.zip',
+  builtAt: '2026-05-10T09:03:13.158487',
   entry: 'desktop.html'
 };
 </script>
@@ -17500,17 +17569,42 @@ window.HAHBoard = window.HAHBoard || {};
 
   function showToast(pane, text, options) {
     options = options || {};
+    // v0.8.177: 'global' toasts attach to document.body with
+    // position: fixed so they survive right-pane re-renders. The
+    // existing pane-attached behaviour wiped the toast on every
+    // state change because the .hah-card got innerHTML-replaced —
+    // sticky=true alone wasn't enough since "sticky" only disabled
+    // the auto-dismiss timer. AI flow needs a toast that persists
+    // for 3-8 seconds across multiple state changes; that means
+    // global.
+    if (options.global) {
+      const existingGlobal = document.querySelector('.hah-composer-toast.is-global');
+      if (existingGlobal) existingGlobal.remove();
+      const toast = document.createElement('div');
+      toast.className = 'hah-composer-toast is-global';
+      if (options.sticky) toast.classList.add('is-sticky');
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add('is-visible'));
+      });
+      if (!options.sticky) {
+        setTimeout(() => {
+          toast.classList.remove('is-visible');
+          setTimeout(() => toast.remove(), 220);
+        }, 2600);
+      }
+      return;
+    }
+
+    // Original pane-attached toast (composer feedback). Lives inside
+    // a .hah-card; auto-dismisses unless sticky.
     const existing = pane.querySelector('.hah-composer-toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
     toast.className = 'hah-composer-toast';
     if (options.sticky) toast.classList.add('is-sticky');
     toast.textContent = text;
-    // v0.8.177: when in discharge-letter editor mode the right pane
-    // contains .hah-dl-pane (no .hah-card). Fall back to that, then
-    // to the pane itself, so the toast always anchors somewhere in
-    // the right pane rather than silently failing or escaping to a
-    // .hah-card in a different pane.
     const container = pane.querySelector('.hah-card')
       || pane.querySelector('.hah-dl-pane')
       || pane;
@@ -17519,11 +17613,6 @@ window.HAHBoard = window.HAHBoard || {};
     requestAnimationFrame(() => {
       requestAnimationFrame(() => toast.classList.add('is-visible'));
     });
-    // v0.8.177: sticky toasts don't auto-dismiss. Used for in-flight
-    // operations (AI generation) where the user needs to see the
-    // status until the operation completes. Caller dismisses by
-    // calling showToast again with new text (overwrites) or by
-    // calling dismissToast(pane).
     if (!options.sticky) {
       setTimeout(() => {
         toast.classList.remove('is-visible');
@@ -17533,10 +17622,18 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function dismissToast(pane) {
+    // Dismiss either the pane-attached toast or the global one,
+    // whichever is currently visible.
+    const globalToast = document.querySelector('.hah-composer-toast.is-global');
+    if (globalToast) {
+      globalToast.classList.remove('is-visible');
+      setTimeout(() => globalToast.remove(), 220);
+    }
     const existing = pane && pane.querySelector('.hah-composer-toast');
-    if (!existing) return;
-    existing.classList.remove('is-visible');
-    setTimeout(() => existing.remove(), 220);
+    if (existing) {
+      existing.classList.remove('is-visible');
+      setTimeout(() => existing.remove(), 220);
+    }
   }
 
   function showAutosaveIndicator(pane) {
@@ -20921,10 +21018,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.177. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.178. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.177. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.178. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -22348,12 +22445,24 @@ window.HAHBoard = window.HAHBoard || {};
       ? `<button type="button" class="hah-dl-pane-regen" data-patient-action="dl-regenerate" aria-label="Regenerate AI prose" title="Regenerate AI prose"><span aria-hidden="true">↻</span> Regenerate</button>`
       : '';
 
+    // v0.8.178: AI status pill in the editor head. Driven by
+    // state.patient.dlAiStatus (set by runAiFlow / runFinalGeneration).
+    // Appears the moment Generate / Regenerate / + Create is pressed,
+    // updates as the flow progresses, clears on completion. In-pane
+    // not body-attached, so it's where the clinician's already looking
+    // and can't get hidden by viewport / z-index quirks.
+    const aiStatus = state && state.patient && state.patient.dlAiStatus;
+    const aiStatusPill = aiStatus
+      ? renderAiStatusPill(aiStatus)
+      : '';
+
     return `<div class="hah-dl-pane">
       <div class="hah-dl-pane-head">
         <div class="hah-dl-pane-title">
           <span class="hah-dl-pane-icon" aria-hidden="true">✎</span>
           <span>Editing discharge letter</span>
           ${badgeHtml}
+          ${aiStatusPill}
         </div>
         <div class="hah-dl-pane-head-actions">
           ${regenBtn}
@@ -22429,6 +22538,26 @@ window.HAHBoard = window.HAHBoard || {};
   // The modal lives in the same right-pane DOM as the editor — same
   // re-render cycle, so action handlers can read its state via the
   // store and write back via setState.
+  // v0.8.178: AI status pill rendered in the editor head. Mirrors the
+  // states the AI flow goes through. The 'success' and 'error' states
+  // briefly self-clear via setTimeout in the flow code; the others
+  // persist until the next state transition.
+  function renderAiStatusPill(status) {
+    const map = {
+      reviewing:    { label: 'Reviewing record…', cls: 'is-busy' },
+      generating:   { label: 'Generating draft…', cls: 'is-busy' },
+      regenerating: { label: 'Regenerating draft…', cls: 'is-busy' },
+      success:      { label: '✓ Draft generated', cls: 'is-success' },
+      error:        { label: '⚠ Generation failed', cls: 'is-error' }
+    };
+    const cfg = map[status];
+    if (!cfg) return '';
+    const spinner = cfg.cls === 'is-busy'
+      ? '<span class="hah-dl-ai-status-spinner" aria-hidden="true"></span>'
+      : '';
+    return `<span class="hah-dl-ai-status ${cfg.cls}" role="status" aria-live="polite">${spinner}${spinner ? ' ' : ''}${cfg.label}</span>`;
+  }
+
   function renderClarifyModalIfActive(state, currentPatientId, c) {
     const modal = state && state.patient && state.patient.dlClarifyModal;
     if (!modal) return '';
@@ -22534,13 +22663,14 @@ window.HAHBoard = window.HAHBoard || {};
     const isRegen = !!(opts && opts.regenerate);
     const useClarify = typeof ai.getClarify === 'function' ? ai.getClarify() : true;
 
-    // v0.8.177: sticky toast — stays until we explicitly replace or
-    // dismiss it. AI calls take 3-8s; the previous 2.6s auto-dismiss
-    // disappeared mid-call, leaving the user wondering whether
-    // anything was happening.
-    if (typeof api.showToast === 'function') {
-      api.showToast(isRegen ? 'Regenerating draft…' : (useClarify ? 'Reviewing record…' : 'Generating draft…'), { sticky: true });
-    }
+    // v0.8.178: AI status driven by state, rendered as a pill in the
+    // editor head. Replaces the body-attached toast that wasn't
+    // visible in field test.
+    api.store.setState({
+      patient: {
+        dlAiStatus: isRegen ? 'regenerating' : (useClarify ? 'reviewing' : 'generating')
+      }
+    });
 
     const allEncounters = (typeof api.getPatientEncounterRows === 'function')
       ? api.getPatientEncounterRows(vm.patient)
@@ -22561,7 +22691,7 @@ window.HAHBoard = window.HAHBoard || {};
       const subs = result && result.substitutions ? result.substitutions : {};
 
       if (questions.length === 0) {
-        if (typeof api.showToast === 'function') api.showToast('Generating draft…', { sticky: true });
+        api.store.setState({ patient: { dlAiStatus: isRegen ? 'regenerating' : 'generating' } });
         runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
           encounters: allEncounters,
           clarifyingAnswers: null,
@@ -22571,11 +22701,10 @@ window.HAHBoard = window.HAHBoard || {};
         return;
       }
 
-      // Modal opens — dismiss the "Reviewing record…" toast since the
-      // modal itself signals what's happening.
-      if (typeof api.dismissToast === 'function') api.dismissToast();
+      // Modal opening — clear status (modal itself signals progress).
       api.store.setState({
         patient: {
+          dlAiStatus: null,
           dlClarifyModal: {
             patientId: patientId,
             questions: questions,
@@ -22587,10 +22716,8 @@ window.HAHBoard = window.HAHBoard || {};
       });
     }).catch((err) => {
       console.error('[dischargeLetter] Clarifying-questions call failed', err);
-      const msg = err && err.message ? err.message : String(err);
-      if (typeof api.showToast === 'function') {
-        api.showToast('Could not get clarifying questions: ' + msg + '. Generating without them…', { sticky: true });
-      }
+      // Fall through to direct generation.
+      api.store.setState({ patient: { dlAiStatus: isRegen ? 'regenerating' : 'generating' } });
       runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
         encounters: allEncounters,
         clarifyingAnswers: null,
@@ -22603,7 +22730,8 @@ window.HAHBoard = window.HAHBoard || {};
   function runFinalGeneration(api, vm, patientId, medChanges, currentLetter, ctx) {
     const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
     if (!ai || typeof ai.generate !== 'function') {
-      if (typeof api.showToast === 'function') api.showToast('AI generation module not loaded');
+      api.store.setState({ patient: { dlAiStatus: 'error' } });
+      setTimeout(() => api.store.setState({ patient: { dlAiStatus: null } }), 3500);
       return;
     }
     const opts = {
@@ -22615,9 +22743,15 @@ window.HAHBoard = window.HAHBoard || {};
       const newBody = stitchInitialBodyWithAi(vm, medChanges, result);
 
       const currentVm = api.buildVm(api.store.getState());
-      if (!currentVm || !currentVm.patient) return;
+      if (!currentVm || !currentVm.patient) {
+        api.store.setState({ patient: { dlAiStatus: null } });
+        return;
+      }
       const persisted = getDischargeLetter(currentVm.patient);
-      if (persisted.status === null) return;
+      if (persisted.status === null) {
+        api.store.setState({ patient: { dlAiStatus: null } });
+        return;
+      }
 
       const updated = Object.assign({}, persisted, {
         body: newBody,
@@ -22628,19 +22762,26 @@ window.HAHBoard = window.HAHBoard || {};
       });
       persistLetterPatch(api, patientId, updated);
 
-      // v0.8.177: replace the sticky "Generating…" toast with the
-      // (auto-dismissing) success message.
-      if (typeof api.showToast === 'function') {
-        api.showToast(ctx.isRegen ? 'Draft regenerated' : 'Draft generated');
-      }
+      // Brief 'success' state, then auto-clear unless a new flow has
+      // started in the meantime.
+      api.store.setState({ patient: { dlAiStatus: 'success' } });
+      setTimeout(() => {
+        const s = api.store.getState();
+        if (s.patient && s.patient.dlAiStatus === 'success') {
+          api.store.setState({ patient: { dlAiStatus: null } });
+        }
+      }, 2500);
     }).catch((err) => {
       console.error('[dischargeLetter] AI generation failed', err);
       const msg = err && err.message ? err.message : String(err);
-      if (typeof api.showToast === 'function') {
-        api.showToast('AI generation failed: ' + msg + '. Manual draft kept.');
-      } else {
-        window.alert('AI generation failed: ' + msg + '\n\nManual draft kept.');
-      }
+      api.store.setState({ patient: { dlAiStatus: 'error' } });
+      window.alert('AI generation failed: ' + msg + '\n\nManual draft kept; you can hit Regenerate to retry.');
+      setTimeout(() => {
+        const s = api.store.getState();
+        if (s.patient && s.patient.dlAiStatus === 'error') {
+          api.store.setState({ patient: { dlAiStatus: null } });
+        }
+      }, 4000);
     });
   }
 
@@ -22874,11 +23015,14 @@ window.HAHBoard = window.HAHBoard || {};
         ? api.getPatientEncounterRows(vm.patient)
         : [];
       const persisted = getDischargeLetter(vm.patient);
-      // Clear modal, show sticky generating toast (will be replaced
-      // when call 2 returns or fails — non-sticky was dismissing at
-      // 2.6s while the AI took 3-8s to respond).
-      api.store.setState({ patient: { dlClarifyModal: null } });
-      if (typeof api.showToast === 'function') api.showToast('Generating draft…', { sticky: true });
+      // Clear modal, set generating status. Status renders in the
+      // editor head as a pill the moment this state change applies.
+      api.store.setState({
+        patient: {
+          dlClarifyModal: null,
+          dlAiStatus: modal.isRegen ? 'regenerating' : 'generating'
+        }
+      });
       runFinalGeneration(api, vm, patientId, medChanges, persisted, {
         encounters: allEncounters,
         clarifyingAnswers: clarifyingAnswers,
