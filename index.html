@@ -7606,10 +7606,215 @@ button.hah-pt-flag:active {
   gap: 4px;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
-.hah-dl-pane-regen:hover {
-  background: rgba(47,111,237,0.08);
+/* v0.8.176: clarifying-questions modal. Renders over the discharge
+ * letter editor (the editor pane stays visible behind a dimmed
+ * backdrop). Borrows the visual language of the board's add-patient
+ * modal — same overlay tint, same border-radius, same width.
+ *
+ * Each question gets:
+ *   - Question text
+ *   - Row of 2-4 option buttons (chips)
+ *   - "Type your own…" toggle that reveals a free-text input
+ *
+ * Footer has Skip and Generate. Generate is disabled until every
+ * question has an answer (option chosen OR free-text typed). DOM-
+ * driven (not state-driven) so the input doesn't lose focus on every
+ * keystroke. */
+.hah-dl-clarify-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: dlClarifyFadeIn 140ms ease-out;
+}
+@keyframes dlClarifyFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.hah-dl-clarify-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  animation: dlClarifySlideIn 180ms ease-out;
+}
+@keyframes dlClarifySlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hah-dl-clarify-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px 20px;
+  border-bottom: 1px solid var(--desk-border);
+}
+.hah-dl-clarify-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--desk-text);
+  letter-spacing: -0.01em;
+}
+.hah-dl-clarify-close {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--desk-text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: background 120ms ease;
+}
+.hah-dl-clarify-close:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--desk-text);
+}
+.hah-dl-clarify-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.hah-dl-clarify-question {
+  margin-bottom: 18px;
+}
+.hah-dl-clarify-question:last-child {
+  margin-bottom: 4px;
+}
+.hah-dl-clarify-q-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--desk-text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.hah-dl-clarify-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.hah-dl-clarify-option {
+  background: #fff;
+  border: 1px solid var(--desk-border);
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--desk-text);
+  font-family: inherit;
+  line-height: 1.3;
+  transition: all 120ms ease;
+}
+.hah-dl-clarify-option:hover {
+  background: rgba(47,111,237,0.06);
+  border-color: rgba(47,111,237,0.45);
+}
+.hah-dl-clarify-option.is-active {
+  background: rgba(47,111,237,0.12);
+  border-color: rgba(47,111,237,0.95);
+  color: rgba(47,111,237,0.95);
+  font-weight: 500;
+}
+.hah-dl-clarify-freetext-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.hah-dl-clarify-freetext-toggle {
+  align-self: flex-start;
+  color: var(--desk-text-muted);
+  font-style: italic;
+  font-size: 11px;
+}
+.hah-dl-clarify-freetext-toggle.is-active {
+  background: rgba(47,111,237,0.12);
   border-color: rgba(47,111,237,0.45);
   color: rgba(47,111,237,0.95);
+  font-style: normal;
+  font-weight: 500;
+}
+.hah-dl-clarify-freetext-input {
+  display: none;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--desk-border);
+  border-radius: 6px;
+  font-family: inherit;
+  color: var(--desk-text);
+  width: 100%;
+  box-sizing: border-box;
+}
+.hah-dl-clarify-freetext-input.is-visible {
+  display: block;
+}
+.hah-dl-clarify-freetext-input:focus {
+  outline: 2px solid rgba(47,111,237,0.35);
+  outline-offset: 0;
+  border-color: rgba(47,111,237,0.7);
+}
+.hah-dl-clarify-empty {
+  text-align: center;
+  color: var(--desk-text-muted);
+  font-size: 13px;
+  padding: 24px;
+}
+.hah-dl-clarify-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--desk-border);
+  background: rgba(15,23,42,0.02);
+  border-radius: 0 0 12px 12px;
+}
+.hah-dl-clarify-skip {
+  background: transparent;
+  border: 1px solid var(--desk-border);
+  padding: 7px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--desk-text-muted);
+  font-family: inherit;
+  transition: all 120ms ease;
+}
+.hah-dl-clarify-skip:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--desk-text);
+}
+.hah-dl-clarify-skip:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.hah-dl-clarify-submit {
+  background: rgba(47,111,237,0.95);
+  border: 1px solid rgba(47,111,237,0.95);
+  padding: 7px 16px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 120ms ease;
+}
+.hah-dl-clarify-submit:hover:not(:disabled) {
+  background: rgba(40,100,220,0.95);
+}
+.hah-dl-clarify-submit:disabled {
+  background: rgba(47,111,237,0.4);
+  border-color: rgba(47,111,237,0.4);
+  cursor: default;
 }
 
 .hah-dl-pane-statusrow {
@@ -8034,9 +8239,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_175_ai_payload_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_175_ai_payload_fix_source.zip',
-  builtAt: '2026-05-10T08:12:51.459636',
+  filename: 'hospital_at_home_board_v0_8_176_clarifying_questions_release.html',
+  source: 'hospital_at_home_board_v0_8_176_clarifying_questions_source.zip',
+  builtAt: '2026-05-10T08:26:37.999537',
   entry: 'desktop.html'
 };
 </script>
@@ -19639,6 +19844,10 @@ window.HAHBoard = window.HAHBoard || {};
   const LS_API_KEY = 'hah_anthropic_api_key';
   const LS_ANONYMISE = 'hah_ai_anonymise';
   const LS_MODEL = 'hah_ai_model';
+  // v0.8.176: clarifying-questions toggle. Default on — the two-call
+  // flow with question modal is the designed experience. Off makes
+  // + Create skip the modal and go straight to letter generation.
+  const LS_CLARIFY = 'hah_ai_clarify';
 
   // Default model. Sonnet 4.6 — best price/performance for structured prose.
   // Can be overridden via the settings panel for users who want Opus 4.7.
@@ -19684,6 +19893,18 @@ window.HAHBoard = window.HAHBoard || {};
       if (model && model !== DEFAULT_MODEL) localStorage.setItem(LS_MODEL, model);
       else localStorage.removeItem(LS_MODEL);
     } catch (_) {}
+  }
+
+  function getClarify() {
+    try {
+      const v = localStorage.getItem(LS_CLARIFY);
+      // Default true if unset — the two-call flow is the intended UX.
+      return v !== 'false';
+    } catch (_) { return true; }
+  }
+
+  function setClarify(on) {
+    try { localStorage.setItem(LS_CLARIFY, on ? 'true' : 'false'); } catch (_) {}
   }
 
   // ─── Anonymisation ───────────────────────────────────────────────────
@@ -20030,13 +20251,60 @@ window.HAHBoard = window.HAHBoard || {};
     ].join('\n');
   }
 
-  function buildUserMessage(payload) {
-    return 'Patient data:\n\n```json\n' + JSON.stringify(payload, null, 2) + '\n```\n\nWrite the three prose sections.';
+  // v0.8.176 — clarifying-questions prompt for call 1 of the two-call
+  // flow. Identifies 0-3 ambiguities or judgment calls that affect the
+  // letter and would benefit from clinician input. NOT formatting,
+  // capitalisation, stylistic preferences, or things the data already
+  // determines.
+  function buildClarifyingQuestionsSystemPrompt() {
+    return [
+      'You are reviewing a patient record before writing a UK clinical discharge letter to the GP.',
+      'Your job RIGHT NOW is NOT to write the letter. It is to identify clarifying questions — judgment calls or ambiguities the clinician should resolve before drafting.',
+      '',
+      'Look for these specifically:',
+      '  - Ambiguous addressing (which GP / practice when the record names more than one or none)',
+      '  - Multiple plausible principal diagnoses (e.g. HF + AKI together — which leads the narrative?)',
+      '  - Optional content (mention social history? note suggested medication titrations the GP might consider? include lifestyle advice?)',
+      '  - Genuine data gaps where you would normally include something but the record doesn\'t supply it',
+      '',
+      'Do NOT ask about:',
+      '  - Things the data unambiguously determines',
+      '  - Formatting, capitalisation, stylistic preferences, units, date formats',
+      '  - Whether to include the standard structured sections (medication changes, recommendations, resuscitation) — those are always included and stitched from data',
+      '',
+      'Output rules:',
+      '  - 0 to 3 questions maximum. Many letters will have 0 — if the record is unambiguous, return an empty list. The clinician benefits more from skipping to drafting than from spurious questions.',
+      '  - Each question gets 2-4 short options that cover the realistic answer space. Avoid "Other" as a forced option — the UI provides a free-text fallback regardless.',
+      '  - Question text should be a single direct sentence. Options should be short noun phrases or short instructions, not full sentences.',
+      '',
+      'Output ONLY a valid JSON object with this shape, no surrounding prose, no markdown fences:',
+      '{ "questions": [ { "question": "...", "options": ["...", "..."] } ] }',
+      '',
+      'If no clarifying questions are needed, output: { "questions": [] }'
+    ].join('\n');
   }
 
-  // ─── API call ───────────────────────────────────────────────────────
+  function buildUserMessage(payload, options) {
+    const o = options || {};
+    let msg = 'Patient data:\n\n```json\n' + JSON.stringify(payload, null, 2) + '\n```';
+    // v0.8.176: when call 2 of the two-call flow runs, the clinician's
+    // answers to the clarifying questions are included as additional
+    // context. The AI was already told (call 1) what it asked; in
+    // call 2 it gets back the answers and applies them.
+    if (o.clarifyingAnswers && Array.isArray(o.clarifyingAnswers) && o.clarifyingAnswers.length) {
+      msg += '\n\nClinician answers to clarifying questions:\n';
+      o.clarifyingAnswers.forEach((qa) => {
+        msg += '\n  Q: ' + qa.question + '\n  A: ' + qa.answer + '\n';
+      });
+      msg += '\nApply these answers when writing the letter. Do not mention the questions explicitly in the prose.';
+    }
+    msg += '\n\nWrite the three prose sections.';
+    return msg;
+  }
 
-  function generate(vm, options) {
+  // ─── API call: clarifying questions (call 1 of two-call flow) ────────
+
+  function generateClarifyingQuestions(vm, options) {
     return new Promise((resolve, reject) => {
       const apiKey = getApiKey();
       if (!apiKey) {
@@ -20053,10 +20321,111 @@ window.HAHBoard = window.HAHBoard || {};
 
       const body = {
         model: getModel(),
+        max_tokens: 600, // questions are small — cap output to keep latency tight
+        system: buildClarifyingQuestionsSystemPrompt(),
+        messages: [
+          { role: 'user', content: 'Patient data:\n\n```json\n' + JSON.stringify(sanitised, null, 2) + '\n```\n\nReturn the clarifying questions JSON.' }
+        ]
+      };
+
+      fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body)
+      }).then((res) => {
+        if (!res.ok) {
+          return res.text().then((errText) => {
+            let parsed; try { parsed = JSON.parse(errText); } catch (_) { parsed = null; }
+            const msg = parsed && parsed.error && parsed.error.message
+              ? parsed.error.message
+              : ('HTTP ' + res.status + ': ' + errText.slice(0, 200));
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      }).then((data) => {
+        if (!data || !Array.isArray(data.content) || data.content.length === 0) {
+          throw new Error('Unexpected API response shape');
+        }
+        const textBlock = data.content.find((b) => b.type === 'text');
+        if (!textBlock) throw new Error('No text content in API response');
+        const json = parseJsonResponse(textBlock.text || '');
+        if (!json) throw new Error('Could not parse JSON from AI response: ' + (textBlock.text || '').slice(0, 200));
+
+        // Defensive: questions should be an array of {question, options}.
+        // Cap at 3 (the prompt says max 3 but trust nothing).
+        const rawQuestions = Array.isArray(json.questions) ? json.questions.slice(0, 3) : [];
+        const questions = rawQuestions
+          .filter((q) => q && typeof q.question === 'string' && q.question.trim())
+          .map((q) => ({
+            // De-anonymise any name-placeholders the AI might have used
+            // in the question text or options.
+            question: deanonymise(q.question.trim(), substitutions),
+            options: Array.isArray(q.options)
+              ? q.options
+                  .filter((o) => typeof o === 'string' && o.trim())
+                  .slice(0, 4) // cap 4 options per question
+                  .map((o) => deanonymise(o.trim(), substitutions))
+              : []
+          }));
+
+        resolve({
+          questions,
+          // Stash the substitutions so call 2 can reuse them — same
+          // patient session, same anonymisation pass.
+          substitutions,
+          model: data.model || getModel(),
+          usage: data.usage || null
+        });
+      }).catch(reject);
+    });
+  }
+
+  // ─── API call: letter prose (call 2 of two-call flow, or one-shot) ──
+
+  function generate(vm, options) {
+    return new Promise((resolve, reject) => {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        reject(new Error('No API key configured. Add one in Settings.'));
+        return;
+      }
+      const rawPayload = buildPromptPayload(vm, options);
+      if (!rawPayload) {
+        reject(new Error('Could not build prompt payload — patient data missing'));
+        return;
+      }
+      const anonymiseOn = getAnonymise();
+      // v0.8.176: in the two-call flow, call 1 has already anonymised
+      // and given us the substitutions. Reuse them in call 2 so the
+      // same identifier mapping is preserved end-to-end. If options
+      // didn't supply substitutions (one-shot mode, or first call),
+      // generate fresh ones.
+      let sanitised, substitutions;
+      if (options && options.substitutions && Object.keys(options.substitutions).length) {
+        // Anonymise again with the same mapping (deterministic on input).
+        const r = anonymiseOn ? anonymise(rawPayload) : { sanitised: rawPayload, substitutions: {} };
+        sanitised = r.sanitised;
+        substitutions = options.substitutions; // trust caller's mapping
+      } else {
+        const r = anonymiseOn ? anonymise(rawPayload) : { sanitised: rawPayload, substitutions: {} };
+        sanitised = r.sanitised;
+        substitutions = r.substitutions;
+      }
+
+      const body = {
+        model: getModel(),
         max_tokens: 1500,
         system: buildSystemPrompt(),
         messages: [
-          { role: 'user', content: buildUserMessage(sanitised) }
+          { role: 'user', content: buildUserMessage(sanitised, {
+            clarifyingAnswers: options && options.clarifyingAnswers
+          }) }
         ]
       };
 
@@ -20138,11 +20507,13 @@ window.HAHBoard = window.HAHBoard || {};
     getApiKey, setApiKey, hasApiKey,
     getAnonymise, setAnonymise,
     getModel, setModel, DEFAULT_MODEL,
+    getClarify, setClarify,
     // Generation
     generate,
+    generateClarifyingQuestions,
     // Helpers (exported for tests)
     anonymise, deanonymise,
-    buildPromptPayload, buildSystemPrompt, buildUserMessage,
+    buildPromptPayload, buildSystemPrompt, buildClarifyingQuestionsSystemPrompt, buildUserMessage,
     parseJsonResponse,
     stripInternalFields, computeAge, computeLOS
   };
@@ -20508,10 +20879,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.175. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.176. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.175. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.176. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -22008,7 +22379,73 @@ window.HAHBoard = window.HAHBoard || {};
         </button>
         ${!isSent ? `<button type="button" class="hah-dl-action-btn" data-patient-action="dl-mark-sent">✓ Mark sent</button>` : ''}
       </div>
-    </div>`;
+    </div>${renderClarifyModalIfActive(state, patient.id, c)}`;
+  }
+
+  // v0.8.176: clarifying-questions modal. Renders only when
+  // state.patient.dlClarifyModal is set AND for the current patient.
+  // The modal lives in the same right-pane DOM as the editor — same
+  // re-render cycle, so action handlers can read its state via the
+  // store and write back via setState.
+  function renderClarifyModalIfActive(state, currentPatientId, c) {
+    const modal = state && state.patient && state.patient.dlClarifyModal;
+    if (!modal) return '';
+    if (modal.patientId !== currentPatientId) return ''; // not for this patient
+    const isGenerating = !!modal.generating;
+
+    const questionsHtml = (modal.questions || []).map((q, idx) => {
+      const ans = (modal.answers && modal.answers[idx]) || { choice: null, freeText: '' };
+      const optionsHtml = (q.options || []).map((opt, optIdx) => {
+        const isActive = ans.choice === optIdx;
+        return `<button type="button"
+          class="hah-dl-clarify-option ${isActive ? 'is-active' : ''}"
+          data-patient-action="dl-clarify-pick"
+          data-q-idx="${idx}"
+          data-opt-idx="${optIdx}">${c.escapeHtml(opt)}</button>`;
+      }).join('');
+      const isFreeTextActive = ans.choice === -1;
+      return `
+        <div class="hah-dl-clarify-question">
+          <div class="hah-dl-clarify-q-text">${c.escapeHtml(q.question)}</div>
+          <div class="hah-dl-clarify-options">${optionsHtml}</div>
+          <div class="hah-dl-clarify-freetext-row">
+            <button type="button"
+              class="hah-dl-clarify-option hah-dl-clarify-freetext-toggle ${isFreeTextActive ? 'is-active' : ''}"
+              data-patient-action="dl-clarify-freetext"
+              data-q-idx="${idx}">Type your own…</button>
+            <input type="text"
+              class="hah-dl-clarify-freetext-input ${isFreeTextActive ? 'is-visible' : ''}"
+              data-q-idx="${idx}"
+              placeholder="Type your answer…"
+              value="${c.escapeHtml(ans.freeText || '')}"
+              ${isFreeTextActive ? '' : 'tabindex="-1"'}>
+          </div>
+        </div>`;
+    }).join('');
+
+    // The Generate button starts disabled. bindClarifyModal runs on
+    // every render and reads DOM state to enable it when all questions
+    // have been answered. Free-text input is NOT in state — its value
+    // lives in DOM only (see bindClarifyModal comment for why).
+
+    return `
+      <div class="hah-dl-clarify-overlay" data-patient-action="dl-clarify-backdrop">
+        <div class="hah-dl-clarify-modal" role="dialog" aria-modal="true" aria-label="Clarify before generating letter">
+          <div class="hah-dl-clarify-head">
+            <div class="hah-dl-clarify-title">A few quick questions before drafting</div>
+            <button type="button" class="hah-dl-clarify-close" data-patient-action="dl-clarify-cancel" aria-label="Cancel">×</button>
+          </div>
+          <div class="hah-dl-clarify-body">
+            ${questionsHtml || '<div class="hah-dl-clarify-empty">No questions returned by the AI.</div>'}
+          </div>
+          <div class="hah-dl-clarify-footer">
+            <button type="button" class="hah-dl-clarify-skip" data-patient-action="dl-clarify-skip" ${isGenerating ? 'disabled' : ''}>Skip and generate</button>
+            <button type="button" class="hah-dl-clarify-submit" data-patient-action="dl-clarify-submit" disabled>
+              ${isGenerating ? 'Generating…' : 'Generate letter'}
+            </button>
+          </div>
+        </div>
+      </div>`;
   }
 
   // ─── Persistence helpers (browser-side only) ───────────────────────────
@@ -22018,77 +22455,133 @@ window.HAHBoard = window.HAHBoard || {};
   // here to keep the discharge-letter module self-contained.
 
   // v0.8.174 (Build B): + Create flow.
+  // v0.8.176: two-call AI flow with clarifying-questions modal.
   //
-  // Two-phase: open the editor immediately with a placeholder body
-  // (manual stitch) so the UI is responsive, then attempt AI
-  // generation in the background and update the body when it returns.
-  // If no API key, skip the AI phase entirely — the manual stitch IS
-  // the result.
+  // Phase 1: write the manual-stitch body so the editor has something
+  // to render right now. UI opens in <50ms.
+  // Phase 2: if AI is configured AND clarifying questions are enabled,
+  //   call generateClarifyingQuestions. If it returns >=1 question,
+  //   show the modal (editor still open in background). If it returns
+  //   0, skip straight to Phase 3.
+  // Phase 3: call generate() with patient data + clinician's answers.
+  //   Update letter body when response lands.
   //
-  // existingForRegeneration is non-null when this is a "replace existing"
-  // create (draft or sent) — passed only to enforce the empty-state
-  // assumption inside transitionToDraft (we always start from
-  // emptyLetter() so generatedAt resets to now).
+  // No API key → skip phases 2/3 entirely. The manual stitch IS the
+  // result. Same as Build A.
+  //
+  // existingForRegeneration is non-null when this is "+ Create" with
+  // an existing letter to replace; passed only to enforce that
+  // transitionToDraft starts from emptyLetter() (so generatedAt resets).
   function startCreateFlow(api, vm, patientId, medChanges, existingForRegeneration) {
-    // Phase 1: write the manual-stitch body so the editor has something
-    // to render right now.
     const manualBody = stitchInitialBody(vm, medChanges);
     const fresh = transitionToDraft(emptyLetter(), manualBody, { now: new Date().toISOString(), bumpGeneration: false });
     persistLetterPatch(api, patientId, fresh);
 
-    // Phase 2: kick off AI generation if a key is set. If not, we're
-    // done — the user gets the manual stitch as the placeholder, same
-    // as Build A.
     const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
     if (!ai || !ai.hasApiKey()) {
-      return;
+      return; // No AI — manual stitch is the result.
     }
-    runAiGeneration(api, vm, patientId, medChanges, fresh, { regenerate: false });
+    runAiFlow(api, vm, patientId, medChanges, fresh, { regenerate: false });
   }
 
-  // Async AI call. Updates the letter body when the response lands.
-  // Failure → toast + leave the manual stitch in place.
-  function runAiGeneration(api, vm, patientId, medChanges, currentLetter, opts) {
+  // Two-call orchestrator. Decides whether to show clarifying-questions
+  // modal based on settings + what the API returns.
+  function runAiFlow(api, vm, patientId, medChanges, currentLetter, opts) {
+    const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
+    if (!ai) return;
+    const isRegen = !!(opts && opts.regenerate);
+    const useClarify = typeof ai.getClarify === 'function' ? ai.getClarify() : true;
+
+    if (typeof api.showToast === 'function') {
+      api.showToast(isRegen ? 'Regenerating draft…' : (useClarify ? 'Reviewing record…' : 'Generating draft…'));
+    }
+
+    // Fetch encounters once and reuse for both calls — same source-of-truth.
+    const allEncounters = (typeof api.getPatientEncounterRows === 'function')
+      ? api.getPatientEncounterRows(vm.patient)
+      : [];
+
+    if (!useClarify) {
+      // One-shot mode (settings-toggled off). Skip questions entirely.
+      runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
+        encounters: allEncounters,
+        clarifyingAnswers: null,
+        substitutions: null,
+        isRegen
+      });
+      return;
+    }
+
+    // Call 1: clarifying questions.
+    ai.generateClarifyingQuestions(vm, { encounters: allEncounters }).then((result) => {
+      const questions = (result && Array.isArray(result.questions)) ? result.questions : [];
+      const subs = result && result.substitutions ? result.substitutions : {};
+
+      if (questions.length === 0) {
+        // Data unambiguous — skip the modal, go straight to letter generation.
+        if (typeof api.showToast === 'function') api.showToast('Generating draft…');
+        runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
+          encounters: allEncounters,
+          clarifyingAnswers: null,
+          substitutions: subs,
+          isRegen
+        });
+        return;
+      }
+
+      // Show the modal. Modal state lives in store.patient.dlClarifyModal.
+      // The Generate button on the modal triggers the dl-clarify-submit
+      // action handler, which reads back the answers and calls phase 3.
+      api.store.setState({
+        patient: {
+          dlClarifyModal: {
+            patientId: patientId,
+            questions: questions,
+            answers: questions.map(() => ({ choice: null, freeText: '' })),
+            substitutions: subs,
+            isRegen: isRegen
+          }
+        }
+      });
+    }).catch((err) => {
+      console.error('[dischargeLetter] Clarifying-questions call failed', err);
+      const msg = err && err.message ? err.message : String(err);
+      if (typeof api.showToast === 'function') {
+        api.showToast('Could not get clarifying questions: ' + msg + '. Generating without them…');
+      }
+      // Best effort — fall through to direct generation. Better than
+      // blocking the create flow on a question-step failure.
+      runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
+        encounters: allEncounters,
+        clarifyingAnswers: null,
+        substitutions: null,
+        isRegen
+      });
+    });
+  }
+
+  // Phase 3: the actual letter-generation call. Runs after either
+  // (a) zero clarifying questions, (b) modal submit with answers,
+  // or (c) clarify disabled in settings.
+  function runFinalGeneration(api, vm, patientId, medChanges, currentLetter, ctx) {
     const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
     if (!ai || typeof ai.generate !== 'function') {
       if (typeof api.showToast === 'function') api.showToast('AI generation module not loaded');
       return;
     }
-    const isRegen = !!(opts && opts.regenerate);
-
-    if (typeof api.showToast === 'function') {
-      api.showToast(isRegen ? 'Regenerating draft…' : 'Generating draft…');
-    }
-
-    // v0.8.175: pass the full encounter list to the AI generator so it
-    // can see clinical history. Without this, buildPromptPayload was
-    // looking at JSON-record paths that don't always carry encounters
-    // (timeline data flows via the ops layer too) and the AI received
-    // an empty log → "insufficient clinical information" responses.
-    const allEncounters = (typeof api.getPatientEncounterRows === 'function')
-      ? api.getPatientEncounterRows(vm.patient)
-      : [];
-
-    ai.generate(vm, { encounters: allEncounters }).then((result) => {
-      // Build a new body using AI prose + structured sections.
+    const opts = {
+      encounters: ctx.encounters,
+      clarifyingAnswers: ctx.clarifyingAnswers,
+      substitutions: ctx.substitutions
+    };
+    ai.generate(vm, opts).then((result) => {
       const newBody = stitchInitialBodyWithAi(vm, medChanges, result);
 
-      // Read the current letter at fire time (not a stale reference).
-      // The user may have already started editing the manual stitch
-      // in the few seconds the API call took. We unconditionally
-      // overwrite the body — there's no way to merge AI prose with
-      // user edits semantically. Acceptable since the user just
-      // clicked + Create or Regenerate; replacement is the expected
-      // outcome.
       const currentVm = api.buildVm(api.store.getState());
       if (!currentVm || !currentVm.patient) return;
       const persisted = getDischargeLetter(currentVm.patient);
-      // If the user has already moved on (different patient, sent the
-      // letter, deleted it), don't write — too much could have changed.
       if (persisted.status === null) return;
 
-      // Bump generationCount and stamp the model — the governance
-      // footer reads these.
       const updated = Object.assign({}, persisted, {
         body: newBody,
         bodyFormat: 'html',
@@ -22099,7 +22592,7 @@ window.HAHBoard = window.HAHBoard || {};
       persistLetterPatch(api, patientId, updated);
 
       if (typeof api.showToast === 'function') {
-        api.showToast('Draft generated');
+        api.showToast(ctx.isRegen ? 'Draft regenerated' : 'Draft generated');
       }
     }).catch((err) => {
       console.error('[dischargeLetter] AI generation failed', err);
@@ -22110,6 +22603,11 @@ window.HAHBoard = window.HAHBoard || {};
         window.alert('AI generation failed: ' + msg + '\n\nManual draft kept.');
       }
     });
+  }
+
+  // Backward-compatible wrapper — used by Regenerate button.
+  function runAiGeneration(api, vm, patientId, medChanges, currentLetter, opts) {
+    runAiFlow(api, vm, patientId, medChanges, currentLetter, opts);
   }
 
   function persistLetterPatch(api, patientId, newLetter) {
@@ -22217,6 +22715,95 @@ window.HAHBoard = window.HAHBoard || {};
         ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
         : [];
       runAiGeneration(api, vm, patientId, medChanges, existing, { regenerate: true });
+      return true;
+    }
+
+    // ─── Clarifying-questions modal handlers ───────────────────────────
+    //
+    // The modal lives in store.patient.dlClarifyModal. Each handler
+    // mutates that state via setState, which triggers a re-render and
+    // re-renders the modal with the updated answers.
+    //
+    // Click backdrop or × → cancel (clear modal state, no AI call).
+    // Click "Skip and generate" → run final generation without answers.
+    // Click an option → mark that question's choice.
+    // Click "Type your own" → switch the question to free-text mode.
+    // Click "Generate letter" → run final generation with collected answers.
+
+    if (action === 'dl-clarify-cancel' || action === 'dl-clarify-backdrop') {
+      // Backdrop click should only fire if the click was actually on the
+      // backdrop element itself, not on a child. Check target.
+      if (action === 'dl-clarify-backdrop' && target !== event.target) return true;
+      api.store.setState({ patient: { dlClarifyModal: null } });
+      return true;
+    }
+
+    if (action === 'dl-clarify-pick') {
+      const qIdx = parseInt(target.getAttribute('data-q-idx'), 10);
+      const optIdx = parseInt(target.getAttribute('data-opt-idx'), 10);
+      const modal = state.patient && state.patient.dlClarifyModal;
+      if (!modal || !Array.isArray(modal.answers)) return true;
+      const newAnswers = modal.answers.slice();
+      newAnswers[qIdx] = { choice: optIdx, freeText: '' };
+      api.store.setState({ patient: { dlClarifyModal: Object.assign({}, modal, { answers: newAnswers }) } });
+      return true;
+    }
+
+    if (action === 'dl-clarify-freetext') {
+      const qIdx = parseInt(target.getAttribute('data-q-idx'), 10);
+      const modal = state.patient && state.patient.dlClarifyModal;
+      if (!modal || !Array.isArray(modal.answers)) return true;
+      const newAnswers = modal.answers.slice();
+      const existing = newAnswers[qIdx] || {};
+      // Toggle: if already in free-text mode, switch back to no-choice
+      // (showing options again). Otherwise enter free-text mode.
+      if (existing.choice === -1) {
+        newAnswers[qIdx] = { choice: null, freeText: '' };
+      } else {
+        newAnswers[qIdx] = { choice: -1, freeText: existing.freeText || '' };
+      }
+      api.store.setState({ patient: { dlClarifyModal: Object.assign({}, modal, { answers: newAnswers }) } });
+      return true;
+    }
+
+    if (action === 'dl-clarify-skip' || action === 'dl-clarify-submit') {
+      const modal = state.patient && state.patient.dlClarifyModal;
+      if (!modal) return true;
+      let clarifyingAnswers = null;
+      if (action === 'dl-clarify-submit') {
+        // Read free-text values from DOM (they're not in state — see
+        // bindClarifyModal comment). Choice is from state (driven by
+        // option-button clicks).
+        const modalEl = document.querySelector('.hah-dl-clarify-modal');
+        clarifyingAnswers = modal.questions.map((q, i) => {
+          const a = (modal.answers && modal.answers[i]) || {};
+          let answerText = '';
+          if (a.choice !== null && a.choice >= 0 && q.options && q.options[a.choice]) {
+            answerText = q.options[a.choice];
+          } else if (a.choice === -1 && modalEl) {
+            const input = modalEl.querySelector('.hah-dl-clarify-freetext-input[data-q-idx="' + i + '"]');
+            const v = input && input.value ? input.value.trim() : '';
+            if (v) answerText = v;
+          }
+          return { question: q.question, answer: answerText };
+        }).filter((qa) => qa.answer);
+      }
+      const medChanges = (typeof api.getPatientEncounterRows === 'function')
+        ? api.getPatientEncounterRows(vm.patient).filter((e) => e && e.type === 'medication_change')
+        : [];
+      const allEncounters = (typeof api.getPatientEncounterRows === 'function')
+        ? api.getPatientEncounterRows(vm.patient)
+        : [];
+      const persisted = getDischargeLetter(vm.patient);
+      // Clear modal, show generating toast.
+      api.store.setState({ patient: { dlClarifyModal: null } });
+      if (typeof api.showToast === 'function') api.showToast('Generating draft…');
+      runFinalGeneration(api, vm, patientId, medChanges, persisted, {
+        encounters: allEncounters,
+        clarifyingAnswers: clarifyingAnswers,
+        substitutions: modal.substitutions || null,
+        isRegen: !!modal.isRegen
+      });
       return true;
     }
 
@@ -22497,7 +23084,60 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
+  // v0.8.176: clarify modal binding. The free-text input value is NOT
+  // stored in state — every keystroke would trigger a re-render and
+  // strip focus from the input. Instead the input keeps its DOM value
+  // and we read it at submit time. State only tracks the choice index.
+  //
+  // The "all answered" enabling of Generate also reads from DOM (via
+  // an input listener) rather than state, so the button enables/
+  // disables live as the user types without triggering re-renders.
+  function bindClarifyModal(pane, state, api) {
+    if (!pane) return;
+    const modal = pane.querySelector('.hah-dl-clarify-modal');
+    if (!modal) return;
+
+    const generateBtn = modal.querySelector('.hah-dl-clarify-submit');
+
+    // Re-evaluate enabled state of the Generate button. Reads choice
+    // from the active option button (.is-active), free-text from the
+    // input element. Pure DOM read, no state involvement.
+    function refreshGenerateEnabled() {
+      const questions = modal.querySelectorAll('.hah-dl-clarify-question');
+      let allAnswered = true;
+      questions.forEach((q) => {
+        const activeOption = q.querySelector('.hah-dl-clarify-option.is-active:not(.hah-dl-clarify-freetext-toggle)');
+        if (activeOption) return; // option chosen — answered
+        const freeTextActive = q.querySelector('.hah-dl-clarify-freetext-toggle.is-active');
+        if (freeTextActive) {
+          const input = q.querySelector('.hah-dl-clarify-freetext-input');
+          if (input && input.value && input.value.trim()) return; // free-text answered
+        }
+        allAnswered = false;
+      });
+      if (generateBtn) {
+        generateBtn.disabled = !allAnswered;
+        if (allAnswered) generateBtn.classList.add('is-enabled');
+        else generateBtn.classList.remove('is-enabled');
+      }
+    }
+
+    const inputs = pane.querySelectorAll('.hah-dl-clarify-freetext-input');
+    inputs.forEach((input) => {
+      if (input.dataset.bound === '1') return;
+      input.dataset.bound = '1';
+      input.addEventListener('input', refreshGenerateEnabled);
+    });
+    // Run once at bind time so the initial state reflects DOM.
+    refreshGenerateEnabled();
+  }
+
   function bindLetterEditor(pane, state, api) {
+    // v0.8.176: clarify modal lives in the same pane DOM. Wire its
+    // free-text input listeners regardless of whether the editor itself
+    // exists in this render — the modal is rendered as a sibling.
+    bindClarifyModal(pane, state, api);
+
     const editor = pane.querySelector('#hahDlBody');
     if (!editor) return;
 
@@ -23030,6 +23670,11 @@ window.HAHBoard = window.HAHBoard || {};
         }
         if (action === 'settings-ai-toggle-anonymise') {
           ai.setAnonymise(!ai.getAnonymise());
+          store.setState({ ui: { revision: Date.now() } });
+          return;
+        }
+        if (action === 'settings-ai-toggle-clarify') {
+          ai.setClarify(!ai.getClarify());
           store.setState({ ui: { revision: Date.now() } });
           return;
         }
@@ -23643,6 +24288,7 @@ window.HAHBoard = window.HAHBoard || {};
     const hasKey = ai.hasApiKey();
     const anonymise = ai.getAnonymise();
     const model = ai.getModel();
+    const clarify = typeof ai.getClarify === 'function' ? ai.getClarify() : true;
     return `
       <section class="hah-card">
         <div class="hah-card-inner">
@@ -23665,6 +24311,10 @@ window.HAHBoard = window.HAHBoard || {};
               <div class="hah-kv-label">Anonymise PII</div>
               <div class="hah-kv-value">${anonymise ? '✓ On' : '✗ Off'}</div>
             </div>
+            <div class="hah-settings-stat">
+              <div class="hah-kv-label">Clarifying questions</div>
+              <div class="hah-kv-value">${clarify ? '✓ On' : '✗ Off'}</div>
+            </div>
           </div>
 
           <div class="hah-settings-actions" style="margin-top:14px;">
@@ -23672,6 +24322,7 @@ window.HAHBoard = window.HAHBoard || {};
             ${hasKey ? `<button type="button" class="hah-inline-pill" data-action="settings-ai-clear-key">Remove key</button>` : ''}
             <button type="button" class="hah-inline-pill" data-action="settings-ai-set-model">Set model</button>
             <button type="button" class="hah-inline-pill" data-action="settings-ai-toggle-anonymise">${anonymise ? 'Disable' : 'Enable'} anonymisation</button>
+            <button type="button" class="hah-inline-pill" data-action="settings-ai-toggle-clarify">${clarify ? 'Disable' : 'Enable'} clarifying questions</button>
           </div>
 
           <p class="hah-muted" style="margin-top:14px;font-size:11px;line-height:1.5;">
