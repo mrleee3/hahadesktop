@@ -5713,30 +5713,78 @@ button.hah-pt-flag:active {
   border-radius: 12px;
 }
 
+/* v0.8.184: unified vertical rhythm via single flex container.
+ *
+ * The composer card's body content (header + tabs + Who's-on-board +
+ * form + footer + preview) used to be a flat list of siblings with
+ * individual margin-bottom values that compounded inconsistently:
+ *
+ *   header.margin-bottom 16
+ *   + composer-tabs.margin-top 14 / margin-bottom 14
+ *   + board-members.margin-bottom 14
+ *   + composer-form.gap (only inside)
+ *   + cform-pull-section.margin-bottom 14 (inside form)
+ *
+ * Result: different gaps between different section pairs. Field-test
+ * surfaced it as a visual inconsistency around the pull-through box.
+ *
+ * Fix: promote .hah-card-inner to a flex column with a single gap
+ * (18px), strip the individual margins from the direct children, and
+ * use the same 16px gap inside .hah-composer-form. Gives a clean
+ * three-tier hierarchy:
+ *
+ *   6px  : label → input (inside .hah-cform-field)
+ *   16px : field → field (inside .hah-composer-form)
+ *   18px : section → section (direct children of .hah-card-inner)
+ */
+.hah-composer-card .hah-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 /* Header: title + headerRight cluster + bottom separator + subtle
  * background tint. The separator gives the form a defined start; the
  * tint makes the header zone visually distinct from the editable
- * surfaces below (without the tint, the white-on-white between
- * header text and textareas was reading as a continuous editable
- * region — like a Word doc title bar).
+ * surfaces below.
  *
- * The tint matches .hah-cform-pull-section, which signals
- * "non-editable container with information inside". */
+ * v0.8.184: removed margin-bottom — the flex gap on .hah-card-inner
+ * now handles section spacing. Title bumped to 16px / 700 for more
+ * presence ("New entry" was reading slightly soft at 15px / 600). */
 .hah-composer-card .hah-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  margin: -20px -24px 16px;
+  margin: -20px -24px 0;
   background: rgba(15, 23, 42, 0.025);
   border-bottom: 1px solid var(--desk-border);
   border-radius: 12px 12px 0 0;
 }
 .hah-composer-card .hah-card-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--desk-text);
+}
+
+/* v0.8.184: strip individual margins from direct children of the
+ * composer card body — vertical rhythm is owned by .hah-card-inner's
+ * flex gap now. Without this, the legacy margins compound with the
+ * flex gap and we're back to inconsistent spacing. */
+.hah-composer-card .hah-composer-tabs,
+.hah-composer-card .hah-board-members,
+.hah-composer-card .hah-composer-form,
+.hah-composer-card .hah-composer-footer,
+.hah-composer-card .hah-cform-pull-section {
+  margin: 0;
+}
+
+/* Inside the form, use 16px between fields — matches the section gap
+ * conceptually (sections at 18px, fields at 16px). The flex container
+ * already exists on .hah-composer-form; just override its gap. */
+.hah-composer-card .hah-composer-form {
+  gap: 16px;
 }
 
 /* Form fields: squarer corners, slightly stronger borders, defined
@@ -5804,29 +5852,24 @@ button.hah-pt-flag:active {
  * override needed; they retain their existing border-radius via the
  * unscoped rules.
  *
- * v0.8.183: bump hover border alpha from 0.2 to 0.4 so the hover
- * state reads more clearly. Outline-only on hover preserves the
- * "fill = active state" affordance — a hover fill would muddy the
- * distinction between hovered and selected. */
+ * v0.8.183: bumped hover border alpha from 0.2 to 0.4.
+ * v0.8.184: hover trial — add a subtle grey fill (same tint as the
+ * pull-through container and header) alongside the darker border.
+ * This is the design we agreed to test: hover ≠ selected because the
+ * fill colour is grey (informational), not blue (selection). If the
+ * trial doesn't land, easy revert to outline-only by deleting the
+ * background property below. */
 .hah-composer-card .hah-composer-tab:hover,
 .hah-composer-card .hah-board-members-chip:hover {
   border-color: rgba(25, 45, 72, 0.4);
+  background: rgba(15, 23, 42, 0.04);
 }
 
 /* Composer-specific pull-through section: slight radius tighten to
- * match the form-field feel.
- *
- * v0.8.183: equalise vertical margin — was inheriting different gaps
- * above vs below. The board-members section above has its own
- * bottom margin, plus the cform-pull-section had its own top margin,
- * which compounded the gap above. Tighten both. */
+ * match the form-field feel. (Vertical spacing handled at the
+ * .hah-card-inner flex level — see v0.8.184 comment above.) */
 .hah-composer-card .hah-cform-pull-section {
   border-radius: 6px;
-  margin-top: 0;
-  margin-bottom: 14px;
-}
-.hah-composer-card .hah-board-members {
-  margin-bottom: 14px;
 }
 
 /* Header autosave indicator: lives in the header right slot.
@@ -5842,16 +5885,6 @@ button.hah-pt-flag:active {
   font-size: 11px;
   color: var(--desk-text-muted);
   letter-spacing: -0.005em;
-}
-
-/* Composer footer: align right (Clear + Done), no margin-right:auto
- * spacer needed since the saved indicator moved to the header. */
-.hah-composer-card .hah-composer-footer {
-  /* unchanged from the existing rule — kept here for documentation
-   * since the autosave indicator removal might suggest a layout
-   * change. The buttons were already right-aligned; the indicator
-   * was the left-anchored item via margin-right: auto. With it
-   * gone, the buttons retain their right alignment. */
 }
 
 /* v0.8.183: clinical note preview corners brought into agreement
@@ -8541,9 +8574,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_183_composer_polish_release.html',
-  source: 'hospital_at_home_board_v0_8_183_composer_polish_source.zip',
-  builtAt: '2026-05-10T20:55:13.073445',
+  filename: 'hospital_at_home_board_v0_8_184_composer_rhythm_release.html',
+  source: 'hospital_at_home_board_v0_8_184_composer_rhythm_source.zip',
+  builtAt: '2026-05-10T21:06:07.481265',
   entry: 'desktop.html'
 };
 </script>
@@ -21267,10 +21300,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.183. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.184. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.183. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.184. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
