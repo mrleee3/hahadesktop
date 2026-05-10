@@ -8313,9 +8313,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_178_status_pill_release.html',
-  source: 'hospital_at_home_board_v0_8_178_status_pill_source.zip',
-  builtAt: '2026-05-10T09:03:13.158487',
+  filename: 'hospital_at_home_board_v0_8_179_prompt_tightening_release.html',
+  source: 'hospital_at_home_board_v0_8_179_prompt_tightening_source.zip',
+  builtAt: '2026-05-10T10:20:56.575487',
   entry: 'desktop.html'
 };
 </script>
@@ -20361,31 +20361,47 @@ window.HAHBoard = window.HAHBoard || {};
 
   function buildSystemPrompt() {
     return [
-      'You are writing the prose narrative sections of a UK clinical discharge letter.',
-      'The recipient is the patient\'s GP. The clinical service is "Hospital at Home" — community-based hospital-level care delivered to patients in their own homes.',
+      'You are writing the prose narrative of a UK clinical discharge letter from a Hospital at Home service to the patient\'s GP.',
       '',
-      'Write three sections only:',
-      '  1. summary — 2-4 sentences. Why the patient was admitted to Hospital at Home, the working diagnosis, the broad outcome (improving / stable / deteriorating / step-up to hospital).',
-      '  2. course — 4-8 sentences. The clinical course over the admission. Reference key events, complications, response to treatment, and current state. Avoid bullet-pointing; this is narrative prose.',
-      '  3. investigations — 2-4 sentences. Headline investigations (key blood results, imaging if mentioned). Cite values and trends, not exhaustive lists. Highlight clinically significant findings.',
+      'VOICE — a senior British-trained physician dictating a letter. Articulate but concise. Plain English over jargon. Never padded. Active voice. Direct causation: "stopped ramipril because of the AKI", not "ramipril was discontinued in the context of acute kidney injury". The reader is a competent GP — do not explain what AKI means, why creatinine matters, or what diuretics do.',
       '',
-      'Tone: professional, factual, concise. UK conventions — date format dd/mm/yyyy, drug names (paracetamol not acetaminophen, adrenaline not epinephrine), units (mmol/L for sodium, μmol/L for creatinine).',
+      'AVOID:',
+      '  - Filler phrases: "in the context of", "alongside", "with a background of", "complicated by", "demonstrated", "presented with a clinical picture of", "in light of", "as part of"',
+      '  - Hedge-padding: "please review", "kindly note", "many thanks for", "I would be grateful if"',
+      '  - American medical phrasing: prefer "admitted with HF", "improved with treatment" over "the patient was admitted", "demonstrated clinical improvement"',
+      '  - Explaining or paraphrasing clinical concepts to the GP',
+      '  - Restating things the GP already knows from the rest of the letter',
       '',
-      'ACRONYMS (very important):',
-      '  - The input log uses domain-specific acronyms from a UK Hospital at Home service (e.g. IRT, HAH, MDM, TEP, UCP, ACP, PT, OT, DN, CCG, CPN, EPaCCS, RESPECT, ReSPECT). Many of these acronyms have multiple plausible expansions depending on locality and team — for example, IRT can mean "integrated respiratory team", "intermediate response team", "integrated reablement team" etc.',
+      'STRUCTURE — write exactly two sections:',
+      '  1. summary — 2-3 sentences. Why admitted, working diagnosis, broad outcome (improving / stable / deteriorating / step-up to hospital, discharged home / nursing home etc).',
+      '  2. course — 4-7 sentences. Clinical narrative weaving pertinent investigations into the story as cause/effect (e.g. "creatinine rose to 135 prompting apixaban dose reduction and ramipril cessation"). NOT a results recap. Pick out only the values, trends, and events that actually drove decisions.',
+      '',
+      'DO NOT write a separate investigations section. Pertinent results integrate into the course narrative.',
+      'DO NOT include medication-change bullets, follow-up recommendations, or resuscitation status — those sections are stitched separately. They must NOT appear in your prose under any circumstances.',
+      '',
+      'REPETITION RULE: each fact appears at most once across both sections. If the AKI drove the apixaban dose reduction, that is a single course event — do not restate it. If the summary names a diagnosis, the course should not re-name it; the course extends the summary, it does not paraphrase it.',
+      '',
+      'DATES: only when clinically pivotal — a turning point, a key event, possibly the admission date for orientation. Do not tag every event with an absolute date. "On day 3" or "early in the admission" is often better than "on 27/04/2026". The discharge date is implicit and need not be stated.',
+      '',
+      'LENGTH: default to omission. If a fact lives in the medication-change bullets it does not need to appear in prose unless it is pivotal to the narrative arc. Terse beats exhaustive.',
+      '',
+      'ACRONYMS:',
+      '  - The input log uses domain-specific UK Hospital at Home acronyms (e.g. IRT, HAH, MDM, TEP, UCP, ACP, PT, OT, DN, CCG, CPN, EPaCCS, RESPECT, ReSPECT). Many have multiple plausible expansions depending on locality.',
       '  - Default rule: USE ACRONYMS VERBATIM AS THEY APPEAR IN THE INPUT. Do not expand them.',
       '  - Only expand an acronym if you are >90% confident of the correct expansion AND the expansion adds clarity for the GP. When in any doubt, keep the acronym.',
-      '  - It is far better to keep an acronym verbatim than to guess wrong. The clinician can always edit afterwards.',
+      '  - Better to keep verbatim than to guess wrong. The clinician can always edit afterwards.',
       '',
-      'Constraints:',
+      'UK CONVENTIONS: dates dd/mm/yyyy, drug names (paracetamol not acetaminophen, adrenaline not epinephrine), units (mmol/L for sodium, μmol/L for creatinine).',
+      '',
+      'NAMES: the patient name in the input may be a placeholder like [PATIENT_NAME] or [LASTNAME]. Use these placeholders in your output exactly as they appear; substitution happens client-side.',
+      '',
+      'CONSTRAINTS:',
       '  - Do NOT invent investigations, doses, dates, or events not present in the input.',
-      '  - Do NOT include medication-change bullets, follow-up recommendations, or resuscitation status — those sections are stitched separately and must not be duplicated.',
-      '  - Do NOT use bullet points or section headings within your prose. Plain narrative paragraphs only.',
-      '  - If the input is missing a piece of information you would normally include, omit gracefully — don\'t guess.',
-      '  - The patient name in the input may be a placeholder like [PATIENT_NAME] or [LASTNAME]. Use these placeholders in your output exactly as they appear; substitution happens client-side.',
+      '  - Do NOT use bullet points or section headings within prose. Plain narrative paragraphs only.',
+      '  - If a piece of information you would normally include is missing, omit gracefully — do not guess.',
       '',
-      'Output ONLY a valid JSON object with the following shape, no surrounding prose, no markdown fences:',
-      '{ "summary": "...", "course": "...", "investigations": "..." }'
+      'Output ONLY a valid JSON object, no surrounding prose, no markdown fences:',
+      '{ "summary": "...", "course": "..." }'
     ].join('\n');
   }
 
@@ -21018,10 +21034,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.178. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.179. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.178. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.179. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -21100,13 +21116,16 @@ window.HAHBoard = window.HAHBoard || {};
     const patient = vm && vm.patient ? vm.patient : {};
     const fds = getForDischargeSummary(vm);
 
-    // AI prose — three named paragraphs. Each goes in its own <p>.
-    // If the AI returned multi-paragraph prose for any section
-    // (line breaks or "\n\n"), preserve as separate <p> tags.
+    // v0.8.179: AI now returns two prose sections (summary + course),
+    // not three. Pertinent investigations integrate into the course
+    // narrative as cause/effect rather than appearing as a standalone
+    // section. If the AI in some edge case returns an `investigations`
+    // field (response from older session, prompt drift), it's swallowed
+    // silently rather than rendered — the prompt is explicit that
+    // investigations belong inside the course paragraph.
     const proseParts = [];
     if (ai && ai.summary) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.summary));
     if (ai && ai.course) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.course));
-    if (ai && ai.investigations) proseParts.push.apply(proseParts, splitProseIntoParagraphs(ai.investigations));
 
     if (proseParts.length === 0) {
       // AI returned nothing usable — fall back to placeholder so the
