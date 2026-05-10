@@ -8034,9 +8034,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_174_ai_generation_release.html',
-  source: 'hospital_at_home_board_v0_8_174_ai_generation_source.zip',
-  builtAt: '2026-05-10T07:51:27.757576',
+  filename: 'hospital_at_home_board_v0_8_175_ai_payload_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_175_ai_payload_fix_source.zip',
+  builtAt: '2026-05-10T08:08:32.405822',
   entry: 'desktop.html'
 };
 </script>
@@ -19827,8 +19827,28 @@ window.HAHBoard = window.HAHBoard || {};
   // gets to see clinical course over time. Per Henry's call: full
   // signal worth the extra ~3-5k input tokens.
 
-  function buildPromptPayload(vm) {
+  // Builds the structured JSON the AI gets as input. The shape is
+  // designed to be readable to the AI without needing format
+  // explanation — keys are descriptive, ordering reflects clinical
+  // narrative flow.
+  //
+  // Takes pre-fetched encounter rows from the caller (rather than
+  // digging into JSON record paths that may not match the actual
+  // storage shape). The desktop's canonical accessor is
+  // getPatientEncounterRows in 26-desktop-patient.js, which merges
+  // local ops state with JSON record encounters and dedupes by id.
+  // Without using it, this module gets a stale or empty list and
+  // the AI sees no clinical history.
+  //
+  // Same pattern for current-state fields (issues / plan / FDS):
+  // primary source is the patient's vm-level fields (most current),
+  // fallback to operational, then to the most recent template
+  // entry's fields. Same fallback chain as the composer pull-through
+  // logic from v0.8.172.
+
+  function buildPromptPayload(vm, options) {
     if (!vm || !vm.patient) return null;
+    options = options || {};
     const p = vm.patient;
     const sourceP = (p.sourcePatient || p) || {};
     const jsonRecord = sourceP.jsonRecord || sourceP || {};
@@ -19838,40 +19858,31 @@ window.HAHBoard = window.HAHBoard || {};
 
     // Demographics (the bits the AI needs for tone — Mrs/Mr, age — but
     // not the bits that identify the individual).
-    const firstName = identity.firstName || sourceP.firstName || '';
-    const lastName = identity.lastName || sourceP.lastName || '';
+    const firstName = identity.firstName || sourceP.firstName || p.firstName || '';
+    const lastName = identity.lastName || sourceP.lastName || p.lastName || '';
     const fullName = (firstName + ' ' + lastName).trim() || p.name || '';
-    const ageYears = computeAge(identity.dob || sourceP.dob);
+    const ageYears = computeAge(identity.dob || sourceP.dob || p.dob);
 
     // Admission info
-    const admissionDate = identity.admissionDate || jsonRecord.admissionDate || sourceP.admissionDate || '';
-    const admissionSource = identity.admissionSource || sourceP.admissionSource || '';
-    const presentingComplaint = identity.presentingComplaint || sourceP.presentingComplaint || '';
+    const admissionDate = identity.admissionDate || jsonRecord.admissionDate || sourceP.admissionDate || p.admissionDate || '';
+    const admissionSource = identity.admissionSource || sourceP.admissionSource || p.admissionSource || '';
+    const presentingComplaint = identity.presentingComplaint || sourceP.presentingComplaint || p.presentingComplaint || p.summaryLine || '';
     const losDays = computeLOS(admissionDate);
 
     // ACP / TEP / DNACPR — feeds the resus paragraph
-    const acp = clinical.acp || {};
+    const acp = clinical.acp || (sourceP.clinical && sourceP.clinical.acp) || {};
     const dnacpr = acp.dnacprStatus || '';
     const ucp = acp.ucp || '';
     const tep = acp.tep || '';
 
-    // Current operational state
-    const issues = operational.issues || '';
-    const plan = operational.plan || '';
-    const fds = operational.forDischargeSummary || '';
-
-    // Bloods — the most recent results, not the full timeline (would
-    // bloat the prompt). Take the last ~5 dates.
-    const bloodsRows = Array.isArray(clinical.bloods) ? clinical.bloods.slice(0, 8) : [];
-
-    // Encounters: full log. Filter to clinical types — exclude noise
-    // (patient-tag changes, sync events). Then sort chronologically
-    // ascending so the AI reads the story in order.
-    const allEncounters = (clinical.encounters || sourceP.encounters || []);
+    // Encounters: full log. The caller passes these in via options.encounters.
+    // We accept both the modern shape (with .fields) and the older
+    // shape, and filter / sort here.
+    const allEncounters = Array.isArray(options.encounters) ? options.encounters : [];
     const clinicalTypes = ['board_round', 'mobile_clinical_review', 'medication_change', 'note', 'admission'];
     const entries = allEncounters
       .filter((e) => e && e.type && clinicalTypes.indexOf(e.type) >= 0)
-      .slice() // copy before sort
+      .slice()
       .sort((a, b) => {
         const ta = new Date(a.timestamp || a.at || 0).getTime();
         const tb = new Date(b.timestamp || b.at || 0).getTime();
@@ -19881,16 +19892,39 @@ window.HAHBoard = window.HAHBoard || {};
         type: e.type,
         date: e.timestamp || e.at || '',
         author: (e.author && e.author.name) || e.author || '',
-        // Strip out any UI-only / internal fields. Just keep clinical.
         fields: stripInternalFields(e.fields || {})
       }));
+
+    // Current state — same fallback chain the composer uses (v0.8.172).
+    // Find the most recent template entry (board_round or mobile review)
+    // — that's where issues/plan/FDS often live.
+    const lastTemplateEntry = allEncounters.find((e) => e && (e.type === 'board_round' || e.type === 'mobile_clinical_review'));
+    const lastFields = (lastTemplateEntry && lastTemplateEntry.fields) || {};
+
+    const issues = String(p.issues || operational.issues || lastFields.issues || '').trim();
+    const plan = String(p.plan || operational.plan || lastFields.plan || '').trim();
+    const fds = String(p.forDischargeSummary || operational.forDischargeSummary || lastFields.forDischargeSummary || '').trim();
+    const progress = String(lastFields.progress || '').trim();
+
+    // Bloods — the most recent results, not the full timeline. The
+    // bloods table can live in clinical.bloods or directly on the
+    // sourcePatient. The desktop renders from vm.patient.bloodsRows
+    // when available — prefer that.
+    let bloodsRows = [];
+    if (Array.isArray(p.bloodsRows) && p.bloodsRows.length) {
+      bloodsRows = p.bloodsRows.slice(0, 8);
+    } else if (Array.isArray(clinical.bloods)) {
+      bloodsRows = clinical.bloods.slice(0, 8);
+    } else if (Array.isArray(sourceP.bloods)) {
+      bloodsRows = sourceP.bloods.slice(0, 8);
+    }
 
     return {
       patient: {
         firstName,
         lastName,
         fullName,
-        sex: identity.sex || sourceP.sex || '',
+        sex: identity.sex || sourceP.sex || p.sex || '',
         ageYears
       },
       admission: {
@@ -19901,6 +19935,7 @@ window.HAHBoard = window.HAHBoard || {};
       },
       currentState: {
         activeIssues: issues,
+        recentProgress: progress,
         currentPlan: plan,
         forDischargeSummary: fds
       },
@@ -19983,14 +20018,14 @@ window.HAHBoard = window.HAHBoard || {};
 
   // ─── API call ───────────────────────────────────────────────────────
 
-  function generate(vm) {
+  function generate(vm, options) {
     return new Promise((resolve, reject) => {
       const apiKey = getApiKey();
       if (!apiKey) {
         reject(new Error('No API key configured. Add one in Settings.'));
         return;
       }
-      const rawPayload = buildPromptPayload(vm);
+      const rawPayload = buildPromptPayload(vm, options);
       if (!rawPayload) {
         reject(new Error('Could not build prompt payload — patient data missing'));
         return;
@@ -20455,10 +20490,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.174. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.175. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.174. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.175. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -22007,7 +22042,16 @@ window.HAHBoard = window.HAHBoard || {};
       api.showToast(isRegen ? 'Regenerating draft…' : 'Generating draft…');
     }
 
-    ai.generate(vm).then((result) => {
+    // v0.8.175: pass the full encounter list to the AI generator so it
+    // can see clinical history. Without this, buildPromptPayload was
+    // looking at JSON-record paths that don't always carry encounters
+    // (timeline data flows via the ops layer too) and the AI received
+    // an empty log → "insufficient clinical information" responses.
+    const allEncounters = (typeof api.getPatientEncounterRows === 'function')
+      ? api.getPatientEncounterRows(vm.patient)
+      : [];
+
+    ai.generate(vm, { encounters: allEncounters }).then((result) => {
       // Build a new body using AI prose + structured sections.
       const newBody = stitchInitialBodyWithAi(vm, medChanges, result);
 
