@@ -7510,6 +7510,11 @@ button.hah-pt-flag:active {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* v0.8.177: positioning context for toast (showToast appends a
+   * .hah-composer-toast inside this when the editor is open and there
+   * is no .hah-card in the right pane). Without this the toast
+   * positions relative to a different ancestor. */
+  position: relative;
 }
 
 .hah-dl-pane-head {
@@ -8239,9 +8244,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_176_clarifying_questions_release.html',
-  source: 'hospital_at_home_board_v0_8_176_clarifying_questions_source.zip',
-  builtAt: '2026-05-10T08:26:37.999537',
+  filename: 'hospital_at_home_board_v0_8_177_clarify_polish_release.html',
+  source: 'hospital_at_home_board_v0_8_177_clarify_polish_source.zip',
+  builtAt: '2026-05-10T08:45:26.388532',
   entry: 'desktop.html'
 };
 </script>
@@ -17493,22 +17498,45 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
-  function showToast(pane, text) {
+  function showToast(pane, text, options) {
+    options = options || {};
     const existing = pane.querySelector('.hah-composer-toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
     toast.className = 'hah-composer-toast';
+    if (options.sticky) toast.classList.add('is-sticky');
     toast.textContent = text;
-    const card = pane.querySelector('.hah-card');
-    if (!card) return;
-    card.appendChild(toast);
+    // v0.8.177: when in discharge-letter editor mode the right pane
+    // contains .hah-dl-pane (no .hah-card). Fall back to that, then
+    // to the pane itself, so the toast always anchors somewhere in
+    // the right pane rather than silently failing or escaping to a
+    // .hah-card in a different pane.
+    const container = pane.querySelector('.hah-card')
+      || pane.querySelector('.hah-dl-pane')
+      || pane;
+    if (!container) return;
+    container.appendChild(toast);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => toast.classList.add('is-visible'));
     });
-    setTimeout(() => {
-      toast.classList.remove('is-visible');
-      setTimeout(() => toast.remove(), 220);
-    }, 2600);
+    // v0.8.177: sticky toasts don't auto-dismiss. Used for in-flight
+    // operations (AI generation) where the user needs to see the
+    // status until the operation completes. Caller dismisses by
+    // calling showToast again with new text (overwrites) or by
+    // calling dismissToast(pane).
+    if (!options.sticky) {
+      setTimeout(() => {
+        toast.classList.remove('is-visible');
+        setTimeout(() => toast.remove(), 220);
+      }, 2600);
+    }
+  }
+
+  function dismissToast(pane) {
+    const existing = pane && pane.querySelector('.hah-composer-toast');
+    if (!existing) return;
+    existing.classList.remove('is-visible');
+    setTimeout(() => existing.remove(), 220);
   }
 
   function showAutosaveIndicator(pane) {
@@ -17602,7 +17630,14 @@ window.HAHBoard = window.HAHBoard || {};
         buildVm: d.buildPatientWorkspaceModel,
         persistPatientPatchToJson: persistPatientPatchToJson,
         getPatientEncounterRows: getPatientEncounterRows,
-        showToast: function (text) { showToast(document.querySelector('.hah-pt-rightpane') || document.body, text); }
+        showToast: function (text, options) {
+          const pane = document.querySelector('#hahRightPane') || document.body;
+          showToast(pane, text, options);
+        },
+        dismissToast: function () {
+          const pane = document.querySelector('#hahRightPane') || document.body;
+          dismissToast(pane);
+        }
       });
       if (handled) return true;
     }
@@ -20239,6 +20274,12 @@ window.HAHBoard = window.HAHBoard || {};
       '',
       'Tone: professional, factual, concise. UK conventions — date format dd/mm/yyyy, drug names (paracetamol not acetaminophen, adrenaline not epinephrine), units (mmol/L for sodium, μmol/L for creatinine).',
       '',
+      'ACRONYMS (very important):',
+      '  - The input log uses domain-specific acronyms from a UK Hospital at Home service (e.g. IRT, HAH, MDM, TEP, UCP, ACP, PT, OT, DN, CCG, CPN, EPaCCS, RESPECT, ReSPECT). Many of these acronyms have multiple plausible expansions depending on locality and team — for example, IRT can mean "integrated respiratory team", "intermediate response team", "integrated reablement team" etc.',
+      '  - Default rule: USE ACRONYMS VERBATIM AS THEY APPEAR IN THE INPUT. Do not expand them.',
+      '  - Only expand an acronym if you are >90% confident of the correct expansion AND the expansion adds clarity for the GP. When in any doubt, keep the acronym.',
+      '  - It is far better to keep an acronym verbatim than to guess wrong. The clinician can always edit afterwards.',
+      '',
       'Constraints:',
       '  - Do NOT invent investigations, doses, dates, or events not present in the input.',
       '  - Do NOT include medication-change bullets, follow-up recommendations, or resuscitation status — those sections are stitched separately and must not be duplicated.',
@@ -20266,6 +20307,7 @@ window.HAHBoard = window.HAHBoard || {};
       '  - Multiple plausible principal diagnoses (e.g. HF + AKI together — which leads the narrative?)',
       '  - Optional content (mention social history? note suggested medication titrations the GP might consider? include lifestyle advice?)',
       '  - Genuine data gaps where you would normally include something but the record doesn\'t supply it',
+      '  - Acronym ambiguity — if the log contains an acronym that has multiple plausible expansions in UK community/hospital-at-home practice (e.g. IRT could be "integrated respiratory team", "intermediate response team", or "integrated reablement team"), ask which expansion is meant — OR offer "keep as IRT" as an option. The default expectation is to keep acronyms verbatim, so most acronyms will not warrant a question.',
       '',
       'Do NOT ask about:',
       '  - Things the data unambiguously determines',
@@ -20879,10 +20921,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.176. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.177. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.176. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.177. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -22492,17 +22534,19 @@ window.HAHBoard = window.HAHBoard || {};
     const isRegen = !!(opts && opts.regenerate);
     const useClarify = typeof ai.getClarify === 'function' ? ai.getClarify() : true;
 
+    // v0.8.177: sticky toast — stays until we explicitly replace or
+    // dismiss it. AI calls take 3-8s; the previous 2.6s auto-dismiss
+    // disappeared mid-call, leaving the user wondering whether
+    // anything was happening.
     if (typeof api.showToast === 'function') {
-      api.showToast(isRegen ? 'Regenerating draft…' : (useClarify ? 'Reviewing record…' : 'Generating draft…'));
+      api.showToast(isRegen ? 'Regenerating draft…' : (useClarify ? 'Reviewing record…' : 'Generating draft…'), { sticky: true });
     }
 
-    // Fetch encounters once and reuse for both calls — same source-of-truth.
     const allEncounters = (typeof api.getPatientEncounterRows === 'function')
       ? api.getPatientEncounterRows(vm.patient)
       : [];
 
     if (!useClarify) {
-      // One-shot mode (settings-toggled off). Skip questions entirely.
       runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
         encounters: allEncounters,
         clarifyingAnswers: null,
@@ -22512,14 +22556,12 @@ window.HAHBoard = window.HAHBoard || {};
       return;
     }
 
-    // Call 1: clarifying questions.
     ai.generateClarifyingQuestions(vm, { encounters: allEncounters }).then((result) => {
       const questions = (result && Array.isArray(result.questions)) ? result.questions : [];
       const subs = result && result.substitutions ? result.substitutions : {};
 
       if (questions.length === 0) {
-        // Data unambiguous — skip the modal, go straight to letter generation.
-        if (typeof api.showToast === 'function') api.showToast('Generating draft…');
+        if (typeof api.showToast === 'function') api.showToast('Generating draft…', { sticky: true });
         runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
           encounters: allEncounters,
           clarifyingAnswers: null,
@@ -22529,9 +22571,9 @@ window.HAHBoard = window.HAHBoard || {};
         return;
       }
 
-      // Show the modal. Modal state lives in store.patient.dlClarifyModal.
-      // The Generate button on the modal triggers the dl-clarify-submit
-      // action handler, which reads back the answers and calls phase 3.
+      // Modal opens — dismiss the "Reviewing record…" toast since the
+      // modal itself signals what's happening.
+      if (typeof api.dismissToast === 'function') api.dismissToast();
       api.store.setState({
         patient: {
           dlClarifyModal: {
@@ -22547,10 +22589,8 @@ window.HAHBoard = window.HAHBoard || {};
       console.error('[dischargeLetter] Clarifying-questions call failed', err);
       const msg = err && err.message ? err.message : String(err);
       if (typeof api.showToast === 'function') {
-        api.showToast('Could not get clarifying questions: ' + msg + '. Generating without them…');
+        api.showToast('Could not get clarifying questions: ' + msg + '. Generating without them…', { sticky: true });
       }
-      // Best effort — fall through to direct generation. Better than
-      // blocking the create flow on a question-step failure.
       runFinalGeneration(api, vm, patientId, medChanges, currentLetter, {
         encounters: allEncounters,
         clarifyingAnswers: null,
@@ -22560,9 +22600,6 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  // Phase 3: the actual letter-generation call. Runs after either
-  // (a) zero clarifying questions, (b) modal submit with answers,
-  // or (c) clarify disabled in settings.
   function runFinalGeneration(api, vm, patientId, medChanges, currentLetter, ctx) {
     const ai = window.HAHBoard && window.HAHBoard.aiGeneration;
     if (!ai || typeof ai.generate !== 'function') {
@@ -22591,6 +22628,8 @@ window.HAHBoard = window.HAHBoard || {};
       });
       persistLetterPatch(api, patientId, updated);
 
+      // v0.8.177: replace the sticky "Generating…" toast with the
+      // (auto-dismissing) success message.
       if (typeof api.showToast === 'function') {
         api.showToast(ctx.isRegen ? 'Draft regenerated' : 'Draft generated');
       }
@@ -22738,31 +22777,59 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
 
+    // v0.8.177: option clicks and free-text toggles now manipulate
+    // the DOM directly — no setState, no re-render, no flicker. State
+    // (`state.patient.dlClarifyModal`) holds the questions list and
+    // substitutions but no longer the per-question answers. The submit
+    // handler reads choice and free-text directly from DOM.
+    //
+    // Why: every setState rebuilds the right pane, including the
+    // modal markup, which strips focus from any focused input and
+    // causes a visible flicker. For an interaction this rapid (option
+    // click → visual confirmation), DOM-only updates are correct.
     if (action === 'dl-clarify-pick') {
-      const qIdx = parseInt(target.getAttribute('data-q-idx'), 10);
-      const optIdx = parseInt(target.getAttribute('data-opt-idx'), 10);
-      const modal = state.patient && state.patient.dlClarifyModal;
-      if (!modal || !Array.isArray(modal.answers)) return true;
-      const newAnswers = modal.answers.slice();
-      newAnswers[qIdx] = { choice: optIdx, freeText: '' };
-      api.store.setState({ patient: { dlClarifyModal: Object.assign({}, modal, { answers: newAnswers }) } });
+      const optionsContainer = target.closest('.hah-dl-clarify-options');
+      if (!optionsContainer) return true;
+      const question = target.closest('.hah-dl-clarify-question');
+      // Deactivate all options in this question's options row.
+      optionsContainer.querySelectorAll('.hah-dl-clarify-option').forEach((btn) => btn.classList.remove('is-active'));
+      // Activate the clicked one.
+      target.classList.add('is-active');
+      // Free-text toggle: deactivate; hide its input.
+      if (question) {
+        const ftToggle = question.querySelector('.hah-dl-clarify-freetext-toggle');
+        if (ftToggle) ftToggle.classList.remove('is-active');
+        const ftInput = question.querySelector('.hah-dl-clarify-freetext-input');
+        if (ftInput) ftInput.classList.remove('is-visible');
+      }
+      // Refresh Generate button enabled state.
+      bindClarifyModal(document.querySelector('#hahRightPane') || document.body, state, api);
       return true;
     }
 
     if (action === 'dl-clarify-freetext') {
-      const qIdx = parseInt(target.getAttribute('data-q-idx'), 10);
-      const modal = state.patient && state.patient.dlClarifyModal;
-      if (!modal || !Array.isArray(modal.answers)) return true;
-      const newAnswers = modal.answers.slice();
-      const existing = newAnswers[qIdx] || {};
-      // Toggle: if already in free-text mode, switch back to no-choice
-      // (showing options again). Otherwise enter free-text mode.
-      if (existing.choice === -1) {
-        newAnswers[qIdx] = { choice: null, freeText: '' };
+      const question = target.closest('.hah-dl-clarify-question');
+      if (!question) return true;
+      const ftInput = question.querySelector('.hah-dl-clarify-freetext-input');
+      const wasActive = target.classList.contains('is-active');
+      if (wasActive) {
+        // Toggle off — back to no answer state.
+        target.classList.remove('is-active');
+        if (ftInput) {
+          ftInput.classList.remove('is-visible');
+          ftInput.value = '';
+        }
       } else {
-        newAnswers[qIdx] = { choice: -1, freeText: existing.freeText || '' };
+        // Activate free-text — deactivate any option chip in this question.
+        question.querySelectorAll('.hah-dl-clarify-option').forEach((btn) => btn.classList.remove('is-active'));
+        target.classList.add('is-active');
+        if (ftInput) {
+          ftInput.classList.add('is-visible');
+          // Defer focus so the class change has applied.
+          setTimeout(() => ftInput.focus(), 0);
+        }
       }
-      api.store.setState({ patient: { dlClarifyModal: Object.assign({}, modal, { answers: newAnswers }) } });
+      bindClarifyModal(document.querySelector('#hahRightPane') || document.body, state, api);
       return true;
     }
 
@@ -22771,19 +22838,31 @@ window.HAHBoard = window.HAHBoard || {};
       if (!modal) return true;
       let clarifyingAnswers = null;
       if (action === 'dl-clarify-submit') {
-        // Read free-text values from DOM (they're not in state — see
-        // bindClarifyModal comment). Choice is from state (driven by
-        // option-button clicks).
+        // v0.8.177: choice and free-text both read from DOM at submit
+        // time. State no longer holds either, since per-keystroke /
+        // per-click setState was causing visible flicker on every
+        // option press.
         const modalEl = document.querySelector('.hah-dl-clarify-modal');
+        if (!modalEl) return true;
+        const questionEls = modalEl.querySelectorAll('.hah-dl-clarify-question');
         clarifyingAnswers = modal.questions.map((q, i) => {
-          const a = (modal.answers && modal.answers[i]) || {};
+          const qEl = questionEls[i];
           let answerText = '';
-          if (a.choice !== null && a.choice >= 0 && q.options && q.options[a.choice]) {
-            answerText = q.options[a.choice];
-          } else if (a.choice === -1 && modalEl) {
-            const input = modalEl.querySelector('.hah-dl-clarify-freetext-input[data-q-idx="' + i + '"]');
-            const v = input && input.value ? input.value.trim() : '';
-            if (v) answerText = v;
+          if (qEl) {
+            // Picked an option chip?
+            const activeOpt = qEl.querySelector('.hah-dl-clarify-option.is-active:not(.hah-dl-clarify-freetext-toggle)');
+            if (activeOpt) {
+              const optIdx = parseInt(activeOpt.getAttribute('data-opt-idx'), 10);
+              if (q.options && q.options[optIdx]) answerText = q.options[optIdx];
+            } else {
+              // Free-text active and non-empty?
+              const ftActive = qEl.querySelector('.hah-dl-clarify-freetext-toggle.is-active');
+              if (ftActive) {
+                const input = qEl.querySelector('.hah-dl-clarify-freetext-input');
+                const v = input && input.value ? input.value.trim() : '';
+                if (v) answerText = v;
+              }
+            }
           }
           return { question: q.question, answer: answerText };
         }).filter((qa) => qa.answer);
@@ -22795,9 +22874,11 @@ window.HAHBoard = window.HAHBoard || {};
         ? api.getPatientEncounterRows(vm.patient)
         : [];
       const persisted = getDischargeLetter(vm.patient);
-      // Clear modal, show generating toast.
+      // Clear modal, show sticky generating toast (will be replaced
+      // when call 2 returns or fails — non-sticky was dismissing at
+      // 2.6s while the AI took 3-8s to respond).
       api.store.setState({ patient: { dlClarifyModal: null } });
-      if (typeof api.showToast === 'function') api.showToast('Generating draft…');
+      if (typeof api.showToast === 'function') api.showToast('Generating draft…', { sticky: true });
       runFinalGeneration(api, vm, patientId, medChanges, persisted, {
         encounters: allEncounters,
         clarifyingAnswers: clarifyingAnswers,
