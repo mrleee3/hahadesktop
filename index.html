@@ -2660,11 +2660,15 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-board-member-chip {
-  padding: 4px 10px;
+  /* v0.8.190: padding + font unified with the other composer chips
+   * (4px 12px, 12px). Member labels are short (LK / SS / GM) so the
+   * tighter previous metrics worked, but consistency across all
+   * composer chips wins. See v0.8.190 changelog. */
+  padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.75);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
@@ -2902,11 +2906,13 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-plan-preset-chip {
-  padding: 4px 10px;
+  /* v0.8.190: padding + font unified with the other composer chips
+   * (4px 12px, 12px). See v0.8.190 changelog. */
+  padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.78);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
@@ -8618,9 +8624,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_189_chip_padding_release.html',
-  source: 'hospital_at_home_board_v0_8_189_chip_padding_source.zip',
-  builtAt: '2026-05-10T21:53:27.193634',
+  filename: 'hospital_at_home_board_v0_8_190_chip_unify_release.html',
+  source: 'hospital_at_home_board_v0_8_190_chip_unify_source.zip',
+  builtAt: '2026-05-10T21:59:58.903207',
   entry: 'desktop.html'
 };
 </script>
@@ -21362,10 +21368,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.189. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.190. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.189. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.190. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
