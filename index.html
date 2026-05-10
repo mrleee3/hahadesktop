@@ -3039,11 +3039,15 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-autosave-indicator {
+  /* v0.8.182: indicator now lives in the card header (right-aligned via
+   * c.card's headerRight slot) rather than as a margin-right:auto
+   * spacer in the footer. Restyled to match the discharge composer's
+   * Draft badge — quiet status pill, not a faded text snippet. */
   font-size: 11px;
   color: var(--desk-text-muted);
-  margin-right: auto;
   opacity: 0;
   transition: opacity 300ms ease;
+  white-space: nowrap;
 }
 
 .hah-autosave-indicator.is-visible {
@@ -5659,6 +5663,155 @@ button.hah-pt-flag:active {
 }
 /* ─── End of medication changes card ─────────────────────────────────── */
 
+
+/* ─── v0.8.182: composer card visual refresh ──────────────────────────
+ *
+ * Scoped to .hah-composer-card to keep the changes contained. The
+ * intent is to bring the board-round / micro-MDM / resp-MDM / mobile-
+ * review composer into the same design language as the discharge
+ * letter editor — squarer corners on form chrome, defined borders,
+ * bolder labels, header with title + saved-status + bottom border.
+ *
+ * What stays unchanged:
+ *  - Round-type chips and Who's-on-board chips stay rounder than
+ *    buttons, preserving the "chip = state, button = action"
+ *    affordance distinction.
+ *  - Pull-through amber highlight (load-bearing — tells you which
+ *    content is auto-filled).
+ *  - Active-blue colour on selected chip.
+ *  - All field positions, action labels, and behaviour.
+ *
+ * Other cards on the page (clinical note preview, ACP, bloods,
+ * medication changes, discharge letter row card) are explicitly NOT
+ * touched. This is a scoped test pass on the composer to see if the
+ * tighter aesthetic feels right before committing to a wider design-
+ * system pass.
+ */
+
+/* Outer card: slight tighten from --desk-radius-xl (20px) to 12px.
+ * Less round than other cards but still rounder than the form
+ * elements inside — establishes a hierarchy. */
+.hah-card.hah-composer-card {
+  border-radius: 12px;
+}
+
+/* Header: title + headerRight cluster + bottom separator. The
+ * separator gives the form a defined start, mirroring the
+ * .hah-dl-pane-head + body pattern in the discharge editor. */
+.hah-composer-card .hah-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--desk-border);
+}
+.hah-composer-card .hah-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--desk-text);
+}
+
+/* Form fields: squarer corners, slightly stronger borders, defined
+ * focus state. The 6px radius is what the discharge editor's form
+ * elements use; matches their visual weight. */
+.hah-composer-card .hah-cform-textarea,
+.hah-composer-card .hah-board-members-input {
+  border-radius: 6px;
+  border-color: rgba(25, 45, 72, 0.18);
+}
+
+.hah-composer-card .hah-cform-textarea:focus,
+.hah-composer-card .hah-board-members-input:focus {
+  /* Defined focus ring — matches the discharge editor's focus state
+   * (slightly darker accent + reduced glow softness) so focus reads
+   * as "active surface" rather than "soft highlight". */
+  border-color: rgba(47, 111, 237, 0.7);
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.18);
+}
+
+/* Pulled-content amber: re-stated at the scoped level so the corner
+ * radius doesn't leak back to 10px. (The unscoped rule has 10px
+ * implicit via .hah-cform-textarea base; the scoped rule above
+ * overrides that to 6px, but the .is-pulled rule needs to be present
+ * to keep its colour treatment, since it's at the same specificity
+ * as the base rule.) Border + bg colours unchanged from the original. */
+.hah-composer-card .hah-cform-textarea.is-pulled {
+  border-radius: 6px;
+}
+
+/* Section labels: bolder + darker. Currently rendered as a faint
+ * uppercase-ish label that's easy to skip past. The discharge editor
+ * uses bold structural headings inside the body; same treatment here
+ * gives the form clearer scan-points. */
+.hah-composer-card .hah-cform-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--desk-text);
+  letter-spacing: -0.005em;
+}
+
+/* Plan presets label and other muted-style labels stay muted — they
+ * are explicitly "secondary structure", not section headings. */
+.hah-composer-card .hah-plan-presets-label {
+  /* unchanged — kept as a sub-label */
+}
+
+/* Action buttons (Clear, Done): squarer, signal "I do a thing" rather
+ * than "I'm a state". The chip-vs-button distinction matters for
+ * affordance — chips are state, pills with verbs are actions. We
+ * preserve chip roundness and only square the action buttons.
+ *
+ * Note: the global .hah-inline-pill rule has border-radius: 999px
+ * (full pill). The scoped override here brings it down to 6px just
+ * for the composer footer. Other inline-pills elsewhere on the page
+ * stay pill-shaped. */
+.hah-composer-card .hah-composer-footer .hah-inline-pill {
+  border-radius: 6px;
+  font-weight: 600;
+  min-height: 32px;
+}
+
+/* Round-type chips and Who's-on-board chips KEEP their rounder
+ * appearance — they are state indicators, not action buttons. No
+ * override needed; they retain their existing border-radius via the
+ * unscoped rules. Documented here so future-me doesn't try to
+ * "tighten the radii to match" without remembering why. */
+
+/* Composer-specific pull-through section: slight radius tighten to
+ * match the form-field feel. */
+.hah-composer-card .hah-cform-pull-section {
+  border-radius: 6px;
+}
+
+/* Header autosave indicator: lives in the header right slot. Restyled
+ * as a quiet status pill rather than a faded text snippet. Mirrors the
+ * Draft badge in the discharge editor — small, contained, with subtle
+ * background tint. */
+.hah-composer-card .hah-section-head .hah-autosave-indicator {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--desk-text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--desk-border);
+  letter-spacing: -0.005em;
+}
+
+/* Composer footer: align right (Clear + Done), no margin-right:auto
+ * spacer needed since the saved indicator moved to the header. */
+.hah-composer-card .hah-composer-footer {
+  /* unchanged from the existing rule — kept here for documentation
+   * since the autosave indicator removal might suggest a layout
+   * change. The buttons were already right-aligned; the indicator
+   * was the left-anchored item via margin-right: auto. With it
+   * gone, the buttons retain their right alignment. */
+}
+
+/* ─── End of composer card visual refresh ─────────────────────────── */
+
 </style>
   <style>
 /* inlined: css/desktop-tasks.css */
@@ -8179,6 +8332,15 @@ button.hah-pt-flag:active {
   height: auto;
   display: block;
   margin: 0 auto;
+  /* v0.8.181: preserve stroke contrast on aggressive scale-down. The
+   * letterhead source is ~1400px wide rendered into a ~535px-wide
+   * preview area, then transform-scaled by the parent. Without an
+   * explicit rendering hint, browsers' default bilinear filtering
+   * blends fine black strokes with the white background — visible to
+   * the clinician as "grey" letterhead. Crisp-edges keeps the
+   * pixel-level contrast intact even at small render sizes. */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* Body content area: clipped to one page-content-height, with the body
@@ -8246,7 +8408,16 @@ button.hah-pt-flag:active {
 }
 
 .hah-dl-prev-body {
-  text-align: justify;
+  /* v0.8.181: text-align: justify was producing big gaps on lines that
+   * end in <br> rather than wrapping naturally. The stitched
+   * Recommendations section renders "Daily weights<br>1. Refer to irt"
+   * as a single paragraph; with justify, the first line "Daily weights"
+   * was being treated as a non-final line (because of the <br>) and
+   * justified to the full width — producing a huge gap between "Daily"
+   * and "weights". UK clinical letters are conventionally left-aligned
+   * anyway; justify was an aesthetic choice that introduced a real bug
+   * with no compensating benefit. */
+  text-align: left;
   margin-bottom: 8px;
 }
 
@@ -8265,7 +8436,8 @@ button.hah-pt-flag:active {
 }
 .hah-dl-prev-body li {
   margin: 0 0 2px 0;
-  text-align: left; /* don't justify list items — looks weird with bullets */
+  /* v0.8.181: text-align: left removed — parent is no longer justified
+   * (see comment on .hah-dl-prev-body) so the override is unnecessary. */
 }
 
 .hah-dl-prev-empty {
@@ -8313,9 +8485,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_180_register_calibration_release.html',
-  source: 'hospital_at_home_board_v0_8_180_register_calibration_source.zip',
-  builtAt: '2026-05-10T17:24:25.812734',
+  filename: 'hospital_at_home_board_v0_8_182_composer_restyle_release.html',
+  source: 'hospital_at_home_board_v0_8_182_composer_restyle_source.zip',
+  builtAt: '2026-05-10T20:33:37.300620',
   entry: 'desktop.html'
 };
 </script>
@@ -16476,7 +16648,6 @@ window.HAHBoard = window.HAHBoard || {};
         ${renderComposerForm(composerType, lastRound, vm)}
       </div>
       <div class="hah-composer-footer">
-        <span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>
         <button type="button" class="${clearBtnClass}" id="hahComposerClearBtn"
           data-patient-action="${clearBtnAction}"${clearBtnStyle}>${clearBtnLabel}</button>
         <button type="button" class="hah-inline-pill is-primary"
@@ -16495,31 +16666,37 @@ window.HAHBoard = window.HAHBoard || {};
             id="hahEmisSendBtn"${isLocked ? '' : ' disabled'}>Send to EMIS</button>
         </div>
       </div>` : ''}
-    `),
+    `, {
+      // v0.8.182: scope visual changes to the composer card via class.
+      // Avoids cascading the composer aesthetic onto every other .hah-card
+      // on the page (clinical note preview, ACP, bloods, etc).
+      className: 'hah-composer-card',
+      // Saved indicator promoted from footer to header right — mirrors
+      // the discharge composer's Draft badge in placement and intent
+      // (a quiet status indicator for a stateful surface).
+      headerRight: '<span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>'
+    }),
       renderPatientRecordCard(vm),
       `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">${isJsonPatient(vm.patient) ? 'Archive / discharge' : 'Discharge'}</button>`
     ]);
   }
 
   function getComposerHeading(type, isLocked, editingEnc) {
-    // If editing a past encounter, show its date instead of "Today's"
+    // v0.8.182: title decoupled from round type. The type chip below the
+    // title is the canonical truth for round type — having the title
+    // also name the type meant they double-coded the same information,
+    // and the title didn't update when the user picked a different
+    // chip. "New entry" / "Edit entry" is type-agnostic and works for
+    // board round, MDM, mobile review, or any future round type.
     if (editingEnc) {
       const dt = new Date(editingEnc.timestamp);
       const isToday = !isNaN(dt.getTime()) && dt.toDateString() === new Date().toDateString();
       const dateLabel = isNaN(dt.getTime())
-        ? 'entry'
-        : (isToday ? 'Today' : dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
-      if (type === 'board_round') return `Editing board round · ${dateLabel}`;
-      if (type === 'mobile_clinical_review') return `Editing mobile review · ${dateLabel}`;
-      if (type === 'micro_mdm')   return `Editing Micro MDM · ${dateLabel}`;
-      if (type === 'resp_mdm')    return `Editing Resp MDM · ${dateLabel}`;
-      return `Editing note · ${dateLabel}`;
+        ? ''
+        : (isToday ? 'today' : dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
+      return dateLabel ? `Edit entry · ${dateLabel}` : 'Edit entry';
     }
-    if (type === 'board_round') return "Today's board round";
-    if (type === 'mobile_clinical_review') return "Today's mobile review";
-    if (type === 'micro_mdm')   return "Today's Micro MDM";
-    if (type === 'resp_mdm')    return "Today's Resp MDM";
-    return "Today's other note";
+    return 'New entry';
   }
 
   function getComposerSubheading(type, isLocked, lastRound) {
@@ -21040,10 +21217,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.180. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.182. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.180. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.182. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
