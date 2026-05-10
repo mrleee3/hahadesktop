@@ -3054,13 +3054,19 @@ body.hah-ws-connecting .hah-ws-dot {
   opacity: 1;
 }
 
-/* v0.8.187: composer-sep divider removed entirely. With the
- * unified flex layout on .hah-card-inner (18px gap between sections)
- * and the bordered preview card below, the divider was redundant
- * chrome. The CSS rule is kept for any legacy callers but emits
- * zero height. */
+/* v0.8.187/189: composer-sep — separator between the form area and
+ * the clinical note preview card. Removed in v0.8.187 on the
+ * assumption that the preview's own card border was enough; field
+ * test showed the dividing line genuinely helps signal "this is a
+ * different region below". Restored.
+ *
+ * No own margin — relies on the .hah-card-inner flex gap (18px) to
+ * separate it from the footer above and the preview card below.
+ * The previous version had margin: 14px 0 12px which compounded
+ * with the flex gap, producing inconsistent total spacing. */
 .hah-composer-sep {
-  display: none;
+  height: 1px;
+  background: var(--desk-border);
 }
 
 /* ─── Note preview box ───────────────────────────────────────────────── */
@@ -3159,11 +3165,19 @@ body.hah-ws-connecting .hah-ws-dot {
 }
 
 .hah-dchip {
-  padding: 4px 10px;
+  /* v0.8.189: padding 10px → 12px horizontally and font-size 11.5px
+   * → 12px to match the round-type chips (.hah-composer-tab). The
+   * other 11.5px-text chips (member, plan-preset) have short labels
+   * (LK/SS, "GP HF F/U") where the tighter padding reads as
+   * proportional. The EDD chips have longer labels ("Possible
+   * today", "Tomorrow") and the same tight padding made them feel
+   * bunched. Matching the round-type chip metrics fixes the visual
+   * — they have similar label lengths. */
+  padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--desk-border);
   background: rgba(255,255,255,0.75);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--desk-text-muted);
   cursor: pointer;
@@ -8604,9 +8618,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_188_discharge_chip_fixes_release.html',
-  source: 'hospital_at_home_board_v0_8_188_discharge_chip_fixes_source.zip',
-  builtAt: '2026-05-10T21:45:56.569394',
+  filename: 'hospital_at_home_board_v0_8_189_chip_padding_release.html',
+  source: 'hospital_at_home_board_v0_8_189_chip_padding_source.zip',
+  builtAt: '2026-05-10T21:53:27.193634',
   entry: 'desktop.html'
 };
 </script>
@@ -16773,6 +16787,7 @@ window.HAHBoard = window.HAHBoard || {};
           data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
       </div>
       ${composerType === 'board_round' ? `
+      <div class="hah-composer-sep"></div>
       <div class="hah-note-preview" id="hahNotePreview" style="display:none">
         <div class="hah-note-preview-head">
           <span class="hah-note-preview-label">Clinical note preview</span>
@@ -21347,10 +21362,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.188. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.189. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.188. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.189. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
