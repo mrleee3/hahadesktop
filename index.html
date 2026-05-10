@@ -8313,9 +8313,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_179_prompt_tightening_release.html',
-  source: 'hospital_at_home_board_v0_8_179_prompt_tightening_source.zip',
-  builtAt: '2026-05-10T10:20:56.575487',
+  filename: 'hospital_at_home_board_v0_8_180_register_calibration_release.html',
+  source: 'hospital_at_home_board_v0_8_180_register_calibration_source.zip',
+  builtAt: '2026-05-10T17:24:25.812734',
   entry: 'desktop.html'
 };
 </script>
@@ -20365,9 +20365,15 @@ window.HAHBoard = window.HAHBoard || {};
       '',
       'VOICE — a senior British-trained physician dictating a letter. Articulate but concise. Plain English over jargon. Never padded. Active voice. Direct causation: "stopped ramipril because of the AKI", not "ramipril was discontinued in the context of acute kidney injury". The reader is a competent GP — do not explain what AKI means, why creatinine matters, or what diuretics do.',
       '',
+      'REGISTER — formal-clinical, NOT conversational. The letter is a professional document, not a chat. Prefer "she has a background of COPD" or "she also has COPD" over "she also had COPD requiring nebulisers" (informal, past-tense for an ongoing condition). Prefer "she was diagnosed with X" over "she had X".',
+      '',
+      'INTERNAL TERMINOLOGY — never leaks into the letter. The GP does not need to know about our board rounds, MDMs, ward rounds, handovers, or other internal workflow events. Translate to clinical observations. Wrong: "By the final board round she reported feeling better". Right: "She continued to improve, with reduced oedema and better oral intake".',
+      '',
+      'ASKS OF THE GP — phrase as polite requests, not directives. Wrong: "its ongoing use warrants your review", "please stop X", "the GP should monitor Y". Right: "we would be grateful if renal function could be monitored", "please consider review of dapagliflozin in light of the AKI", "could you arrange a repeat U&E in 1-2 weeks". Note: the AVOID list below proscribes "please review" and "kindly note" as STANDALONE filler — but they are appropriate when carrying a genuine request. Use sparingly and only when load-bearing.',
+      '',
       'AVOID:',
-      '  - Filler phrases: "in the context of", "alongside", "with a background of", "complicated by", "demonstrated", "presented with a clinical picture of", "in light of", "as part of"',
-      '  - Hedge-padding: "please review", "kindly note", "many thanks for", "I would be grateful if"',
+      '  - Filler phrases: "in the context of", "alongside", "with a background of"* (* "background of" is fine for stating co-morbidities), "complicated by", "demonstrated", "presented with a clinical picture of", "in light of", "as part of"',
+      '  - Hedge-padding when standalone: "please review", "kindly note", "many thanks for", "I would be grateful if" — these are filler when not carrying an actual ask, but ARE appropriate when carrying a genuine clinical request to the GP (see ASKS rule above)',
       '  - American medical phrasing: prefer "admitted with HF", "improved with treatment" over "the patient was admitted", "demonstrated clinical improvement"',
       '  - Explaining or paraphrasing clinical concepts to the GP',
       '  - Restating things the GP already knows from the rest of the letter',
@@ -21034,10 +21040,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.179. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.180. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.179. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.180. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
