@@ -8036,7 +8036,7 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 window.__HAH_BOARD_BUILD__ = {
   filename: 'hospital_at_home_board_v0_8_175_ai_payload_fix_release.html',
   source: 'hospital_at_home_board_v0_8_175_ai_payload_fix_source.zip',
-  builtAt: '2026-05-10T08:08:32.405822',
+  builtAt: '2026-05-10T08:12:51.459636',
   entry: 'desktop.html'
 };
 </script>
@@ -18409,7 +18409,7 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, computeCaseloadMetrics, renderCaseloadCard, sortPatientRows };
+  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, computeCaseloadMetrics, renderCaseloadCard, sortPatientRows, getPatientEncounterRows };
 })();
 
 </script>
@@ -19875,10 +19875,28 @@ window.HAHBoard = window.HAHBoard || {};
     const ucp = acp.ucp || '';
     const tep = acp.tep || '';
 
-    // Encounters: full log. The caller passes these in via options.encounters.
-    // We accept both the modern shape (with .fields) and the older
-    // shape, and filter / sort here.
-    const allEncounters = Array.isArray(options.encounters) ? options.encounters : [];
+    // Encounters: full log. The caller can pass these in via
+    // options.encounters (typical path — they already have the list).
+    // Otherwise we look up the canonical accessor on window.HAHBoard.
+    //
+    // Why we don't dig into the JSON record directly: encounters live
+    // at jsonRecord.timeline (NOT clinical.encounters), and the raw
+    // timeline entries need conversion via encounterFromJsonTimelineEntry
+    // to the shape the rest of the code uses. The desktop also has
+    // local ops-state encounters that haven't synced yet (a board round
+    // someone just saved). The canonical accessor merges both sources
+    // and applies the conversion. Reimplementing it here means risking
+    // drift from the source-of-truth when shapes change. Calling out
+    // is cheaper than duplicating.
+    let allEncounters = Array.isArray(options.encounters) ? options.encounters : null;
+    if (!allEncounters && typeof window !== 'undefined') {
+      const patientApi = window.HAHBoard && window.HAHBoard.patientScreen;
+      if (patientApi && typeof patientApi.getPatientEncounterRows === 'function') {
+        allEncounters = patientApi.getPatientEncounterRows(p) || [];
+      }
+    }
+    if (!allEncounters) allEncounters = [];
+
     const clinicalTypes = ['board_round', 'mobile_clinical_review', 'medication_change', 'note', 'admission'];
     const entries = allEncounters
       .filter((e) => e && e.type && clinicalTypes.indexOf(e.type) >= 0)
