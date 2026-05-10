@@ -3054,12 +3054,13 @@ body.hah-ws-connecting .hah-ws-dot {
   opacity: 1;
 }
 
-/* ─── Composer / preview separator ──────────────────────────────────── */
-
+/* v0.8.187: composer-sep divider removed entirely. With the
+ * unified flex layout on .hah-card-inner (18px gap between sections)
+ * and the bordered preview card below, the divider was redundant
+ * chrome. The CSS rule is kept for any legacy callers but emits
+ * zero height. */
 .hah-composer-sep {
-  height: 1px;
-  background: var(--desk-border);
-  margin: 14px 0 12px;
+  display: none;
 }
 
 /* ─── Note preview box ───────────────────────────────────────────────── */
@@ -3184,9 +3185,9 @@ body.hah-ws-connecting .hah-ws-dot {
   border-color: rgba(22,163,74,0.32);
 }
 
-.hah-dchip-ready.is-active {
-  font-weight: 600;
-}
+/* v0.8.188: font-weight bump on Ready chip's .is-active state
+ * removed for the same reason as the other discharge chips — width
+ * shift on click. Colour change is enough to signal selection. */
 
 .hah-dchip.is-locked {
   opacity: 0.42;
@@ -4482,11 +4483,17 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 /* ─── Discharge chips — selected state ──────────────────────────────── */
 
+/* v0.8.188: font-weight bump on .is-active removed. The base weight
+ * is 500; the previous .is-active rule bumped to 600, which made the
+ * chip visually wider (text reflow with heavier strokes) — the chip
+ * would shift position when selected, and adjacent chips would
+ * nudge. Other chip types (round-type, Who's-on-board) don't change
+ * weight when active; discharge chips should match. The colour
+ * change (white-grey → blue tint) is enough to signal selection. */
 .hah-dchip.is-active {
   background: rgba(47,111,237,0.12);
   border-color: rgba(47,111,237,0.4);
   color: rgba(47,111,237,0.95);
-  font-weight: 600;
 }
 
 .hah-dchip-ready.is-active {
@@ -5771,13 +5778,21 @@ button.hah-pt-flag:active {
 /* v0.8.184: strip individual margins from direct children of the
  * composer card body — vertical rhythm is owned by .hah-card-inner's
  * flex gap now. Without this, the legacy margins compound with the
- * flex gap and we're back to inconsistent spacing. */
+ * flex gap and we're back to inconsistent spacing.
+ *
+ * v0.8.187: the composer-footer also had its own padding-top: 6px /
+ * padding-bottom: 2px which compounded with the 18px flex gap above
+ * it — visual gap was 24px+ rather than the intended 18px. Zeroed
+ * inside the composer. */
 .hah-composer-card .hah-composer-tabs,
 .hah-composer-card .hah-board-members,
 .hah-composer-card .hah-composer-form,
 .hah-composer-card .hah-composer-footer,
 .hah-composer-card .hah-cform-pull-section {
   margin: 0;
+}
+.hah-composer-card .hah-composer-footer {
+  padding: 0;
 }
 
 /* Inside the form, use 16px between fields — matches the section gap
@@ -8589,9 +8604,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_186_chip_fixes_release.html',
-  source: 'hospital_at_home_board_v0_8_186_chip_fixes_source.zip',
-  builtAt: '2026-05-10T21:34:18.608569',
+  filename: 'hospital_at_home_board_v0_8_188_discharge_chip_fixes_release.html',
+  source: 'hospital_at_home_board_v0_8_188_discharge_chip_fixes_source.zip',
+  builtAt: '2026-05-10T21:45:56.569394',
   entry: 'desktop.html'
 };
 </script>
@@ -16758,7 +16773,6 @@ window.HAHBoard = window.HAHBoard || {};
           data-patient-action="composer-done">${isLocked ? 'Edit' : 'Done'}</button>
       </div>
       ${composerType === 'board_round' ? `
-      <div class="hah-composer-sep"></div>
       <div class="hah-note-preview" id="hahNotePreview" style="display:none">
         <div class="hah-note-preview-head">
           <span class="hah-note-preview-label">Clinical note preview</span>
@@ -17487,16 +17501,30 @@ window.HAHBoard = window.HAHBoard || {};
           [todayChip, tomorrowChip].forEach((c) => { if (c) { c.dataset.active = 'false'; c.classList.remove('is-active'); } });
         }
         if (quick === 'today') {
+          // v0.8.188: click on an already-active Today should toggle
+          // it off, matching the Ready chip's behaviour. Previously
+          // Today and Tomorrow could only be deselected by clicking
+          // a different chip — no way to "unset" a discharge guess.
+          const alreadyActive = chip.dataset.active === 'true';
           clearDateChips();
-          setDate(todayIso());
-          if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
           if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+          if (alreadyActive) {
+            setDate('');
+          } else {
+            setDate(todayIso());
+            if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
+          }
         }
         if (quick === 'tomorrow') {
+          const alreadyActive = chip.dataset.active === 'true';
           clearDateChips();
-          setDate(tomorrowIso());
-          if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
           if (readyChip) { readyChip.dataset.active = 'false'; readyChip.classList.remove('is-active'); }
+          if (alreadyActive) {
+            setDate('');
+          } else {
+            setDate(tomorrowIso());
+            if (chip) { chip.dataset.active = 'true'; chip.classList.add('is-active'); }
+          }
         }
         if (quick === 'ready') {
           const nowActive = chip.dataset.active === 'true';
@@ -21319,10 +21347,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.186. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.188. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.186. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.188. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
