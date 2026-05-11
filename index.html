@@ -81,6 +81,519 @@
 
 </style>
   <style>
+/* inlined: css/desktop-tokens.css */
+/* ─────────────────────────────────────────────────────────────────────
+ * H@H Board — Design system tokens (Phase 1, v0.8.193)
+ *
+ * Loaded first, before any other CSS. Defines the design vocabulary
+ * the rest of the app will speak. No surface-specific styles here —
+ * those live in desktop-primitives.css (for the reusable classes) and
+ * the existing per-surface CSS files (for everything else).
+ *
+ * Scope: desktop only. The mobile PWA has its own visual language
+ * (iOS conventions, smaller screens, touch targets) and is NOT
+ * unified with desktop.
+ *
+ * Numeric scale chosen over semantic names. "Radius-md" beats
+ * "radius-tool" because (a) the same value gets reused across what
+ * "tool" / "field" / "button" might want, and (b) semantic names get
+ * awkward when you need exceptions. If we ever need a 4th option in a
+ * scale, we just add it.
+ *
+ * The existing `--desk-*` tokens (in desktop-shell.css) are NOT
+ * removed — they're used by every existing rule across the app. The
+ * new `--hah-*` tokens coexist. As surfaces migrate (Phase 2), they
+ * switch from `--desk-*` to `--hah-*` and the old tokens shrink
+ * toward eventual removal.
+ *
+ * What's intentionally NOT here:
+ *   - Component classes (.hah-surface, .hah-field, .hah-chip etc) —
+ *     those live in desktop-primitives.css.
+ *   - Per-surface styles (composer card, discharge editor, etc) —
+ *     those stay in their per-surface CSS files.
+ *   - Shadow scale, transition scale — defer until we see if we need
+ *     a system for them. YAGNI for now.
+ * ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Corner radii ────────────────────────────────────────────────
+   * sm  → tight tool surfaces: form fields, buttons, action squares,
+   *       sub-section containers (pull-through, common-actions
+   *       indent).
+   * md  → primary containers: outer cards. Softer than the tools
+   *       inside them, establishes hierarchy.
+   * lg  → emphasised containers (rare). The discharge letter outer
+   *       pane, top-level board cards.
+   * tag → tiny status badges (Draft pill, etc).
+   * pill→ chips. Always fully rounded regardless of height.
+   */
+  --hah-radius-sm: 6px;
+  --hah-radius-md: 10px;
+  --hah-radius-lg: 14px;
+  --hah-radius-tag: 4px;
+  --hah-radius-pill: 999px;
+
+  /* ─── Spacing rhythm ─────────────────────────────────────────────
+   * xs  → tightest, sub-element nudges (e.g. icon-to-text in a chip)
+   * sm  → label → input gap (within a field block)
+   * md  → field → field (within a form)
+   * lg  → section → section (within a card)
+   * xl  → card → card (within a stack)
+   * xxl → block-level separation (between major page regions)
+   */
+  --hah-gap-xs: 4px;
+  --hah-gap-sm: 6px;
+  --hah-gap-md: 16px;
+  --hah-gap-lg: 18px;
+  --hah-gap-xl: 20px;
+  --hah-gap-xxl: 28px;
+
+  /* ─── Surface tints ──────────────────────────────────────────────
+   * Subtle backgrounds for non-editable container surfaces. Anchored
+   * to slate-900 (15,23,42) so they read as neutral grey on white
+   * cards regardless of accent colour.
+   *
+   * header  → card header zones (above a divider).
+   * context → contextual containers: pull-through box, info panels,
+   *           the hover state of chips/buttons.
+   * pulled  → amber tint for auto-filled content (Issues / Plan /
+   *           FDS when pulled from previous round). Load-bearing —
+   *           tells the clinician "this came from somewhere".
+   */
+  --hah-tint-header: rgba(15, 23, 42, 0.025);
+  --hah-tint-context: rgba(15, 23, 42, 0.04);
+  --hah-tint-pulled: rgba(180, 83, 9, 0.05);
+
+  /* ─── Borders ────────────────────────────────────────────────────
+   * Tiered by visual weight rather than function:
+   * faint    → barely-there outlines for sub-elements / secondary
+   *            chips (Common Actions chips).
+   * default  → standard outlined surfaces (form fields, base chips).
+   * hover    → hover state — clearly hovered but not selected.
+   * active   → selected/focused state (blue).
+   * pulled   → amber border for pulled content (matches tint-pulled).
+   *
+   * These are alpha-on-slate so they tint correctly against white.
+   */
+  --hah-border-faint: rgba(25, 45, 72, 0.10);
+  --hah-border: rgba(25, 45, 72, 0.18);
+  --hah-border-hover: rgba(25, 45, 72, 0.35);
+  --hah-border-active: rgba(47, 111, 237, 0.7);
+  --hah-border-pulled: rgba(180, 83, 9, 0.20);
+
+  /* ─── Focus ring ─────────────────────────────────────────────────
+   * The defined-not-glow focus state from the composer restyle.
+   * Border colour goes to --hah-border-active; box-shadow provides
+   * the ring. Two layers of softness (different alphas) so the ring
+   * has body without bleeding.
+   */
+  --hah-focus-ring: 0 0 0 2px rgba(47, 111, 237, 0.18);
+
+  /* ─── Type weights ───────────────────────────────────────────────
+   * Tied to *role*, not to *size*. A 13px section label and a 16px
+   * section label both want weight 600 — it's the label-ness that
+   * dictates the weight, not the px value.
+   *
+   * body    → default chip/field text, base running text.
+   * meta    → muted sub-labels ("COMMON ACTIONS", "PULL THROUGH").
+   * label   → section labels ("Issues", "Plan", etc).
+   * action  → button text — slightly heavier so it reads as tappable.
+   * title   → card titles.
+   * display → page-level titles (patient name, board heading).
+   */
+  --hah-weight-body: 500;
+  --hah-weight-meta: 500;
+  --hah-weight-label: 600;
+  --hah-weight-action: 600;
+  --hah-weight-title: 600;
+  --hah-weight-display: 700;
+
+  /* ─── Type sizes ─────────────────────────────────────────────────
+   * Five-step scale. Match to weight by role (see above), not by
+   * mechanical pairing.
+   */
+  --hah-text-xs: 11px;
+  --hah-text-sm: 12px;
+  --hah-text-md: 13px;
+  --hah-text-lg: 15px;
+  --hah-text-xl: 18px;
+  --hah-text-2xl: 22px;
+
+  /* ─── Letter-spacing tightening ─────────────────────────────────
+   * Larger sizes feel loose at default tracking. Tighten as size
+   * grows. Numbers chosen by eye, not by formula.
+   */
+  --hah-tracking-tight: -0.015em; /* display, page titles */
+  --hah-tracking-snug: -0.01em;   /* card titles, section labels */
+  --hah-tracking-normal: 0;       /* body */
+  --hah-tracking-wide: 0.04em;    /* meta labels — uppercase needs air */
+
+  /* ─── Accent fills (for active states on chips, primary buttons) ─
+   * tint = subtle fill, edge = border colour, strong = full primary.
+   */
+  --hah-accent-tint: rgba(47, 111, 237, 0.10);
+  --hah-accent-edge: rgba(47, 111, 237, 0.40);
+  --hah-accent-strong: rgba(47, 111, 237, 0.95);
+  --hah-accent-text: rgba(47, 111, 237, 0.95);
+
+  /* Success / danger accents — used sparingly. Mirror the structure
+   * of the primary accent so swapping is mechanical. */
+  --hah-success-tint: rgba(22, 163, 74, 0.10);
+  --hah-success-edge: rgba(22, 163, 74, 0.40);
+  --hah-success-text: #15803d;
+
+  --hah-danger-tint: rgba(220, 38, 38, 0.10);
+  --hah-danger-edge: rgba(220, 38, 38, 0.40);
+  --hah-danger-text: #b91c1c;
+}
+
+</style>
+  <style>
+/* inlined: css/desktop-primitives.css */
+/* ─────────────────────────────────────────────────────────────────────
+ * H@H Board — Design system primitives (Phase 1, v0.8.193)
+ *
+ * Reusable utility classes that compose into surfaces. Each class is
+ * "small" — does one job, doesn't fight other classes. Surfaces apply
+ * primitives by combining classes in markup (e.g. <button class="hah-
+ * chip hah-chip-sub">), not by writing per-surface CSS that
+ * duplicates the primitive's rules.
+ *
+ * Loaded second, after desktop-tokens.css. Available everywhere but
+ * not yet applied to anything. Phase 2 chunks (v0.8.194 onwards) will
+ * migrate surface markup to use these classes.
+ *
+ * Naming: every primitive is `.hah-*` so it's clearly distinguishable
+ * from the existing `--desk-*` / `.hah-card` / `.hah-card-inner`
+ * legacy classes. The legacy classes stay where they are. Migration
+ * is gradual.
+ *
+ * Conventions encoded here:
+ *   - "chip = state, button = action" — distinct primitives for each
+ *   - Hover = grey fill (informational); active = coloured fill
+ *     (semantic). Hover and active are visually distinct, and active
+ *     IGNORES hover (so a selected chip doesn't repaint on cursor-
+ *     over).
+ *   - Focus = defined ring, not glow.
+ *   - Section labels = bold dark; sub-labels (meta) = muted
+ *     uppercase.
+ *
+ * What's intentionally NOT here:
+ *   - Layout primitives (.hah-stack, .hah-row etc) — there are
+ *     existing ones (c.stack) that work fine; no need to duplicate.
+ *   - Modal primitives — modals are rare enough that per-modal
+ *     styling is fine until we have 5+ of them with shared chrome.
+ *   - Card primitives — `.hah-surface` below covers card-like
+ *     surfaces; the existing `.hah-card` + `.hah-card-inner` pattern
+ *     stays since every surface in the app uses it. We extend rather
+ *     than replace.
+ * ───────────────────────────────────────────────────────────────────── */
+
+
+/* ─── Surfaces ────────────────────────────────────────────────────────
+ *
+ * A "surface" is the chrome around a section of content — typically a
+ * card, but also pane regions and modal bodies. The primitive defines
+ * border, radius, background, and the optional header treatment.
+ *
+ * Usage:
+ *   <div class="hah-surface">
+ *     <div class="hah-surface-head">
+ *       <span class="hah-surface-title">Title</span>
+ *       <span>optional right-side content</span>
+ *     </div>
+ *     <div class="hah-surface-body">...</div>
+ *   </div>
+ *
+ * For now intentionally compatible with the existing `.hah-card` +
+ * `.hah-card-inner` pattern — surfaces that already use those classes
+ * can ADD `.hah-surface` etc. alongside without conflict. Migration
+ * is additive, not replacement, until a surface has fully moved.
+ */
+.hah-surface {
+  background: #fff;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
+}
+
+.hah-surface-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--hah-tint-header);
+  border-bottom: 1px solid var(--hah-border-faint);
+  /* Round the top corners to match the surface; bottom stays square
+   * because the body is right below. Inherits parent's radius via
+   * inheritance from --hah-radius-md. */
+  border-radius: var(--hah-radius-md) var(--hah-radius-md) 0 0;
+}
+
+.hah-surface-title {
+  font-size: var(--hah-text-xl);
+  font-weight: var(--hah-weight-title);
+  letter-spacing: var(--hah-tracking-snug);
+  color: var(--desk-text);
+}
+
+.hah-surface-body {
+  padding: var(--hah-gap-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hah-gap-lg);
+}
+
+
+/* ─── Labels ──────────────────────────────────────────────────────────
+ *
+ * Section labels vs meta labels. The distinction matters: section
+ * labels name a top-level field group ("Issues", "Plan"); meta labels
+ * sit *above* a sub-utility ("COMMON ACTIONS" above the preset chips,
+ * "PULL THROUGH" above the toggle row).
+ *
+ * Section labels are bold dark, easy to scan for hierarchy.
+ * Meta labels are muted uppercase with letter-spacing — visually
+ * subordinate, recognisable as "this is a sub-section marker".
+ */
+.hah-label {
+  font-size: var(--hah-text-md);
+  font-weight: var(--hah-weight-label);
+  color: var(--desk-text);
+  letter-spacing: var(--hah-tracking-snug);
+}
+
+.hah-meta-label {
+  font-size: var(--hah-text-xs);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--hah-tracking-wide);
+}
+
+
+/* ─── Fields ──────────────────────────────────────────────────────────
+ *
+ * Text input + textarea + select. Single primitive — different element
+ * types share the same chrome. Focus state is defined ring, not soft
+ * glow.
+ *
+ * Usage:
+ *   <textarea class="hah-field"></textarea>
+ *   <input type="text" class="hah-field">
+ *
+ * Variants: .hah-field-pulled adds the amber treatment for auto-
+ * filled content.
+ */
+.hah-field {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-sm);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--hah-text-sm);
+  color: var(--desk-text);
+  line-height: 1.5;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  box-sizing: border-box;
+}
+
+.hah-field:focus,
+.hah-field:focus-visible {
+  outline: none;
+  border-color: var(--hah-border-active);
+  box-shadow: var(--hah-focus-ring);
+}
+
+.hah-field-pulled {
+  background: var(--hah-tint-pulled);
+  border-color: var(--hah-border-pulled);
+}
+
+
+/* ─── Chips ───────────────────────────────────────────────────────────
+ *
+ * State indicators. Always fully rounded (pill). Outlined by default,
+ * grey fill on hover, coloured fill when active. Active ignores hover
+ * (jarring otherwise).
+ *
+ * Three variants:
+ *   .hah-chip            → standard chip
+ *   .hah-chip-sub        → secondary / sub-option chip (transparent
+ *                          background, faint border). For Common
+ *                          Actions and similar sub-utilities.
+ *   .hah-chip + .is-active → selected state, blue tint
+ *
+ * Semantic colour variants (.hah-chip.is-active-success etc.) can be
+ * added when a surface needs them — for now the primary blue is
+ * enough.
+ */
+.hah-chip {
+  padding: 4px 12px;
+  border-radius: var(--hah-radius-pill);
+  border: 1px solid var(--hah-border);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-body);
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 140ms ease;
+}
+
+.hah-chip:hover:not(.is-active) {
+  background: var(--hah-tint-context);
+  color: var(--desk-text);
+}
+
+.hah-chip.is-active {
+  background: var(--hah-accent-tint);
+  border-color: var(--hah-accent-edge);
+  color: var(--hah-accent-text);
+}
+
+.hah-chip-sub {
+  background: transparent;
+  border-color: var(--hah-border-faint);
+}
+
+.hah-chip:disabled,
+.hah-chip.is-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+
+/* ─── Action buttons ─────────────────────────────────────────────────
+ *
+ * Verb-tap buttons. Squarer corners than chips to enforce the
+ * "chip = state, button = action" affordance distinction. Two
+ * variants:
+ *
+ *   .hah-action       → default — outlined, muted-text. Secondary
+ *                       actions (Clear, Cancel, Close).
+ *   .hah-action-primary → emphasised — blue. Primary action (Done,
+ *                         Save, Generate).
+ *
+ * Both inherit a defined hover state. Primary actions get a slightly
+ * deeper hover than the secondary's grey-fill.
+ */
+.hah-action {
+  padding: 6px 14px;
+  min-height: 32px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-sm);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--hah-text-md);
+  font-weight: var(--hah-weight-action);
+  color: var(--desk-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 140ms ease;
+}
+
+.hah-action:hover {
+  background: var(--hah-tint-context);
+  border-color: var(--hah-border-hover);
+}
+
+.hah-action-primary {
+  background: var(--hah-accent-tint);
+  border-color: var(--hah-accent-edge);
+  color: var(--hah-accent-text);
+}
+
+.hah-action-primary:hover {
+  background: rgba(47, 111, 237, 0.16);
+  border-color: var(--hah-accent-strong);
+}
+
+.hah-action:disabled,
+.hah-action.is-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+
+/* ─── Status pills ───────────────────────────────────────────────────
+ *
+ * Quiet status indicators. Smaller than chips, no hover. For things
+ * like the Draft badge in the discharge editor, or the autosave
+ * "Saved 21:47" text in the composer header.
+ *
+ * Three semantic variants:
+ *   .hah-status              → neutral muted
+ *   .hah-status-success      → green tint (Sent, Complete)
+ *   .hah-status-warning      → amber/yellow (Draft, Pending)
+ *   .hah-status-danger       → red (Error, Failed)
+ *
+ * Usage:
+ *   <span class="hah-status hah-status-warning">Draft</span>
+ */
+.hah-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--hah-radius-tag);
+  font-size: var(--hah-text-xs);
+  font-weight: var(--hah-weight-body);
+  color: var(--desk-text-muted);
+  background: var(--hah-tint-context);
+  border: 1px solid var(--hah-border-faint);
+  letter-spacing: var(--hah-tracking-snug);
+  white-space: nowrap;
+}
+
+.hah-status-success {
+  background: var(--hah-success-tint);
+  border-color: var(--hah-success-edge);
+  color: var(--hah-success-text);
+}
+
+.hah-status-warning {
+  background: rgba(202, 138, 4, 0.10);
+  border-color: rgba(202, 138, 4, 0.40);
+  color: #92400e;
+}
+
+.hah-status-danger {
+  background: var(--hah-danger-tint);
+  border-color: var(--hah-danger-edge);
+  color: var(--hah-danger-text);
+}
+
+
+/* ─── Sub-section container ──────────────────────────────────────────
+ *
+ * The "PULL THROUGH" box pattern from the composer — a bordered
+ * container with the context tint, used to group a small cluster of
+ * controls under a meta-label. Could also work for any "options
+ * panel" sitting inside a card.
+ *
+ * Usage:
+ *   <div class="hah-subsection">
+ *     <div class="hah-meta-label">PULL THROUGH</div>
+ *     <div>... toggle row ...</div>
+ *   </div>
+ */
+.hah-subsection {
+  padding: 10px 12px;
+  background: var(--hah-tint-context);
+  border: 1px solid var(--hah-border-faint);
+  border-radius: var(--hah-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hah-gap-sm);
+}
+
+</style>
+  <style>
 /* inlined: css/desktop-shell.css */
 :root {
   --desk-header-h: 72px;
@@ -8650,9 +9163,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_192_subbullet_renumber_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_192_subbullet_renumber_fix_source.zip',
-  builtAt: '2026-05-11T18:10:23.751692',
+  filename: 'hospital_at_home_board_v0_8_193_design_tokens_release.html',
+  source: 'hospital_at_home_board_v0_8_193_design_tokens_source.zip',
+  builtAt: '2026-05-11T18:19:39.315062',
   entry: 'desktop.html'
 };
 </script>
@@ -21433,10 +21946,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.192. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.193. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.192. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.193. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
