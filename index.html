@@ -911,10 +911,28 @@ html, body {
   display: block;
 }
 
+/* v0.8.195: card chrome unified on design tokens.
+ *
+ * The .hah-card rule is the global base for card chrome. Every card
+ * on every screen — composer, settings, modals, board cards — uses
+ * this either directly (via `c.card()`) or via a parallel primitive
+ * (.hah-ref-widget for middle-pane reference cards, .hah-mdm-widget
+ * for MDM cards, .hah-log-card for patient log). The parallel
+ * primitives MUST agree with .hah-card on chrome — same border, same
+ * radius, same shadow. They differ only in *semantic content*
+ * (coloured heads, internal layout).
+ *
+ * The previous --desk-border (alpha 0.08) was too faint to give cards
+ * clearly defined edges; field test on v0.8.194 confirmed --hah-border
+ * (alpha 0.18) is the right weight. The previous --desk-radius-xl
+ * (20px) was softer than the composer card's 12px — they didn't sit
+ * well side-by-side. --hah-radius-md is 12px, the composer reference.
+ *
+ * One template, applied globally. */
 .hah-card {
   background: var(--desk-panel);
-  border: 1px solid var(--desk-border);
-  border-radius: var(--desk-radius-xl);
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
   box-shadow: var(--desk-shadow);
 }
 
@@ -2652,10 +2670,14 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* ─── Board round log ────────────────────────────────────────────────── */
 
+/* v0.8.195: patient log card chrome unified with .hah-card. The
+ * blue semantic head (.hah-log-head below) stays — it's the
+ * "patient log" identity colour, distinct from the chrome. */
 .hah-log-card {
-  background: rgba(255,255,255,0.9);
-  border: 1px solid var(--desk-border);
-  border-radius: 16px;
+  background: var(--desk-panel);
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
+  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -2870,10 +2892,14 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* ─── MDM widgets ────────────────────────────────────────────────────── */
 
+/* v0.8.195: MDM card chrome unified with .hah-card. The coloured
+ * heads (green for Micro MDM, purple for Resp MDM — see rules below)
+ * stay; they're semantic colour-coding, distinct from the chrome. */
 .hah-mdm-widget {
-  background: rgba(255,255,255,0.88);
-  border: 1px solid var(--desk-border);
-  border-radius: 14px;
+  background: var(--desk-panel);
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
+  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -2965,45 +2991,22 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* ─── Reference widgets ──────────────────────────────────────────────── */
 
-/* ─── v0.8.194: middle-pane cards migrated to design tokens ──────────
+/* v0.8.195: .hah-ref-widget now agrees with .hah-card on chrome.
+ * Background, border, radius, shadow — all identical. The only
+ * difference between the two markup choices is that .hah-ref-widget
+ * carries a smaller header-bar pattern (.hah-ref-head with neutral
+ * tint via the design tokens) while .hah-card has the .hah-card-inner
+ * padded body without a built-in head. They're two layouts on the
+ * same chrome.
  *
- * Phase 2 chunk 1. The five middle-pane cards (ACP, Bloods,
- * Medications, Medication changes, Discharge letter row) all use the
- * shared .hah-ref-widget / .hah-ref-head / .hah-ref-label markup
- * pattern. Updating these three rules to reference tokens migrates
- * all five surfaces with one change.
- *
- * What changed:
- *   - .hah-ref-widget border-radius: 14px → --hah-radius-md (12px).
- *     Brings these cards into agreement with the composer card's
- *     outer radius (12px), which is the design language reference.
- *   - .hah-ref-widget border: --desk-border → --hah-border (slightly
- *     stronger, matches the composer's field borders).
- *   - .hah-ref-head background: rgba(0,0,0,0.04) → --hah-tint-header
- *     (rgba(15,23,42,0.025) — slate-anchored, subtler).
- *   - .hah-ref-head border-bottom: rgba(0,0,0,0.08) → --hah-border-
- *     faint. (Note: the shared head rule at the top of the file sets
- *     border-bottom for layout; we override the colour-only property
- *     here via the per-class rule.)
- *   - .hah-ref-label font-size + weight via tokens (no value change,
- *     just stops hardcoding).
- *
- * What stayed the same:
- *   - The shared head layout rule (display, align-items, padding,
- *     min-height: 36px). Pixel-aligned heads across the page is
- *     load-bearing and shouldn't be disturbed by a token migration.
- *   - All .hah-ref-* card body styles. Card internals are per-surface
- *     and beyond the scope of chunk 1.
- *   - The .hah-card-action button used in the head right slot — its
- *     own primitive question, deferred to a later chunk.
- *
- * No markup changes. No visible behaviour changes other than the
- * cosmetic ones listed above.
- */
+ * The 12px radius, --hah-border edge, and slight shadow are all
+ * inherited from --hah-radius-md / --hah-border / --desk-shadow. No
+ * value should be hardcoded here. */
 .hah-ref-widget {
-  background: rgba(255,255,255,0.88);
+  background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
+  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -5805,14 +5808,18 @@ button.hah-pt-flag:active {
    inline composer for adding/editing, edit pencil per row.
    Harmonised with .hah-ref-widget styling family. */
 
-/* v0.8.194: med-changes card migrated to design tokens. The markup
- * carries both .hah-ref-widget and .hah-medchg-card; without this
- * migration, .hah-medchg-card's own border-radius and border rules
- * would override the .hah-ref-widget token-based values. */
+/* v0.8.195: medication-changes card chrome unified with .hah-card.
+ * The markup carries both .hah-ref-widget and .hah-medchg-card, so
+ * the .hah-ref-widget rule above would already apply — but this
+ * surface had its own rule before that overrode chrome separately.
+ * Keeping the rule in place (rather than deleting it) so the surface
+ * doesn't suddenly fall back to .hah-card-defaults if someone
+ * removes one of the classes from the markup. */
 .hah-medchg-card {
-  background: rgba(255,255,255,0.88);
+  background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
+  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -6287,12 +6294,12 @@ button.hah-pt-flag:active {
  *    what these fields are from the labels.
  */
 
-/* Outer card: slight tighten from --desk-radius-xl (20px) to 12px.
- * Less round than other cards but still rounder than the form
- * elements inside — establishes a hierarchy. */
-.hah-card.hah-composer-card {
-  border-radius: 12px;
-}
+/* v0.8.195: composer-card no longer needs its own border-radius
+ * override. The global .hah-card rule sets --hah-radius-md (12px),
+ * which is what the composer was overriding to anyway. Removed.
+ * Kept this comment block to preserve the design intent: the outer
+ * card uses --hah-radius-md (medium), the form elements inside use
+ * --hah-radius-sm (squarer) — that's the hierarchy. */
 
 /* v0.8.184: unified vertical rhythm via single flex container.
  *
@@ -9204,9 +9211,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_194_middle_pane_cards_release.html',
-  source: 'hospital_at_home_board_v0_8_194_middle_pane_cards_source.zip',
-  builtAt: '2026-05-11T18:26:46.982122',
+  filename: 'hospital_at_home_board_v0_8_195_card_chrome_unified_release.html',
+  source: 'hospital_at_home_board_v0_8_195_card_chrome_unified_source.zip',
+  builtAt: '2026-05-11T18:45:12.332444',
   entry: 'desktop.html'
 };
 </script>
@@ -21987,10 +21994,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.194. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.195. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.194. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.195. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
