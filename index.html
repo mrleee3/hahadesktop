@@ -5949,6 +5949,32 @@ button.hah-pt-flag:active {
   border-radius: 12px;
 }
 
+/* v0.8.191: plan-preset chips ("Common actions") are quick-fill
+ * helpers for the Plan field — they insert text on click and don't
+ * persist a selection. Functionally they're a sub-utility, not a
+ * top-level option, so they should sit visually below the surrounding
+ * chips even though they share the same metrics (per v0.8.190
+ * unification — same padding, font-size, font-weight).
+ *
+ * Three changes:
+ *   1. Transparent background instead of white-ish — they sit on the
+ *      card surface rather than pretending to be raised buttons.
+ *   2. Fainter border (alpha 0.5) — less visual weight than the
+ *      primary chips above.
+ *   3. Small left indent on the row (12px) — conventional sub-option
+ *      signal in dense forms, anchors the row under the "COMMON
+ *      ACTIONS" label which is itself in a quieter register.
+ *
+ * Hover and active behaviour unchanged — hover gets the same grey
+ * fill as other composer chips (defined further up in this block). */
+.hah-composer-card .hah-plan-presets-chips {
+  padding-left: 12px;
+}
+.hah-composer-card .hah-plan-preset-chip {
+  background: transparent;
+  border-color: rgba(25, 45, 72, 0.12);
+}
+
 /* ─── End of composer card visual refresh ─────────────────────────── */
 
 </style>
@@ -8624,9 +8650,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_190_chip_unify_release.html',
-  source: 'hospital_at_home_board_v0_8_190_chip_unify_source.zip',
-  builtAt: '2026-05-10T21:59:58.903207',
+  filename: 'hospital_at_home_board_v0_8_191_preset_chip_hierarchy_release.html',
+  source: 'hospital_at_home_board_v0_8_191_preset_chip_hierarchy_source.zip',
+  builtAt: '2026-05-11T18:05:00.738816',
   entry: 'desktop.html'
 };
 </script>
@@ -21368,10 +21394,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.190. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.191. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.190. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.191. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
