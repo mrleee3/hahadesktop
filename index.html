@@ -8650,9 +8650,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_191_preset_chip_hierarchy_release.html',
-  source: 'hospital_at_home_board_v0_8_191_preset_chip_hierarchy_source.zip',
-  builtAt: '2026-05-11T18:05:00.738816',
+  filename: 'hospital_at_home_board_v0_8_192_subbullet_renumber_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_192_subbullet_renumber_fix_source.zip',
+  builtAt: '2026-05-11T18:10:23.751692',
   entry: 'desktop.html'
 };
 </script>
@@ -16916,13 +16916,52 @@ window.HAHBoard = window.HAHBoard || {};
     }).join('');
   }
 
+  // v0.8.192: bug fix — when stitching `issueLines` (or `vm.issues`)
+  // back into the textarea-shaped string, sub-bullet lines (lines
+  // beginning with "- ", "• ", or indented whitespace) must NOT be
+  // renumbered. Previously the renumber blindly counted every line,
+  // so the source:
+  //
+  //   1. hf
+  //   2. aki
+  //   - started iv fluids
+  //   - restart meds
+  //   3. copd
+  //
+  // round-tripped (via issueLines + renumber on display) as:
+  //
+  //   1. hf
+  //   2. aki
+  //   3. - started iv fluids
+  //   4. - restart meds
+  //   5. copd
+  //
+  // because the sub-bullets and the top-level "copd" all got
+  // consecutive numbers from the running counter.
+  //
+  // Fix: walk lines, only increment+prefix the counter for "real"
+  // issue lines (non-empty, doesn't start with sub-bullet marker).
+  // Sub-bullet lines emit verbatim.
+  function renumberIssueLines(lines) {
+    let counter = 0;
+    return lines.map((line) => {
+      if (!line || !line.trim()) return line; // blank line preserved
+      // Sub-bullet markers: -, •, *, or leading whitespace indent
+      if (/^\s/.test(line) || /^[-•*]\s/.test(line.trim())) {
+        return line;
+      }
+      counter += 1;
+      return counter + '. ' + line;
+    }).join('\n');
+  }
+
   function renderComposerForm(type, lastRound, vm) {
     if (type === 'board_round') {
       const lastF          = lastRound ? (lastRound.fields || {}) : null;
-      const fallbackIssues = vm ? vm.issues.map((l, i) => (i + 1) + '. ' + l).join('\n') : '';
+      const fallbackIssues = vm ? renumberIssueLines(vm.issues) : '';
       const pulledIssues   = lastF
         ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
-            ? lastF.issueLines.map((l, i) => (i + 1) + '. ' + l).join('\n')
+            ? renumberIssueLines(lastF.issueLines)
             : String(lastF.issues || '').trim())
         : fallbackIssues;
       const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
@@ -17446,7 +17485,7 @@ window.HAHBoard = window.HAHBoard || {};
           targetId = 'cform-issues';
           pulledValue = lastF
             ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
-                ? lastF.issueLines.map((l, i) => (i + 1) + '. ' + l).join('\n')
+                ? renumberIssueLines(lastF.issueLines)
                 : String(lastF.issues || '').trim())
             : '';
         } else if (key === 'plan') {
@@ -17794,7 +17833,7 @@ window.HAHBoard = window.HAHBoard || {};
     const lastF     = lastRound && lastRound.fields;
     const pulledIssues = lastF
       ? (Array.isArray(lastF.issueLines) && lastF.issueLines.length
-          ? lastF.issueLines.map((l, i) => (i + 1) + '. ' + l).join('\n')
+          ? renumberIssueLines(lastF.issueLines)
           : String(lastF.issues || '').trim())
       : '';
     const pulledPlan = lastF ? String(lastF.plan || '').trim() : '';
@@ -19100,7 +19139,7 @@ window.HAHBoard = window.HAHBoard || {};
     });
   }
 
-  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, computeCaseloadMetrics, renderCaseloadCard, sortPatientRows, getPatientEncounterRows };
+  window.HAHBoard.patientScreen = { renderLeftPane, renderMainPane, renderRightPane, handleClick, handleChange, afterRender, computeCaseloadMetrics, renderCaseloadCard, sortPatientRows, getPatientEncounterRows, renumberIssueLines };
 })();
 
 </script>
@@ -21394,10 +21433,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.191. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.192. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.191. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.192. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
