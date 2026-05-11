@@ -919,21 +919,19 @@ html, body {
  * (.hah-ref-widget for middle-pane reference cards, .hah-mdm-widget
  * for MDM cards, .hah-log-card for patient log). The parallel
  * primitives MUST agree with .hah-card on chrome — same border, same
- * radius, same shadow. They differ only in *semantic content*
- * (coloured heads, internal layout).
+ * radius. They differ only in *semantic content* (coloured heads,
+ * internal layout).
  *
- * The previous --desk-border (alpha 0.08) was too faint to give cards
- * clearly defined edges; field test on v0.8.194 confirmed --hah-border
- * (alpha 0.18) is the right weight. The previous --desk-radius-xl
- * (20px) was softer than the composer card's 12px — they didn't sit
- * well side-by-side. --hah-radius-md is 12px, the composer reference.
- *
- * One template, applied globally. */
+ * v0.8.196: shadow removed. The combination of defined border
+ * (--hah-border at alpha 0.18) plus the slight desk-shadow lift was
+ * doing double-duty for separating cards from the page background.
+ * Flat cards with strong borders is the right call for clinical
+ * density — borders do the separation work, the page reads as
+ * calmer. */
 .hah-card {
   background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
-  box-shadow: var(--desk-shadow);
 }
 
 .hah-card-inner { padding: 20px 24px; }
@@ -2677,7 +2675,6 @@ body.hah-ws-connecting .hah-ws-dot {
   background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
-  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -2899,7 +2896,6 @@ body.hah-ws-connecting .hah-ws-dot {
   background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
-  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -3006,7 +3002,6 @@ body.hah-ws-connecting .hah-ws-dot {
   background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
-  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -5819,7 +5814,6 @@ button.hah-pt-flag:active {
   background: var(--desk-panel);
   border: 1px solid var(--hah-border);
   border-radius: var(--hah-radius-md);
-  box-shadow: var(--desk-shadow);
   overflow: hidden;
 }
 
@@ -9211,9 +9205,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_195_card_chrome_unified_release.html',
-  source: 'hospital_at_home_board_v0_8_195_card_chrome_unified_source.zip',
-  builtAt: '2026-05-11T18:45:12.332444',
+  filename: 'hospital_at_home_board_v0_8_196_flat_cards_release.html',
+  source: 'hospital_at_home_board_v0_8_196_flat_cards_source.zip',
+  builtAt: '2026-05-11T19:39:15.982819',
   entry: 'desktop.html'
 };
 </script>
@@ -21994,10 +21988,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.195. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.196. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.195. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.196. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
