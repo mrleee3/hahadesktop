@@ -661,9 +661,15 @@ html, body {
 
 .hah-header {
   grid-area: header;
-  display: flex;
+  /* v0.8.204: grid (1fr auto 1fr) so the search input stays optically
+     centred with only two header children (brand + search). The empty
+     third column acts as a phantom counterweight to the brand column,
+     keeping the search dead-centre regardless of brand text width.
+     Previous space-between layout pushed search to the far right after
+     the right-hand button group was removed in v0.8.203. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--desk-gap-4);
   padding: 0 var(--desk-gap-5);
   background: #0a84ff;
@@ -9457,9 +9463,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_203_topbar_cleanup_release.html',
-  source: 'hospital_at_home_board_v0_8_203_topbar_cleanup_source.zip',
-  builtAt: '2026-05-11T20:47:20.981052',
+  filename: 'hospital_at_home_board_v0_8_204_search_centered_release.html',
+  source: 'hospital_at_home_board_v0_8_204_search_centered_source.zip',
+  builtAt: '2026-05-11T20:55:21.199913',
   entry: 'desktop.html'
 };
 </script>
@@ -22461,10 +22467,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.203. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.204. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.203. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.204. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
