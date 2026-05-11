@@ -2698,25 +2698,12 @@ body.hah-ws-connecting .hah-ws-dot {
 .hah-log-card .hah-log-dot { display: none; }
 
 .hah-log-head {
+  /* v0.8.201: option B. The coloured fill alone signals semantic
+   * identity; the head's borders all match the design system's
+   * neutral chrome. No top/left/right perimeter borders to fight
+   * the card's corner geometry. */
   background: rgba(55, 138, 221, 0.08);
-  /* v0.8.198: head gets coloured borders on all 4 sides. Top + left
-   * + right at alpha 0.18 (mirrors --hah-border weight on the card).
-   * Bottom at alpha 0.10 (mirrors --hah-border-faint, slightly
-   * lighter — preserves the chrome relationship between outer card
-   * border and head's internal separator).
-   *
-   * v0.8.200: top corners rounded to match the card's outer border.
-   * The card has border-radius var(--hah-radius-md) (12px) and a
-   * 1px outer border; the head sits 1px inside that border, so its
-   * top corners need to be 11px (12px - 1px) to curve concentrically
-   * with the card. Without this the head's flat top corners showed
-   * through the card's rounded corners as a misaligned wedge. */
-  border-top: 1px solid rgba(55, 138, 221, 0.18);
-  border-left: 1px solid rgba(55, 138, 221, 0.18);
-  border-right: 1px solid rgba(55, 138, 221, 0.18);
-  border-bottom-color: rgba(55, 138, 221, 0.10);
-  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
-  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
+  border-bottom-color: var(--hah-border-faint);
 }
 
 .hah-log-dot {
@@ -3937,32 +3924,19 @@ body.hah-ws-connecting .hah-ws-dot {
   border-bottom-color: rgba(0,0,0,0.08);
 }
 
-/* v0.8.198: coloured MDM cards keep neutral card chrome (no outer
- * border override here). The head gets its own coloured borders on
- * all 4 sides — top + left + right at alpha 0.18 matching --hah-
- * border weight, bottom at alpha 0.10 matching --hah-border-faint.
- * Head reads as a coloured-tagged band inside neutral card chrome.
- *
- * v0.8.200: top corners rounded to track the card's curve. See
- * .hah-log-head above for the geometry rationale. */
+/* v0.8.201: option B. Coloured fill signals semantic identity for
+ * MDM cards (green for Micro, purple for Resp). Borders all match
+ * the design system's neutral chrome — no perimeter colour, no
+ * special corner geometry. Disciplined per the design system
+ * principle: borders do chrome, fills do content. */
 .hah-mdm-widget[data-mdm-type="micro_mdm"] .hah-mdm-head {
   background: rgba(29, 158, 117, 0.08);
-  border-top: 1px solid rgba(29, 158, 117, 0.18);
-  border-left: 1px solid rgba(29, 158, 117, 0.18);
-  border-right: 1px solid rgba(29, 158, 117, 0.18);
-  border-bottom-color: rgba(29, 158, 117, 0.10);
-  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
-  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
+  border-bottom-color: var(--hah-border-faint);
 }
 
 .hah-mdm-widget[data-mdm-type="resp_mdm"] .hah-mdm-head {
   background: rgba(127, 119, 221, 0.1);
-  border-top: 1px solid rgba(127, 119, 221, 0.18);
-  border-left: 1px solid rgba(127, 119, 221, 0.18);
-  border-right: 1px solid rgba(127, 119, 221, 0.18);
-  border-bottom-color: rgba(127, 119, 221, 0.10);
-  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
-  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
+  border-bottom-color: var(--hah-border-faint);
 }
 
 .hah-mdm-chevron-sm {
@@ -9263,9 +9237,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_200_head_corner_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_200_head_corner_fix_source.zip',
-  builtAt: '2026-05-11T20:09:10.547331',
+  filename: 'hospital_at_home_board_v0_8_201_coloured_fill_only_release.html',
+  source: 'hospital_at_home_board_v0_8_201_coloured_fill_only_source.zip',
+  builtAt: '2026-05-11T20:14:35.006627',
   entry: 'desktop.html'
 };
 </script>
@@ -22046,10 +22020,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.200. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.201. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.200. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.201. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
