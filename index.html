@@ -121,14 +121,16 @@
    *       sub-section containers (pull-through, common-actions
    *       indent).
    * md  → primary containers: outer cards. Softer than the tools
-   *       inside them, establishes hierarchy.
+   *       inside them, establishes hierarchy. Set to match the
+   *       composer card's outer radius (v0.8.182+) so cards and the
+   *       composer agree by construction when laid out side-by-side.
    * lg  → emphasised containers (rare). The discharge letter outer
    *       pane, top-level board cards.
    * tag → tiny status badges (Draft pill, etc).
    * pill→ chips. Always fully rounded regardless of height.
    */
   --hah-radius-sm: 6px;
-  --hah-radius-md: 10px;
+  --hah-radius-md: 12px;
   --hah-radius-lg: 14px;
   --hah-radius-tag: 4px;
   --hah-radius-pill: 999px;
@@ -2963,22 +2965,57 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* ─── Reference widgets ──────────────────────────────────────────────── */
 
+/* ─── v0.8.194: middle-pane cards migrated to design tokens ──────────
+ *
+ * Phase 2 chunk 1. The five middle-pane cards (ACP, Bloods,
+ * Medications, Medication changes, Discharge letter row) all use the
+ * shared .hah-ref-widget / .hah-ref-head / .hah-ref-label markup
+ * pattern. Updating these three rules to reference tokens migrates
+ * all five surfaces with one change.
+ *
+ * What changed:
+ *   - .hah-ref-widget border-radius: 14px → --hah-radius-md (12px).
+ *     Brings these cards into agreement with the composer card's
+ *     outer radius (12px), which is the design language reference.
+ *   - .hah-ref-widget border: --desk-border → --hah-border (slightly
+ *     stronger, matches the composer's field borders).
+ *   - .hah-ref-head background: rgba(0,0,0,0.04) → --hah-tint-header
+ *     (rgba(15,23,42,0.025) — slate-anchored, subtler).
+ *   - .hah-ref-head border-bottom: rgba(0,0,0,0.08) → --hah-border-
+ *     faint. (Note: the shared head rule at the top of the file sets
+ *     border-bottom for layout; we override the colour-only property
+ *     here via the per-class rule.)
+ *   - .hah-ref-label font-size + weight via tokens (no value change,
+ *     just stops hardcoding).
+ *
+ * What stayed the same:
+ *   - The shared head layout rule (display, align-items, padding,
+ *     min-height: 36px). Pixel-aligned heads across the page is
+ *     load-bearing and shouldn't be disturbed by a token migration.
+ *   - All .hah-ref-* card body styles. Card internals are per-surface
+ *     and beyond the scope of chunk 1.
+ *   - The .hah-card-action button used in the head right slot — its
+ *     own primitive question, deferred to a later chunk.
+ *
+ * No markup changes. No visible behaviour changes other than the
+ * cosmetic ones listed above.
+ */
 .hah-ref-widget {
   background: rgba(255,255,255,0.88);
-  border: 1px solid var(--desk-border);
-  border-radius: 14px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
   overflow: hidden;
 }
 
 .hah-ref-head {
   justify-content: space-between;
-  background: rgba(0,0,0,0.04);
-  border-bottom-color: rgba(0,0,0,0.08);
+  background: var(--hah-tint-header);
+  border-bottom-color: var(--hah-border-faint);
 }
 
 .hah-ref-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-label);
   color: var(--desk-text);
 }
 
@@ -5768,10 +5805,14 @@ button.hah-pt-flag:active {
    inline composer for adding/editing, edit pencil per row.
    Harmonised with .hah-ref-widget styling family. */
 
+/* v0.8.194: med-changes card migrated to design tokens. The markup
+ * carries both .hah-ref-widget and .hah-medchg-card; without this
+ * migration, .hah-medchg-card's own border-radius and border rules
+ * would override the .hah-ref-widget token-based values. */
 .hah-medchg-card {
   background: rgba(255,255,255,0.88);
-  border: 1px solid var(--desk-border);
-  border-radius: 14px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
   overflow: hidden;
 }
 
@@ -5780,13 +5821,13 @@ button.hah-pt-flag:active {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba(0,0,0,0.04);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: var(--hah-tint-header);
+  border-bottom: 1px solid var(--hah-border-faint);
 }
 
 .hah-medchg-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-label);
   color: var(--desk-text);
   flex: 0 0 auto;
 }
@@ -9163,9 +9204,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_193_design_tokens_release.html',
-  source: 'hospital_at_home_board_v0_8_193_design_tokens_source.zip',
-  builtAt: '2026-05-11T18:19:39.315062',
+  filename: 'hospital_at_home_board_v0_8_194_middle_pane_cards_release.html',
+  source: 'hospital_at_home_board_v0_8_194_middle_pane_cards_source.zip',
+  builtAt: '2026-05-11T18:26:46.982122',
   entry: 'desktop.html'
 };
 </script>
@@ -21946,10 +21987,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.193. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.194. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.193. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.194. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
