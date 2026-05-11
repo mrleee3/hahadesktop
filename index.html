@@ -2475,8 +2475,15 @@ body.hah-ws-connecting .hah-ws-dot {
   gap: 6px;
   padding: 12px 16px 11px 20px;
   background: rgba(255,255,255,0.96);
-  border: 1px solid rgba(34,84,162,0.1);
-  border-radius: 16px;
+  /* v0.8.199: chrome migrated to match the design system. Border
+   * stays in semantic blue (this surface is the most important
+   * thing on screen and earns the identity tint) but at alpha 0.18
+   * matching --hah-border weight from the migration, not the
+   * previous 0.1 which was too faint for the new defined-edge
+   * aesthetic. Border-radius switches to --hah-radius-md (12px) so
+   * the header agrees with every card on the page. */
+  border: 1px solid rgba(34, 84, 162, 0.18);
+  border-radius: var(--hah-radius-md);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -2562,14 +2569,19 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* ─── Obs strip ──────────────────────────────────────────────────────── */
 
+/* v0.8.199: chrome migrated to design tokens. Outer border at
+ * --hah-border (alpha 0.18) matching the migrated cards; internal
+ * cell dividers at --hah-border-faint (alpha 0.10) so they read as
+ * subordinate to the outer chrome — same relationship as a card's
+ * outer border vs. its head's bottom border. */
 .hah-obs-strip,
 .hah-status-strip {
   display: flex;
   gap: 0;
   padding: 0;
   background: rgba(255,255,255,0.9);
-  border: 1px solid var(--desk-border);
-  border-radius: 14px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
   overflow: hidden;
 }
 
@@ -2580,7 +2592,7 @@ body.hah-ws-connecting .hah-ws-dot {
   flex-direction: column;
   gap: 2px;
   padding: 10px 14px;
-  border-right: 1px solid var(--desk-border);
+  border-right: 1px solid var(--hah-border-faint);
   min-width: 0;
 }
 
@@ -2691,11 +2703,20 @@ body.hah-ws-connecting .hah-ws-dot {
    * + right at alpha 0.18 (mirrors --hah-border weight on the card).
    * Bottom at alpha 0.10 (mirrors --hah-border-faint, slightly
    * lighter — preserves the chrome relationship between outer card
-   * border and head's internal separator). */
+   * border and head's internal separator).
+   *
+   * v0.8.200: top corners rounded to match the card's outer border.
+   * The card has border-radius var(--hah-radius-md) (12px) and a
+   * 1px outer border; the head sits 1px inside that border, so its
+   * top corners need to be 11px (12px - 1px) to curve concentrically
+   * with the card. Without this the head's flat top corners showed
+   * through the card's rounded corners as a misaligned wedge. */
   border-top: 1px solid rgba(55, 138, 221, 0.18);
   border-left: 1px solid rgba(55, 138, 221, 0.18);
   border-right: 1px solid rgba(55, 138, 221, 0.18);
   border-bottom-color: rgba(55, 138, 221, 0.10);
+  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
+  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
 }
 
 .hah-log-dot {
@@ -3920,13 +3941,18 @@ body.hah-ws-connecting .hah-ws-dot {
  * border override here). The head gets its own coloured borders on
  * all 4 sides — top + left + right at alpha 0.18 matching --hah-
  * border weight, bottom at alpha 0.10 matching --hah-border-faint.
- * Head reads as a coloured-tagged band inside neutral card chrome. */
+ * Head reads as a coloured-tagged band inside neutral card chrome.
+ *
+ * v0.8.200: top corners rounded to track the card's curve. See
+ * .hah-log-head above for the geometry rationale. */
 .hah-mdm-widget[data-mdm-type="micro_mdm"] .hah-mdm-head {
   background: rgba(29, 158, 117, 0.08);
   border-top: 1px solid rgba(29, 158, 117, 0.18);
   border-left: 1px solid rgba(29, 158, 117, 0.18);
   border-right: 1px solid rgba(29, 158, 117, 0.18);
   border-bottom-color: rgba(29, 158, 117, 0.10);
+  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
+  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
 }
 
 .hah-mdm-widget[data-mdm-type="resp_mdm"] .hah-mdm-head {
@@ -3935,6 +3961,8 @@ body.hah-ws-connecting .hah-ws-dot {
   border-left: 1px solid rgba(127, 119, 221, 0.18);
   border-right: 1px solid rgba(127, 119, 221, 0.18);
   border-bottom-color: rgba(127, 119, 221, 0.10);
+  border-top-left-radius: calc(var(--hah-radius-md) - 1px);
+  border-top-right-radius: calc(var(--hah-radius-md) - 1px);
 }
 
 .hah-mdm-chevron-sm {
@@ -8417,10 +8445,16 @@ button.hah-pt-flag:active {
    Right pane editor (letter mode takeover)
    ============================================================ */
 
+/* v0.8.199: discharge letter editor pane chrome migrated to design
+ * tokens. Outer border, radius, and head treatment now agree with
+ * every other card on the app — neutral grey border, --hah-radius-md
+ * corners, --hah-tint-header head fill, --hah-border-faint head
+ * bottom border. Internal layout (title styling, body padding,
+ * action buttons) unchanged. */
 .hah-dl-pane {
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -8436,8 +8470,8 @@ button.hah-pt-flag:active {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafbfc;
+  border-bottom: 1px solid var(--hah-border-faint);
+  background: var(--hah-tint-header);
   gap: 10px;
 }
 
@@ -9229,9 +9263,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_198_coloured_head_borders_release.html',
-  source: 'hospital_at_home_board_v0_8_198_coloured_head_borders_source.zip',
-  builtAt: '2026-05-11T19:54:06.907330',
+  filename: 'hospital_at_home_board_v0_8_200_head_corner_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_200_head_corner_fix_source.zip',
+  builtAt: '2026-05-11T20:09:10.547331',
   entry: 'desktop.html'
 };
 </script>
@@ -22012,10 +22046,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.198. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.200. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.198. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.200. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
