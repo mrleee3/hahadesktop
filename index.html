@@ -2670,10 +2670,15 @@ body.hah-ws-connecting .hah-ws-dot {
 
 /* v0.8.195: patient log card chrome unified with .hah-card. The
  * blue semantic head (.hah-log-head below) stays — it's the
- * "patient log" identity colour, distinct from the chrome. */
+ * "patient log" identity colour, distinct from the chrome.
+ *
+ * v0.8.197 option A trial: card border colour overridden to the
+ * same blue as the head's bottom border. The head now reads as
+ * fully bordered in its semantic colour rather than the previous
+ * grey-perimeter / blue-bottom split. Whole-card identity colour. */
 .hah-log-card {
   background: var(--desk-panel);
-  border: 1px solid var(--hah-border);
+  border: 1px solid rgba(55, 138, 221, 0.2);
   border-radius: var(--hah-radius-md);
   overflow: hidden;
 }
@@ -3903,9 +3908,20 @@ body.hah-ws-connecting .hah-ws-dot {
   border-bottom-color: rgba(0,0,0,0.08);
 }
 
+/* v0.8.197 option A trial: coloured-MDM cards get their outer border
+ * in the same semantic colour as the head, not just the head's
+ * bottom border. Card-wide identity colour. */
+.hah-mdm-widget[data-mdm-type="micro_mdm"] {
+  border-color: rgba(29, 158, 117, 0.22);
+}
+
 .hah-mdm-widget[data-mdm-type="micro_mdm"] .hah-mdm-head {
   background: rgba(29, 158, 117, 0.08);
   border-bottom-color: rgba(29, 158, 117, 0.22);
+}
+
+.hah-mdm-widget[data-mdm-type="resp_mdm"] {
+  border-color: rgba(127, 119, 221, 0.24);
 }
 
 .hah-mdm-widget[data-mdm-type="resp_mdm"] .hah-mdm-head {
@@ -9205,9 +9221,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_196_flat_cards_release.html',
-  source: 'hospital_at_home_board_v0_8_196_flat_cards_source.zip',
-  builtAt: '2026-05-11T19:39:15.982819',
+  filename: 'hospital_at_home_board_v0_8_197_coloured_card_borders_release.html',
+  source: 'hospital_at_home_board_v0_8_197_coloured_card_borders_source.zip',
+  builtAt: '2026-05-11T19:47:09.850579',
   entry: 'desktop.html'
 };
 </script>
@@ -21988,10 +22004,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.196. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.197. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.196. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.197. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
