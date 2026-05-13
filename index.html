@@ -771,10 +771,16 @@ html, body {
    on the right and `env(titlebar-area-x)` is 0, so the brand keeps
    its original position. The search is centred via absolute
    positioning regardless, and the right side has no header content
-   to clear from the OS-controls overlay area. */
+   to clear from the OS-controls overlay area.
+   v0.8.224: now there IS right-side content (account avatar). Pad
+   the right side in WCO mode to clear the OS controls overlay
+   region. Computed as max(gap-5, viewport-width - titlebar-area-x -
+   titlebar-area-width) — the part of the window NOT covered by the
+   titlebar area, which is where the OS controls sit. */
 @media (display-mode: window-controls-overlay) {
   .hah-header {
     padding-left: max(var(--desk-gap-5), env(titlebar-area-x, 0px));
+    padding-right: max(var(--desk-gap-5), calc(100vw - env(titlebar-area-x) - env(titlebar-area-width)));
   }
 }
 
@@ -1350,6 +1356,278 @@ html, body {
   }
 }
 
+
+/* ───────────────────────────────────────────────────────────────────
+   v0.8.224 — Account avatar + flyout (Build B Phases 1+2)
+   ─────────────────────────────────────────────────────────────────── */
+
+/* Push the right-side header group to the far right. The header is a
+   flex container with brand-left, absolute-positioned search-centre,
+   and now avatar-right. `margin-left: auto` on the right group eats
+   the remaining flex space, parking the avatar against the right edge
+   (plus whatever padding the WCO @media rule applies for OS controls). */
+.hah-header .hah-header-group-right {
+  margin-left: auto;
+  gap: var(--desk-gap-2);
+}
+
+.hah-account-avatar {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.42);
+  background-color: rgba(255, 255, 255, 0.16);
+  background-position: center;
+  background-size: cover;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.hah-account-avatar:hover {
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.62);
+}
+
+.hah-account-avatar:active {
+  transform: scale(0.96);
+}
+
+.hah-account-avatar.is-signed-out .hah-account-avatar-initials::after {
+  /* Use a generic person glyph when signed out — small inline SVG via
+     content is tricky; using a unicode-ish marker is simpler. */
+  content: '';
+}
+
+.hah-account-avatar.is-signed-out {
+  /* Render a generic user silhouette via SVG background when no
+     initials. Inline SVG data URI, white stroke. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.7' stroke-linecap='round'><circle cx='12' cy='9' r='3.5'/><path d='M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>");
+  background-size: 22px 22px;
+  background-repeat: no-repeat;
+}
+
+.hah-account-avatar.is-signed-out .hah-account-avatar-initials {
+  display: none;
+}
+
+/* ── Flyout (Popover API) ───────────────────────────────────────── */
+
+.hah-account-flyout {
+  /* Reset popover defaults */
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  /* Top-layer positioning — anchored manually since CSS Anchor
+     Positioning isn't universally supported yet. Use fixed positioning
+     with right-aligned coords matching the avatar location. */
+  position: fixed;
+  top: calc(var(--desk-header-h) + 8px);
+  right: var(--desk-gap-5);
+  width: 320px;
+  z-index: 9000;
+}
+
+@media (display-mode: window-controls-overlay) {
+  /* Shift away from the OS controls overlay area on Windows. */
+  .hah-account-flyout {
+    right: max(var(--desk-gap-5), calc(100vw - env(titlebar-area-x) - env(titlebar-area-width)));
+  }
+}
+
+.hah-account-flyout::backdrop {
+  /* Subtle dim behind the flyout so it stands out and stray clicks
+     dismiss it via Popover API's light-dismiss behaviour. */
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.hah-account-flyout > div {
+  background: #ffffff;
+  color: var(--desk-text);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 16px;
+  font-family: inherit;
+}
+
+.hah-account-flyout-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.hah-account-flyout-avatar-big {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(10, 132, 255, 0.12);
+  color: #0a84ff;
+  background-position: center;
+  background-size: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.hah-account-flyout-avatar-big.is-empty {
+  background-color: rgba(15, 23, 42, 0.06);
+  color: rgba(15, 23, 42, 0.55);
+}
+.hah-account-flyout-avatar-big.is-empty svg {
+  width: 24px;
+  height: 24px;
+}
+
+.hah-account-flyout-identity {
+  min-width: 0;
+  flex: 1;
+}
+.hah-account-flyout-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--desk-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hah-account-flyout-email {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--desk-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hah-account-flyout-section {
+  padding-top: 12px;
+}
+
+.hah-account-flyout-field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--desk-text-muted);
+  margin-bottom: 6px;
+}
+
+.hah-account-flyout-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--desk-text);
+  background: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.hah-account-flyout-input:focus {
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+}
+
+.hah-account-flyout-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--desk-text-muted);
+}
+
+.hah-account-flyout-actions {
+  padding-top: 14px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.hah-account-flyout-actions.is-primary-only {
+  justify-content: stretch;
+}
+.hah-account-flyout-actions.is-primary-only > * {
+  flex: 1;
+}
+
+.hah-account-flyout-secondary {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--desk-text);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 140ms ease;
+}
+.hah-account-flyout-secondary:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+/* Microsoft-standard sign-in button. Spec: white background, dark
+   text, the 4-coloured Microsoft logo on the left, 14px height of
+   the logo. Source: Microsoft branding guidelines for sign-in. */
+.hah-account-flyout-msbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 41px;
+  padding: 0 16px;
+  border: 1px solid #8c8c8c;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5e5e5e;
+  font-weight: 600;
+  font-size: 15px;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.hah-account-flyout-msbtn:hover {
+  background: #f3f3f3;
+  border-color: #5e5e5e;
+}
+.hah-account-flyout-msbtn:active {
+  background: #e6e6e6;
+}
+.hah-account-flyout-msbtn svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hah-account-avatar,
+  .hah-account-flyout-input,
+  .hah-account-flyout-secondary,
+  .hah-account-flyout-msbtn {
+    transition: none;
+  }
+}
 
 </style>
   <style>
@@ -9794,9 +10072,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_223_pwa_cache_bust_release.html',
-  source: 'hospital_at_home_board_v0_8_223_pwa_cache_bust_source.zip',
-  builtAt: '2026-05-13T20:45:14.225145',
+  filename: 'hospital_at_home_board_v0_8_224_microsoft_identity_release.html',
+  source: 'hospital_at_home_board_v0_8_224_microsoft_identity_source.zip',
+  builtAt: '2026-05-13T21:10:59.509728',
   entry: 'desktop.html'
 };
 </script>
@@ -9808,6 +10086,23 @@ window.__HAH_BOARD_BUILD__ = {
   const state = {
     route: { view: 'board', entityId: null, preset: null },
     boardround: { currentIndex: 0 },
+    // v0.8.224 (Phase 1 of Build B): identity slice driven by
+    // js/22c-desktop-identity.js. Updated whenever MSAL sign-in
+    // completes, when the user edits their display name, or when
+    // they sign out. `signedIn: false` is the initial / signed-out
+    // state. Shell renders the topbar avatar from this slice.
+    actorIdentity: {
+      oid: null,
+      name: null,
+      email: null,
+      displayName: null,
+      photoBlobUrl: null,
+      signedIn: false
+    },
+    // v0.8.224: shell tracks whether the account flyout is open so
+    // the avatar can show an active/pressed state and so a re-render
+    // doesn't close it unexpectedly.
+    accountFlyoutOpen: false,
     selectedPatientId: null,
     selectedTaskId: null,
     selectedInsightKey: null,
@@ -10388,6 +10683,248 @@ window.HAHBoard = window.HAHBoard || {};
 
 </script>
   <script>
+/* inlined: js/22c-desktop-identity.js */
+/* ─── H@H Board — Desktop identity (v0.8.224 / Phase 1+2 of Build B) ────
+   Owns the current user's identity for write attribution and the
+   in-app account avatar / flyout. Sits between MSAL (which provides
+   the raw account + access token) and the store (which holds the
+   identity state slice).
+
+   Identity sources, in order of precedence:
+   1. MSAL account (homeAccountId / oid, name, username)
+   2. Microsoft Graph /me profile (name, email, jobTitle if work account)
+   3. Microsoft Graph /me/photo/$value (binary JPEG → blob URL)
+   4. Per-install display-name override (localStorage, keyed by oid)
+
+   What this module does NOT do:
+   - Trigger the MSAL sign-in flow itself. That belongs in the shared
+     JSON store today (and eventually a dedicated auth-trigger module).
+     This module is told `applyAccount(...)` after MSAL succeeds.
+   - Persist anything to the shared JSON. Display name lives in
+     localStorage per install per oid for Phase 1+2. Later it'll move
+     to a user-profile section of the shared JSON.
+────────────────────────────────────────────────────────────────────────── */
+
+window.HAHBoard = window.HAHBoard || {};
+
+(function () {
+  const GRAPH_ROOT = 'https://graph.microsoft.com/v1.0';
+  const DISPLAY_NAME_KEY_PREFIX = 'hah_board_identity_displayname_';
+  const FALLBACK_NAME = 'Board user';
+
+  // In-memory state — also synced into the store via setIdentity().
+  let cached = {
+    oid: null,
+    name: null,         // Microsoft profile name, e.g. "Lee Klungarvuth"
+    email: null,
+    displayName: null,  // What gets stamped in writes — user-editable
+    photoBlobUrl: null,
+    photoFetchedAt: null
+  };
+
+  // ── localStorage helpers ───────────────────────────────────────────
+
+  function loadDisplayNameOverride(oid) {
+    if (!oid) return null;
+    try {
+      return localStorage.getItem(DISPLAY_NAME_KEY_PREFIX + oid) || null;
+    } catch (_) { return null; }
+  }
+
+  function saveDisplayNameOverride(oid, name) {
+    if (!oid) return;
+    try {
+      if (name && name.trim()) {
+        localStorage.setItem(DISPLAY_NAME_KEY_PREFIX + oid, name.trim());
+      } else {
+        localStorage.removeItem(DISPLAY_NAME_KEY_PREFIX + oid);
+      }
+    } catch (_) {}
+  }
+
+  // ── Store integration ──────────────────────────────────────────────
+
+  function pushToStore() {
+    const store = window.HAHBoard && window.HAHBoard.store;
+    if (!store || typeof store.setState !== 'function') return;
+    store.setState({
+      actorIdentity: {
+        oid: cached.oid,
+        name: cached.name,
+        email: cached.email,
+        displayName: cached.displayName,
+        photoBlobUrl: cached.photoBlobUrl,
+        signedIn: !!cached.oid
+      }
+    });
+  }
+
+  // ── Graph profile fetch ────────────────────────────────────────────
+
+  async function fetchProfileFromGraph(accessToken) {
+    if (!accessToken) return null;
+    try {
+      const res = await fetch(GRAPH_ROOT + '/me?$select=id,displayName,givenName,surname,mail,userPrincipalName,jobTitle', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (_) { return null; }
+  }
+
+  async function fetchPhotoFromGraph(accessToken) {
+    if (!accessToken) return null;
+    try {
+      // 48x48 is plenty for a topbar avatar; smaller fetch.
+      // Personal accounts may not have a 48x48 size — fall back to default photo.
+      const sizeRes = await fetch(GRAPH_ROOT + '/me/photos/48x48/$value', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      let blob = null;
+      if (sizeRes.ok) {
+        blob = await sizeRes.blob();
+      } else {
+        const fallback = await fetch(GRAPH_ROOT + '/me/photo/$value', {
+          headers: { Authorization: 'Bearer ' + accessToken }
+        });
+        if (!fallback.ok) return null;
+        blob = await fallback.blob();
+      }
+      if (!blob || blob.size < 64) return null; // too small to be a real photo
+      return URL.createObjectURL(blob);
+    } catch (_) { return null; }
+  }
+
+  // ── Public API ─────────────────────────────────────────────────────
+
+  /**
+   * Called after a successful MSAL login. Account is the MSAL account
+   * object (has homeAccountId, username, name, etc). accessToken is
+   * the bearer token for Graph calls.
+   */
+  async function applyAccount(account, accessToken) {
+    if (!account) return;
+    // homeAccountId is the canonical Microsoft identity for this user
+    // across all signed-in sessions. For personal accounts this is
+    // <oid>.<tenant>; we use the full string as the stable identifier.
+    const oid = String(account.homeAccountId || account.localAccountId || '').trim();
+    if (!oid) return;
+
+    cached.oid = oid;
+    cached.name = account.name || account.username || null;
+    cached.email = account.username || null;
+
+    // Apply any locally-saved display-name override for this oid.
+    const override = loadDisplayNameOverride(oid);
+    cached.displayName = (override && override.trim())
+      || cached.name
+      || FALLBACK_NAME;
+
+    pushToStore();
+
+    // Fetch fuller profile from Graph in the background.
+    fetchProfileFromGraph(accessToken).then((profile) => {
+      if (!profile) return;
+      // Only overwrite if Graph returns something better than the
+      // MSAL claim. MSAL's `name` often matches Graph's displayName
+      // anyway, but Graph is canonical for email (`mail` vs
+      // `userPrincipalName`).
+      if (profile.displayName) cached.name = profile.displayName;
+      if (profile.mail) cached.email = profile.mail;
+      else if (profile.userPrincipalName) cached.email = profile.userPrincipalName;
+
+      // Refresh the display name only if there's no override.
+      const overrideStill = loadDisplayNameOverride(oid);
+      if (!overrideStill) {
+        cached.displayName = cached.name || FALLBACK_NAME;
+      }
+      pushToStore();
+    }).catch(() => {});
+
+    // Fetch photo in the background.
+    fetchPhotoFromGraph(accessToken).then((blobUrl) => {
+      if (!blobUrl) return;
+      // Revoke any previous blob URL we created to avoid memory leak.
+      if (cached.photoBlobUrl) {
+        try { URL.revokeObjectURL(cached.photoBlobUrl); } catch (_) {}
+      }
+      cached.photoBlobUrl = blobUrl;
+      cached.photoFetchedAt = Date.now();
+      pushToStore();
+    }).catch(() => {});
+  }
+
+  /**
+   * Update the user-editable display name. Persists to localStorage
+   * for this oid. Empty/whitespace string clears the override and
+   * reverts to the Microsoft profile name.
+   */
+  function setDisplayName(name) {
+    if (!cached.oid) return;
+    const trimmed = (name || '').trim();
+    saveDisplayNameOverride(cached.oid, trimmed);
+    cached.displayName = trimmed || cached.name || FALLBACK_NAME;
+    pushToStore();
+  }
+
+  /**
+   * Returns the current actor identity for write attribution.
+   * Always returns an object — `oid` may be null if not signed in.
+   * `displayName` always has a value (falls back to 'Board user').
+   */
+  function getActor() {
+    return {
+      oid: cached.oid,
+      displayName: cached.displayName || FALLBACK_NAME
+    };
+  }
+
+  function isSignedIn() {
+    return !!cached.oid;
+  }
+
+  function clear() {
+    if (cached.photoBlobUrl) {
+      try { URL.revokeObjectURL(cached.photoBlobUrl); } catch (_) {}
+    }
+    cached = {
+      oid: null,
+      name: null,
+      email: null,
+      displayName: null,
+      photoBlobUrl: null,
+      photoFetchedAt: null
+    };
+    pushToStore();
+  }
+
+  /**
+   * Compute initials from a name. "Lee Klungarvuth" → "LK".
+   * "Dr Lee Klungarvuth" → "DK" (first + last). Single word →
+   * first two characters. No name → "?".
+   */
+  function computeInitials(name) {
+    const s = (name || '').trim();
+    if (!s) return '?';
+    const parts = s.split(/\s+/);
+    if (parts.length === 1) {
+      return s.slice(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  window.HAHBoard.identity = {
+    applyAccount,
+    setDisplayName,
+    getActor,
+    isSignedIn,
+    clear,
+    computeInitials
+  };
+})();
+
+</script>
+  <script>
 /* inlined: js/23-desktop-components.js */
 (function () {
   window.HAHBoard = window.HAHBoard || {};
@@ -10609,8 +11146,30 @@ window.HAHBoard = window.HAHBoard || {};
   }
 
   function getActorName() {
+    // v0.8.224: prefer identity-module display name (Microsoft profile +
+    // user-editable override) over the legacy free-text setting.
+    // The setting still works as a fallback for users who haven't
+    // signed in yet.
+    const identity = window.HAHBoard && window.HAHBoard.identity;
+    if (identity && identity.isSignedIn && identity.isSignedIn()) {
+      const actor = identity.getActor();
+      if (actor && actor.displayName) return actor.displayName;
+    }
     const text = String(actorProfile && actorProfile.name || '').trim();
     return text || 'Board user';
+  }
+
+  // v0.8.224: oid for the canonical Microsoft identity that wrote the
+  // change. Null when the user isn't signed in. Stamped alongside
+  // lastWriter on every write so we can track who-across-devices made
+  // a change once name-display can drift (overrides, profile changes).
+  function getActorOid() {
+    const identity = window.HAHBoard && window.HAHBoard.identity;
+    if (identity && identity.isSignedIn && identity.isSignedIn()) {
+      const actor = identity.getActor();
+      return (actor && actor.oid) || null;
+    }
+    return null;
   }
 
   function buildMutationId() {
@@ -10625,6 +11184,7 @@ window.HAHBoard = window.HAHBoard || {};
     state.updatedAt = nowIso();
     state.lastMutationId = buildMutationId();
     state.lastWriter = getActorName();
+    state.lastWriterOid = getActorOid();  // v0.8.224: canonical identity stamp
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (_err) {}
@@ -10736,7 +11296,7 @@ window.HAHBoard = window.HAHBoard || {};
       title: String(title || 'H@H Boardround Summary').trim() || 'H@H Boardround Summary',
       summaryText: text,
       createdAt: nowIso(),
-      createdBy: getActorName()
+      createdBy: getActorName(), createdByOid: getActorOid()
     };
     state.roundSummaries.unshift(row);
     state.roundSummaries = state.roundSummaries.slice(0, MAX_SUMMARY_ROWS);
@@ -10765,7 +11325,7 @@ window.HAHBoard = window.HAHBoard || {};
       ...current,
       ...cleanObject(patch),
       updatedAt: nowIso(),
-      updatedBy: getActorName()
+      updatedBy: getActorName(), updatedByOid: getActorOid()
     };
     appendAudit({
       type: 'patient-state',
@@ -10833,7 +11393,7 @@ window.HAHBoard = window.HAHBoard || {};
     Object.keys(state.patientStates).forEach((pid) => {
       const ps = state.patientStates[pid];
       if (ps && ps.boardStatus && ps.boardStatus !== 'Not discussed') {
-        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() };
       }
     });
     // JSON: enumerate all patients in the cached bundle and patch each
@@ -10887,7 +11447,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (prevId && prevId !== pid) {
       const prevPs = state.patientStates[prevId];
       if (prevPs && prevPs.boardStatus === 'In discussion') {
-        state.patientStates[prevId] = { ...prevPs, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+        state.patientStates[prevId] = { ...prevPs, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() };
       }
       // Record leftAt for previous
       if (round.patientTimings[prevId] && !round.patientTimings[prevId].leftAt) {
@@ -10897,7 +11457,7 @@ window.HAHBoard = window.HAHBoard || {};
     // Only set In discussion if current status is Not discussed (don't re-flag completed/deferred patients)
     const curPs = state.patientStates[pid] || {};
     if (curPs.boardStatus !== 'Discussed' && curPs.boardStatus !== 'Actioned' && curPs.boardStatus !== 'Deferred') {
-      state.patientStates[pid] = { ...curPs, boardStatus: 'In discussion', updatedAt: nowIso(), updatedBy: getActorName() };
+      state.patientStates[pid] = { ...curPs, boardStatus: 'In discussion', updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() };
     }
     // Record enteredAt if first entry
     if (!round.patientTimings[pid]) {
@@ -10952,7 +11512,7 @@ window.HAHBoard = window.HAHBoard || {};
     Object.keys(state.patientStates).forEach((pid) => {
       const ps = state.patientStates[pid];
       if (ps && ps.boardStatus === 'In discussion') {
-        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName() };
+        state.patientStates[pid] = { ...ps, boardStatus: 'Not discussed', updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() };
       }
     });
     const summary = {
@@ -11115,7 +11675,7 @@ window.HAHBoard = window.HAHBoard || {};
         ...state.customTasks[existingIndex],
         ...cleanObject(patch),
         updatedAt: nowIso(),
-        updatedBy: getActorName()
+        updatedBy: getActorName(), updatedByOid: getActorOid()
       };
       appendAudit({
         type: 'task-updated',
@@ -11133,7 +11693,7 @@ window.HAHBoard = window.HAHBoard || {};
       ...current,
       ...cleanObject(patch),
       updatedAt: nowIso(),
-      updatedBy: getActorName()
+      updatedBy: getActorName(), updatedByOid: getActorOid()
     };
     appendAudit({
       type: 'task-updated',
@@ -11158,11 +11718,11 @@ window.HAHBoard = window.HAHBoard || {};
       status: String(taskInput.status || 'Open').trim(),
       blocker: String(taskInput.blocker || '').trim(),
       createdFrom: String(taskInput.createdFrom || 'Board').trim(),
-      createdBy: getActorName(),
+      createdBy: getActorName(), createdByOid: getActorOid(),
       createdAt: String(taskInput.createdAt || nowIso()).trim(),
       boardLink: String(taskInput.boardLink || '').trim(),
       updatedAt: nowIso(),
-      updatedBy: getActorName()
+      updatedBy: getActorName(), updatedByOid: getActorOid()
     };
     if (!task.patientId || !task.title) return null;
     state.customTasks.unshift(task);
@@ -11706,6 +12266,7 @@ window.HAHBoard = window.HAHBoard || {};
     setActorName,
     promptActorName,
     getActorName,
+    getActorOid,
     getSyncInfo,
     getRecentAudit,
     getRecentSummaries,
@@ -11995,6 +12556,15 @@ window.HAHBoard = window.HAHBoard || {};
           name: account.name || '',
           homeAccountId: account.homeAccountId || ''
         };
+        // v0.8.224: propagate the account to the identity module so
+        // the topbar avatar / writer attribution updates immediately.
+        // `response.accessToken` is the bearer token from the login
+        // popup — saves an extra acquireTokenSilent() round-trip.
+        try {
+          if (window.HAHBoard.identity && typeof window.HAHBoard.identity.applyAccount === 'function') {
+            await window.HAHBoard.identity.applyAccount(account, response.accessToken);
+          }
+        } catch (_) { /* identity hookup is best-effort */ }
       }
       state.lastOperation = 'Signed in to Microsoft';
       state.lastError = '';
@@ -12024,6 +12594,51 @@ window.HAHBoard = window.HAHBoard || {};
     } catch (_) {
       const response = await app.acquireTokenPopup({ scopes: GRAPH_SCOPES });
       return response.accessToken;
+    }
+  }
+
+  // v0.8.224: silent identity restoration. Called once at app startup
+  // by the shell. If MSAL has a cached account, we acquire a token
+  // silently and hand it to the identity module — no user prompt, no
+  // popup. The avatar populates seamlessly on launch.
+  // Returns true if we restored, false if the user needs to sign in
+  // interactively (no cached account or silent acquisition failed).
+  async function tryRestoreIdentitySilently() {
+    try {
+      // Only attempt if there are configured settings and the library
+      // can load — otherwise skip silently (e.g., never-signed-in user).
+      if (!settings.clientId) return false;
+      const app = await getMsalApp();
+      let account = app.getActiveAccount();
+      if (!account) {
+        const accounts = app.getAllAccounts();
+        account = accounts && accounts[0];
+        if (account) app.setActiveAccount(account);
+      }
+      if (!account) return false;
+      const response = await app.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
+      if (window.HAHBoard.identity && typeof window.HAHBoard.identity.applyAccount === 'function') {
+        await window.HAHBoard.identity.applyAccount(account, response.accessToken);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function signOutInteractive() {
+    try {
+      const app = await getMsalApp();
+      const account = app.getActiveAccount();
+      // logoutPopup avoids a full page redirect; the splash / app
+      // stays in place. Skipping account hint means MSAL clears all
+      // local accounts which is what we want for "sign out".
+      await app.logoutPopup({ account, mainWindowRedirectUri: window.location.href });
+    } catch (_) { /* best effort */ }
+    state.account = null;
+    saveState();
+    if (window.HAHBoard.identity && typeof window.HAHBoard.identity.clear === 'function') {
+      window.HAHBoard.identity.clear();
     }
   }
 
@@ -12132,7 +12747,7 @@ window.HAHBoard = window.HAHBoard || {};
       },
       meta: {
         lastMigrationAt: '',
-        lastWriter: getActorName()
+        lastWriter: getActorName(), lastWriterOid: getActorOid()
       }
     });
   }
@@ -12140,14 +12755,14 @@ window.HAHBoard = window.HAHBoard || {};
   function makeTasksSchema() {
     return Object.assign(schemaHeader('tasks'), {
       tasks: [],
-      meta: { lastWriter: getActorName() }
+      meta: metaStamp()
     });
   }
 
   function makeRoundIndexSchema() {
     return Object.assign(schemaHeader('round-index'), {
       dates: [],
-      meta: { lastWriter: getActorName() }
+      meta: metaStamp()
     });
   }
 
@@ -12211,7 +12826,7 @@ window.HAHBoard = window.HAHBoard || {};
       },
       meta: {
         updatedAt: nowIso(),
-        updatedBy: getActorName(),
+        updatedBy: getActorName(), updatedByOid: getActorOid(),
         version: 1
       }
     });
@@ -12223,7 +12838,7 @@ window.HAHBoard = window.HAHBoard || {};
       present: [],
       discussedPatientIds: [],
       summaries: [],
-      meta: { lastWriter: getActorName() }
+      meta: metaStamp()
     });
   }
 
@@ -12308,7 +12923,7 @@ window.HAHBoard = window.HAHBoard || {};
 
   async function savePatient(patient) {
     if (!patient || !patient.id) throw new Error('Cannot save patient without an id.');
-    patient.meta = Object.assign({}, patient.meta || {}, { updatedAt: nowIso(), updatedBy: getActorName(), version: (patient.meta && patient.meta.version || 0) + 1 });
+    patient.meta = Object.assign({}, patient.meta || {}, { updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid(), version: (patient.meta && patient.meta.version || 0) + 1 });
     return putJson(childPath(settings.folderPath, `patients/${patient.id}.json`), patient);
   }
 
@@ -12393,7 +13008,7 @@ window.HAHBoard = window.HAHBoard || {};
     next.patients = Object.assign({}, next.patients || {});
     next.patients.archivedIds = ids.slice();
     next.updatedAt = nowIso();
-    next.meta = Object.assign({}, next.meta || {}, { lastWriter: getActorName() });
+    next.meta = Object.assign({}, next.meta || {}, Object.assign({}, metaStamp()));
     return next;
   }
 
@@ -12657,10 +13272,10 @@ window.HAHBoard = window.HAHBoard || {};
     }
     const rows = Array.isArray(doc.tasks) ? doc.tasks.slice() : [];
     const idx = rows.findIndex(function (row) { return String(row.id) === String(task.id); });
-    if (idx >= 0) rows[idx] = Object.assign({}, rows[idx], task, { updatedAt: nowIso(), updatedBy: getActorName() });
-    else rows.unshift(Object.assign({}, task, { createdAt: task.createdAt || nowIso(), updatedAt: nowIso(), updatedBy: getActorName() }));
+    if (idx >= 0) rows[idx] = Object.assign({}, rows[idx], task, { updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() });
+    else rows.unshift(Object.assign({}, task, { createdAt: task.createdAt || nowIso(), updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() }));
     doc.tasks = rows;
-    doc.meta = Object.assign({}, doc.meta || {}, { lastWriter: getActorName() });
+    doc.meta = Object.assign({}, doc.meta || {}, Object.assign({}, metaStamp()));
     const saved = await saveTasks(doc);
     try {
       await appendAudit({
@@ -12682,9 +13297,9 @@ window.HAHBoard = window.HAHBoard || {};
     const rows = Array.isArray(doc.tasks) ? doc.tasks.slice() : [];
     const idx = rows.findIndex(function (row) { return String(row.id) === id; });
     if (idx < 0) return null;
-    rows[idx] = Object.assign({}, rows[idx], patch || {}, { updatedAt: nowIso(), updatedBy: getActorName() });
+    rows[idx] = Object.assign({}, rows[idx], patch || {}, { updatedAt: nowIso(), updatedBy: getActorName(), updatedByOid: getActorOid() });
     doc.tasks = rows;
-    doc.meta = Object.assign({}, doc.meta || {}, { lastWriter: getActorName() });
+    doc.meta = Object.assign({}, doc.meta || {}, Object.assign({}, metaStamp()));
     const saved = await saveTasks(doc);
     try {
       await appendAudit({
@@ -12882,7 +13497,7 @@ window.HAHBoard = window.HAHBoard || {};
     next.patients.activeIds = ids.slice();
     next.patients.sortOrder = ids.slice();
     next.updatedAt = nowIso();
-    next.meta = Object.assign({}, next.meta || {}, { lastWriter: getActorName() });
+    next.meta = Object.assign({}, next.meta || {}, Object.assign({}, metaStamp()));
     return next;
   }
 
@@ -13283,6 +13898,37 @@ window.HAHBoard = window.HAHBoard || {};
     return 'Board user';
   }
 
+  // v0.8.224: oid alongside name for write attribution to the canonical
+  // Microsoft identity. Returns null when not signed in. Stamped into
+  // every write that already stamps lastWriter, via the metaStamp()
+  // helper below.
+  function getActorOid() {
+    if (window.HAHBoard.ops && typeof window.HAHBoard.ops.getActorOid === 'function') {
+      return window.HAHBoard.ops.getActorOid();
+    }
+    return null;
+  }
+
+  // v0.8.224: build the dual-field writer stamp. Returns an object
+  // suitable for spreading into a meta block:
+  //   { ...metaStamp() } → { lastWriter: 'Dr Lee', lastWriterOid: 'xyz' }
+  function metaStamp() {
+    return {
+      lastWriter: getActorName(),
+      lastWriterOid: getActorOid()
+    };
+  }
+
+  // v0.8.224: build a per-record updatedBy stamp. Same dual-field
+  // approach but with the field names tasks / patients use.
+  //   Object.assign(rec, recordStamp())
+  function recordStamp() {
+    return {
+      updatedBy: getActorName(),
+      updatedByOid: getActorOid()
+    };
+  }
+
   window.HAHBoard.sharedJsonStore = {
     getInfo,
     setClientId,
@@ -13290,6 +13936,8 @@ window.HAHBoard = window.HAHBoard || {};
     promptClientId,
     promptFolderPath,
     signIn,
+    signOutInteractive,
+    tryRestoreIdentitySilently,
     initialiseStore,
     testReadWrite,
     createTestPatient,
@@ -22798,10 +23446,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.223. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.224. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.223. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.224. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25505,6 +26153,13 @@ window.HAHBoard = window.HAHBoard || {};
       window.HAHBoard.update.init();
     }
     startJsonUpdatePoller();
+    // v0.8.224: silent identity restoration. If MSAL has a cached
+    // account (from a previous sign-in), pull it through to the
+    // identity module without prompting — populates the topbar
+    // avatar and writer attribution on every launch.
+    if (window.HAHBoard.sharedJsonStore && typeof window.HAHBoard.sharedJsonStore.tryRestoreIdentitySilently === 'function') {
+      window.HAHBoard.sharedJsonStore.tryRestoreIdentitySilently().catch(function () {});
+    }
     // v0.8.221: splash dismissal is click-only now — no auto-dismiss
     // call at end of init. The splash stays up until the user clicks
     // anywhere on it (via bindSplashClickDismiss bound at top of init).
@@ -25588,6 +26243,25 @@ window.HAHBoard = window.HAHBoard || {};
               aria-label="Global search"
             />
           </div>
+
+          <!-- v0.8.224: account avatar on the far right of the topbar.
+               Rendered by updateAccountAvatar() from state.actorIdentity.
+               When signed in: shows initials or photo, clicking opens
+               the account flyout (managed by Popover API). When not
+               signed in: shows a generic user icon, clicking opens
+               the flyout with a Sign-in CTA. -->
+          <div class="hah-header-group hah-header-group-right">
+            <button
+              type="button"
+              id="hahAccountAvatarBtn"
+              class="hah-account-avatar"
+              popovertarget="hahAccountFlyout"
+              aria-label="Account"
+              title="Account"
+            >
+              <span id="hahAccountAvatarInitials" class="hah-account-avatar-initials">?</span>
+            </button>
+          </div>
         </header>
 
         <nav class="hah-nav" id="hahNav">
@@ -25642,6 +26316,15 @@ window.HAHBoard = window.HAHBoard || {};
         <div class="hah-resize-handle" id="hahResizeRight" data-resize="right"></div>
         <aside class="hah-right-pane" id="hahRightPane"></aside>
       </div>
+
+      <!-- v0.8.224: account flyout panel. Uses the Popover API
+           (Edge 114+) — the avatar button has popovertarget pointing
+           here, so opening / closing / light-dismiss / focus
+           management are all handled by the browser. We just render
+           the content. -->
+      <div id="hahAccountFlyout" popover="auto" class="hah-account-flyout">
+        <div id="hahAccountFlyoutBody"></div>
+      </div>
     `;
   }
 
@@ -25663,6 +26346,15 @@ window.HAHBoard = window.HAHBoard || {};
       const action = actionTarget.getAttribute('data-action');
       if (action === 'open-settings') {
         router.navigate({ view: 'settings' });
+        return;
+      }
+      // v0.8.224: account flyout actions.
+      if (action === 'account-sign-in') {
+        handleAccountSignIn();
+        return;
+      }
+      if (action === 'account-sign-out') {
+        handleAccountSignOut();
         return;
       }
       if (action === 'sync-json') {
@@ -25774,6 +26466,28 @@ window.HAHBoard = window.HAHBoard || {};
       if (screen && typeof screen.handleChange === 'function') {
         screen.handleChange(event, state);
       }
+      // v0.8.224: account display-name input commits on change/blur.
+      // (Browser change event fires when an input loses focus after edit.)
+      if (event.target && event.target.id === 'hahAccountDisplayNameInput') {
+        const next = String(event.target.value || '').trim();
+        if (window.HAHBoard.identity && typeof window.HAHBoard.identity.setDisplayName === 'function') {
+          window.HAHBoard.identity.setDisplayName(next);
+        }
+      }
+    });
+
+    // v0.8.224: also commit display name on Enter, and close the
+    // flyout. Keeps "type-and-press-Enter" as a discoverable shortcut.
+    rootEl.addEventListener('keydown', function (event) {
+      if (event.target && event.target.id === 'hahAccountDisplayNameInput' && event.key === 'Enter') {
+        event.preventDefault();
+        const next = String(event.target.value || '').trim();
+        if (window.HAHBoard.identity && typeof window.HAHBoard.identity.setDisplayName === 'function') {
+          window.HAHBoard.identity.setDisplayName(next);
+        }
+        const flyout = document.getElementById('hahAccountFlyout');
+        if (flyout && typeof flyout.hidePopover === 'function') flyout.hidePopover();
+      }
     });
 
     const search = rootEl.querySelector('#hahGlobalSearch');
@@ -25790,6 +26504,43 @@ window.HAHBoard = window.HAHBoard || {};
         if (input) input.focus();
       }
     });
+  }
+
+  // v0.8.224: account action handlers.
+  async function handleAccountSignIn() {
+    const jsonStore = window.HAHBoard.sharedJsonStore;
+    if (!jsonStore) return;
+    // The shared JSON store's signIn() drives the MSAL loginPopup
+    // flow and threads the resulting account into the identity
+    // module. If MSAL config isn't set up yet (no clientId), bounce
+    // the user to Settings to enter it.
+    try {
+      const info = jsonStore.getInfo();
+      if (!info || !info.clientId) {
+        window.alert('Add your Microsoft application (client) ID in Settings before signing in.');
+        router.navigate({ view: 'settings' });
+        return;
+      }
+      await jsonStore.signIn();
+      // Close the flyout so the user sees the avatar update.
+      const flyout = document.getElementById('hahAccountFlyout');
+      if (flyout && typeof flyout.hidePopover === 'function') flyout.hidePopover();
+    } catch (err) {
+      window.alert('Sign-in failed: ' + (err && err.message ? err.message : err));
+    }
+  }
+
+  async function handleAccountSignOut() {
+    const jsonStore = window.HAHBoard.sharedJsonStore;
+    if (!jsonStore || typeof jsonStore.signOutInteractive !== 'function') return;
+    if (!window.confirm('Sign out of your Microsoft account on this device?')) return;
+    try {
+      await jsonStore.signOutInteractive();
+      const flyout = document.getElementById('hahAccountFlyout');
+      if (flyout && typeof flyout.hidePopover === 'function') flyout.hidePopover();
+    } catch (err) {
+      window.alert('Sign-out failed: ' + (err && err.message ? err.message : err));
+    }
   }
 
   async function performSharedJsonSync(stateSnapshot) {
@@ -25878,6 +26629,7 @@ window.HAHBoard = window.HAHBoard || {};
   function renderFromState(state) {
     updateHeader(state);
     updateNav(state);
+    updateAccount(state);
     updatePanes(state);
   }
 
@@ -25888,6 +26640,100 @@ window.HAHBoard = window.HAHBoard || {};
     // board page when manual action is needed). The hahEnvironmentLabel
     // kicker was also removed; the left nav rail makes the current view
     // self-evident.
+  }
+
+  // v0.8.224: account avatar + flyout rendering. Reads
+  // state.actorIdentity (populated by the identity module) and:
+  //   - sets initials / photo on the avatar button
+  //   - rebuilds flyout body (signed-in view or signed-out CTA)
+  // Both surfaces re-render on every state change since identity
+  // changes are infrequent — no caching/memoization needed.
+  function updateAccount(state) {
+    const identity = state.actorIdentity || {};
+    const signedIn = !!identity.signedIn;
+
+    // Avatar button
+    const avatarBtn = rootEl.querySelector('#hahAccountAvatarBtn');
+    const initialsEl = rootEl.querySelector('#hahAccountAvatarInitials');
+    if (avatarBtn && initialsEl) {
+      avatarBtn.classList.toggle('is-signed-in', signedIn);
+      avatarBtn.classList.toggle('is-signed-out', !signedIn);
+      const ident = window.HAHBoard.identity;
+      const initials = signedIn && ident
+        ? ident.computeInitials(identity.displayName || identity.name)
+        : '';
+      if (signedIn && identity.photoBlobUrl) {
+        avatarBtn.style.backgroundImage = 'url(' + JSON.stringify(identity.photoBlobUrl) + ')';
+        initialsEl.textContent = '';
+        initialsEl.style.display = 'none';
+      } else {
+        avatarBtn.style.backgroundImage = '';
+        initialsEl.style.display = '';
+        initialsEl.textContent = signedIn ? initials : '';
+      }
+      avatarBtn.setAttribute('aria-label', signedIn ? ('Account — ' + (identity.displayName || 'signed in')) : 'Sign in to your Microsoft account');
+      avatarBtn.setAttribute('title', signedIn ? (identity.displayName || 'Signed in') : 'Sign in');
+    }
+
+    // Flyout body
+    const body = rootEl.querySelector('#hahAccountFlyoutBody');
+    if (body) {
+      body.innerHTML = signedIn ? renderAccountFlyoutSignedIn(identity) : renderAccountFlyoutSignedOut();
+    }
+  }
+
+  function renderAccountFlyoutSignedIn(identity) {
+    const ident = window.HAHBoard.identity;
+    const initials = ident ? ident.computeInitials(identity.displayName || identity.name) : '';
+    const displayName = identity.displayName || '';
+    const email = identity.email || '';
+    const photoUrl = identity.photoBlobUrl || '';
+    const big = photoUrl
+      ? '<div class="hah-account-flyout-avatar-big" style="background-image:url(' + JSON.stringify(photoUrl) + ');"></div>'
+      : '<div class="hah-account-flyout-avatar-big"><span>' + escapeHtml(initials) + '</span></div>';
+    return [
+      '<div class="hah-account-flyout-header">',
+      big,
+      '<div class="hah-account-flyout-identity">',
+      '<div class="hah-account-flyout-name">' + escapeHtml(displayName) + '</div>',
+      email ? '<div class="hah-account-flyout-email">' + escapeHtml(email) + '</div>' : '',
+      '</div>',
+      '</div>',
+      '<div class="hah-account-flyout-section">',
+      '<label class="hah-account-flyout-field-label" for="hahAccountDisplayNameInput">Display name in writes</label>',
+      '<input type="text" id="hahAccountDisplayNameInput" class="hah-account-flyout-input" value="' + escapeHtml(displayName) + '" placeholder="e.g. Dr Lee" data-action="account-edit-display-name" />',
+      '<div class="hah-account-flyout-hint">Stamped on board rounds, tasks, and edits. Defaults to your Microsoft profile name; edit to add a title or use a different form.</div>',
+      '</div>',
+      '<div class="hah-account-flyout-actions">',
+      '<button type="button" class="hah-account-flyout-secondary" data-action="account-sign-out">Sign out</button>',
+      '</div>'
+    ].join('');
+  }
+
+  function renderAccountFlyoutSignedOut() {
+    return [
+      '<div class="hah-account-flyout-header is-empty">',
+      '<div class="hah-account-flyout-avatar-big is-empty">',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="3.5"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
+      '</div>',
+      '<div class="hah-account-flyout-identity">',
+      '<div class="hah-account-flyout-name">Not signed in</div>',
+      '<div class="hah-account-flyout-email">Your changes will be attributed to "Board user"</div>',
+      '</div>',
+      '</div>',
+      '<div class="hah-account-flyout-actions is-primary-only">',
+      '<button type="button" class="hah-account-flyout-msbtn" data-action="account-sign-in">',
+      // Microsoft 4-square logo
+      '<svg viewBox="0 0 21 21" focusable="false">',
+      '<rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>',
+      '<rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>',
+      '<rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>',
+      '<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>',
+      '</svg>',
+      '<span>Sign in with Microsoft</span>',
+      '</button>',
+      '</div>'
+    ].join('');
   }
 
   function updateNav(state) {
