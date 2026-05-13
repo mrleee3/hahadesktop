@@ -644,7 +644,15 @@
   <style>
 /* inlined: css/desktop-shell.css */
 :root {
-  --desk-header-h: 72px;
+  /* v0.8.225: header dropped 72px → 56px to match the M365 visual
+     rhythm. Word, Excel, OneNote etc all sit around 40–48px on
+     Windows 11; 56px is a half-step that gives the in-bar content
+     (search input, avatar) generous breathing room while shrinking
+     the dead space significantly. Edge's WCO overlay height is
+     ~40–48px, so at 56px the OS controls fill most but not all of
+     the bar height — known acceptable trade-off. Drop to 48px in a
+     future build if controls feel stranded. */
+  --desk-header-h: 56px;
   --desk-nav-w: 56px;
   --desk-left-w: 292px;
   --desk-right-w: 680px;
@@ -795,12 +803,14 @@ html, body {
 .hah-header .hah-search {
   width: 420px;
   max-width: 100%;
-  height: 40px;
-  border-radius: 12px;
+  /* v0.8.225: height dropped 40 → 34 to sit naturally in the 56px
+     bar with 11px top/bottom breathing room. */
+  height: 34px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.15);
   padding: 0 14px;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   color: #fff;
 }
@@ -949,7 +959,8 @@ html, body {
 }
 
 .hah-brand {
-  font-size: 20px;
+  /* v0.8.225: 20 → 17 to sit naturally in the 56px bar. */
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -1377,15 +1388,16 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  /* v0.8.225: 34 → 30 to match the 56px bar's reduced rhythm. */
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.42);
   background-color: rgba(255, 255, 255, 0.16);
   background-position: center;
   background-size: cover;
   color: #fff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -10072,9 +10084,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_224_microsoft_identity_release.html',
-  source: 'hospital_at_home_board_v0_8_224_microsoft_identity_source.zip',
-  builtAt: '2026-05-13T21:10:59.509728',
+  filename: 'hospital_at_home_board_v0_8_225_topbar_56px_release.html',
+  source: 'hospital_at_home_board_v0_8_225_topbar_56px_source.zip',
+  builtAt: '2026-05-13T21:25:51.669182',
   entry: 'desktop.html'
 };
 </script>
@@ -23446,10 +23458,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.224. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.225. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.224. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.225. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
