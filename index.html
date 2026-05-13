@@ -9723,9 +9723,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_218_splash_click_robust_release.html',
-  source: 'hospital_at_home_board_v0_8_218_splash_click_robust_source.zip',
-  builtAt: '2026-05-13T18:51:06.495782',
+  filename: 'hospital_at_home_board_v0_8_219_splash_syntax_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_219_splash_syntax_fix_source.zip',
+  builtAt: '2026-05-13T18:56:13.582048',
   entry: 'desktop.html'
 };
 </script>
@@ -22727,10 +22727,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.218. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.219. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.218. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.219. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25505,7 +25505,6 @@ window.HAHBoard = window.HAHBoard || {};
         if (splash.parentNode) splash.parentNode.removeChild(splash);
       }, SPLASH_FADE_MS + 60);
     }, wait);
-  }
   }
 
   function renderShell() {
