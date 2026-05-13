@@ -9541,8 +9541,24 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       overflow: hidden; transition: opacity .9s ease, visibility 0s linear .9s;
       /* v0.8.217: dismissable on click — see splashClickToDismiss
          handler in 22-desktop-shell.js. Cursor hint makes the
-         affordance discoverable. */
+         affordance discoverable.
+         v0.8.220: explicit `app-region: no-drag` because in PWA WCO
+         mode Edge treats the title-bar-overlay region (top ~30px of
+         the window) as a window-drag region by default. The splash
+         overlays that region as a fixed-position element, but Edge's
+         drag handling can still intercept pointer events in that
+         strip unless the element opts out. Setting no-drag on the
+         splash and all its children guarantees clicks land on our
+         handler rather than being interpreted as window-drag intent. */
       cursor: pointer;
+      -webkit-app-region: no-drag;
+      app-region: no-drag;
+    }
+    /* v0.8.220: ensure every child element of the splash also
+       opts out of any inherited drag region. */
+    #hahDesktopSplash * {
+      -webkit-app-region: no-drag;
+      app-region: no-drag;
     }
     #hahDesktopSplash.hidden {
       opacity: 0; visibility: hidden; pointer-events: none;
@@ -9694,8 +9710,13 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
        to the JS-bound addEventListener. Sets `window.__hahSplashDismissNow`
        which the JS handler (when it runs) will detect and dismiss
        immediately. Means clicks landing during the brief window
-       before initDesktopShell runs are NOT lost. -->
-  <div id="hahDesktopSplash" aria-hidden="true" onclick="window.__hahSplashDismissNow = true; if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash();">
+       before initDesktopShell runs are NOT lost.
+       v0.8.220: console.log added so DevTools shows definitively
+       whether the inline handler fires. If you see the log when
+       clicking, click handling works and any remaining issue is in
+       the dismissal logic; if you don't, pointer events are being
+       intercepted before they reach the element. -->
+  <div id="hahDesktopSplash" aria-hidden="true" onclick="console.log('[splash] inline onclick fired'); window.__hahSplashDismissNow = true; if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash();">
     <div class="app-splash-glow app-splash-glow-a"></div>
     <div class="app-splash-glow app-splash-glow-b"></div>
     <div class="app-splash-stack">
@@ -9723,9 +9744,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_219_splash_syntax_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_219_splash_syntax_fix_source.zip',
-  builtAt: '2026-05-13T18:56:13.582048',
+  filename: 'hospital_at_home_board_v0_8_220_splash_no_drag_release.html',
+  source: 'hospital_at_home_board_v0_8_220_splash_no_drag_source.zip',
+  builtAt: '2026-05-13T20:21:44.553348',
   entry: 'desktop.html'
 };
 </script>
@@ -22727,10 +22748,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.219. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.220. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.219. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.220. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25453,12 +25474,15 @@ window.HAHBoard = window.HAHBoard || {};
     if (!splash) return;
     // Use pointerdown for snappier feel than click (no wait for up).
     splash.addEventListener('pointerdown', () => {
+      console.log('[splash] pointerdown fired');
       window.__hahDismissSplash();
     }, { once: true });
     // If a click already landed during the parse-time gap, dismiss now.
     if (window.__hahSplashDismissNow) {
+      console.log('[splash] parse-time click flag detected, dismissing');
       window.__hahDismissSplash();
     }
+    console.log('[splash] handlers bound, splash element:', splash);
   }
 
   // Expose immediately on the IIFE-internal scope's window so the
