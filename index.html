@@ -9689,8 +9689,13 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <!-- Splash markup — verbatim from mobile (only outer id changed and
        the click button stripped since desktop doesn't need a tappable
-       icon for biometric/PIN gate). -->
-  <div id="hahDesktopSplash" aria-hidden="true">
+       icon for biometric/PIN gate).
+       v0.8.218: inline onclick attribute as a parse-time-bound backup
+       to the JS-bound addEventListener. Sets `window.__hahSplashDismissNow`
+       which the JS handler (when it runs) will detect and dismiss
+       immediately. Means clicks landing during the brief window
+       before initDesktopShell runs are NOT lost. -->
+  <div id="hahDesktopSplash" aria-hidden="true" onclick="window.__hahSplashDismissNow = true; if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash();">
     <div class="app-splash-glow app-splash-glow-a"></div>
     <div class="app-splash-glow app-splash-glow-b"></div>
     <div class="app-splash-stack">
@@ -9718,9 +9723,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_217_splash_click_dismiss_release.html',
-  source: 'hospital_at_home_board_v0_8_217_splash_click_dismiss_source.zip',
-  builtAt: '2026-05-13T18:41:42.994570',
+  filename: 'hospital_at_home_board_v0_8_218_splash_click_robust_release.html',
+  source: 'hospital_at_home_board_v0_8_218_splash_click_robust_source.zip',
+  builtAt: '2026-05-13T18:51:06.495782',
   entry: 'desktop.html'
 };
 </script>
@@ -22722,10 +22727,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.217. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.218. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.217. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.218. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25434,21 +25439,34 @@ window.HAHBoard = window.HAHBoard || {};
     dismissDesktopSplash();
   }
 
-  // v0.8.217: click-anywhere-on-splash dismissal. Mobile's icon-click
-  // pattern doesn't apply (desktop has no PIN gate), but the user
-  // should still be able to skip the splash if they want to. Whole
-  // surface is clickable, fires the existing dismiss path. Idempotent
-  // — clicking twice is a no-op. Removed when splash leaves the DOM.
+  // v0.8.218: splash dismissal now happens through three independent
+  // paths, any of which suffices:
+  //   1. Inline `onclick` on the splash element (parse-time-bound,
+  //      works before any JS module loads — sets a flag on window).
+  //   2. addEventListener('pointerdown') wired in init — fires on
+  //      mouse-down rather than waiting for full click, more responsive.
+  //   3. The 5.6s timer in dismissDesktopSplash() (upper bound).
+  // The window.__hahDismissSplash function lets paths 1 and 2 share
+  // the same idempotent dismissal logic.
   function bindSplashClickDismiss() {
     const splash = document.getElementById('hahDesktopSplash');
     if (!splash) return;
-    let dismissed = false;
-    splash.addEventListener('click', () => {
-      if (dismissed) return;
-      dismissed = true;
-      dismissDesktopSplash(true);
-    });
+    // Use pointerdown for snappier feel than click (no wait for up).
+    splash.addEventListener('pointerdown', () => {
+      window.__hahDismissSplash();
+    }, { once: true });
+    // If a click already landed during the parse-time gap, dismiss now.
+    if (window.__hahSplashDismissNow) {
+      window.__hahDismissSplash();
+    }
   }
+
+  // Expose immediately on the IIFE-internal scope's window so the
+  // inline onclick in HTML and the addEventListener handler above
+  // both go through the same code path.
+  window.__hahDismissSplash = function () {
+    dismissDesktopSplash(true);
+  };
 
   // v0.8.212: splash dismissal. Tracks first-call time globally so the
   // minimum visible time is measured from initial paint, not from when
