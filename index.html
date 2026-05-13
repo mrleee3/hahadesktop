@@ -1445,10 +1445,19 @@ html, body {
      nav rail (~56px wide). Flyout opens to the right of the rail
      and rises from the bottom. CSS Anchor Positioning would be
      cleaner but isn't broadly supported yet — fixed positioning
-     with manual coords works in all current browsers. */
+     with manual coords works in all current browsers.
+     v0.8.229: explicitly clear `top` and `right` to override the
+     UA stylesheet's `[popover] { inset: 0 }` default. Without
+     this, `top: 0` and `right: 0` remain in force from the inset
+     shorthand and the popover ends up at top-left instead of
+     bottom-left. `bottom: 16px` matches the avatar's bottom edge
+     exactly (nav padding 12px + avatar margin-bottom 4px), so the
+     flyout and avatar share a bottom alignment. */
   position: fixed;
+  top: auto;
+  right: auto;
   left: calc(var(--desk-nav-w) + 8px);
-  bottom: var(--desk-gap-5);
+  bottom: 16px;
   width: 320px;
   z-index: 9000;
 }
@@ -1460,9 +1469,14 @@ html, body {
 }
 
 .hah-account-flyout::backdrop {
-  /* Subtle dim behind the flyout so it stands out and stray clicks
-     dismiss it via Popover API's light-dismiss behaviour. */
-  background: rgba(15, 23, 42, 0.04);
+  /* v0.8.229: backdrop tint removed. The previous 4% black fill was
+     painting over the entire window-behind-popover including the
+     topbar's blue area, which the OS controls overlay onto — making
+     the controls' background visibly change tone when the popover
+     opens. Transparent backdrop avoids this. Light-dismiss
+     (click-outside-to-close) still works regardless of backdrop
+     styling — it's behaviour built into the Popover API itself. */
+  background: transparent;
 }
 
 .hah-account-flyout > div {
@@ -10085,9 +10099,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_228_avatar_in_rail_release.html',
-  source: 'hospital_at_home_board_v0_8_228_avatar_in_rail_source.zip',
-  builtAt: '2026-05-13T21:51:13.126908',
+  filename: 'hospital_at_home_board_v0_8_229_flyout_fixes_release.html',
+  source: 'hospital_at_home_board_v0_8_229_flyout_fixes_source.zip',
+  builtAt: '2026-05-13T21:58:31.565087',
   entry: 'desktop.html'
 };
 </script>
@@ -23459,10 +23473,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.228. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.229. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.228. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.229. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
