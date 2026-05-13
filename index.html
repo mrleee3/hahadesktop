@@ -9637,8 +9637,10 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       letter-spacing: 0.01em;
       color: rgba(255,255,255,0.86);
       opacity: 0;
-      transform: translateY(8px);
-      animation: hahSplashTitleIn 0.72s cubic-bezier(0.16, 0.84, 0.2, 1) 0.36s forwards;
+      /* v0.8.213: match mobile tagline timing (.9s @ 1.1s delay).
+         Mobile uses a two-span tagline with sequential fades, we use
+         a single span so the .9s/1.1s pair is collapsed into one. */
+      animation: hahSplashFadeIn 0.9s ease 1.1s forwards;
     }
     #hahDesktopSplash .hah-splash-company {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -9649,7 +9651,10 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       text-transform: uppercase;
       color: rgba(255,255,255,0.82);
       opacity: 0;
-      animation: hahSplashFadeIn 1.4s cubic-bezier(0, 0, 0.2, 1) 0.7s forwards;
+      /* v0.8.213: match mobile company-line timing (1.8s @ 3.6s delay).
+         A long, slow fade at the very end of the reveal so the splash
+         feels like a deliberate sequence rather than a quick flash. */
+      animation: hahSplashFadeIn 1.8s cubic-bezier(0, 0, 0.2, 1) 3.6s forwards;
       margin-top: 6px;
     }
     @keyframes hahSplashLogoIn {
@@ -9701,9 +9706,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_212_nav_indicator_splash_release.html',
-  source: 'hospital_at_home_board_v0_8_212_nav_indicator_splash_source.zip',
-  builtAt: '2026-05-13T12:57:53.940968',
+  filename: 'hospital_at_home_board_v0_8_213_splash_timing_release.html',
+  source: 'hospital_at_home_board_v0_8_213_splash_timing_source.zip',
+  builtAt: '2026-05-13T13:03:49.972097',
   entry: 'desktop.html'
 };
 </script>
@@ -22705,10 +22710,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.212. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.213. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.212. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.213. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25419,7 +25424,12 @@ window.HAHBoard = window.HAHBoard || {};
   // initDesktopShell happens to be invoked (which could be late on slow
   // loads). The splash element gets a class that triggers the CSS fade,
   // then is removed from the DOM after the transition completes.
-  const SPLASH_MIN_MS = 1200;
+  // v0.8.213: minimum visible time bumped 1200 → 2400 to match the
+  // mobile app's APP_SPLASH_MIN_MS constant. The desktop and mobile
+  // splashes now share both the staged animation rhythm (logo →
+  // title → tagline → company) and the same minimum window before
+  // dismissal, so launching either app feels the same speed.
+  const SPLASH_MIN_MS = 2400;
   function dismissDesktopSplash() {
     const splash = document.getElementById('hahDesktopSplash');
     if (!splash) return;
