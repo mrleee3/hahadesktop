@@ -644,18 +644,12 @@
   <style>
 /* inlined: css/desktop-shell.css */
 :root {
-  /* v0.8.227: header fixed at 48px. v0.8.226 tried matching
-     env(titlebar-area-height) so the OS controls would fill the bar
-     edge-to-edge — but Edge picked a smaller titlebar-area than Word
-     uses (~32-34px on this Windows 11 install vs Word's ~46px), and
-     the resulting bar was too thin to feel like a proper title bar.
-     Pragmatic decision: pick a height that looks right for the app
-     and accept that Edge's controls will sit at the top with ~14px
-     of bar below them. The dead-strip is small enough to read as
-     "intentional title-bar styling" rather than "broken layout",
-     and gives the in-bar content (search, avatar) room to breathe.
-     This is essentially Word's bar height. */
-  --desk-header-h: 48px;
+  /* v0.8.228: back to the original 72px. After v0.8.225-227's
+     iterations to shrink/match-Edge, the cleanest answer was to leave
+     the bar alone and move the avatar out of it entirely — see the
+     left nav rail bottom slot. Reverts:
+       - v0.8.225 (56px), v0.8.226 (env-matched), v0.8.227 (48px fixed). */
+  --desk-header-h: 72px;
   --desk-nav-w: 56px;
   --desk-left-w: 292px;
   --desk-right-w: 680px;
@@ -789,13 +783,12 @@ html, body {
    titlebar-area-width) — the part of the window NOT covered by the
    titlebar area, which is where the OS controls sit. */
 @media (display-mode: window-controls-overlay) {
-  /* v0.8.227: dropped the env(titlebar-area-height) override from
-     v0.8.226 — Edge's reported titlebar-area was too thin to look
-     right. Bar stays at the 48px default in WCO mode (matches Word's
-     bar height). OS controls sit at the top with ~14px below them. */
+  /* v0.8.228: right-padding override removed — the avatar moved out
+     of the topbar (to the bottom of the left nav rail), so there's
+     nothing on the right that needs to clear the OS controls. The
+     header's right side is empty space again in WCO mode. */
   .hah-header {
     padding-left: max(var(--desk-gap-5), env(titlebar-area-x, 0px));
-    padding-right: max(var(--desk-gap-5), calc(100vw - env(titlebar-area-x) - env(titlebar-area-width)));
   }
 }
 
@@ -810,14 +803,12 @@ html, body {
 .hah-header .hah-search {
   width: 420px;
   max-width: 100%;
-  /* v0.8.227: 30 → 32px to sit naturally in the 48px bar
-     (8px breathing top/bottom). */
-  height: 32px;
-  border-radius: 8px;
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.15);
-  padding: 0 12px;
-  font-size: 13px;
+  padding: 0 14px;
+  font-size: 14px;
   outline: none;
   color: #fff;
 }
@@ -966,9 +957,7 @@ html, body {
 }
 
 .hah-brand {
-  /* v0.8.226: 17 → 15 to match Word/Excel/OneNote document-title
-     typography. Sits well in a 40-48px bar. */
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -1385,26 +1374,24 @@ html, body {
    and now avatar-right. `margin-left: auto` on the right group eats
    the remaining flex space, parking the avatar against the right edge
    (plus whatever padding the WCO @media rule applies for OS controls). */
-.hah-header .hah-header-group-right {
-  margin-left: auto;
-  gap: var(--desk-gap-2);
-}
-
+/* v0.8.228: avatar lives in the bottom of the nav rail now, not the
+   topbar. Base styles cover the nav-rail context; colour palette
+   shifts from white-on-blue (topbar context) to muted blue-on-grey
+   (matches the other nav buttons). */
 .hah-account-avatar {
   -webkit-app-region: no-drag;
   app-region: no-drag;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* v0.8.227: 26 → 28 to look right in the 48px bar. */
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.42);
-  background-color: rgba(255, 255, 255, 0.16);
+  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  background-color: rgba(10, 132, 255, 0.10);
   background-position: center;
   background-size: cover;
-  color: #fff;
+  color: #0a84ff;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1413,25 +1400,29 @@ html, body {
   transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
+/* When the avatar sits in the nav rail (which is most of the time
+   now), park it at the bottom of the column via margin-top: auto.
+   The nav is flex-column with align-items: center, so this slot
+   gracefully shrinks any gap above the avatar to push it down. */
+.hah-account-avatar.hah-account-avatar-in-rail {
+  margin-top: auto;
+  margin-bottom: 4px;
+}
+
 .hah-account-avatar:hover {
-  background-color: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.62);
+  background-color: rgba(10, 132, 255, 0.18);
+  border-color: rgba(10, 132, 255, 0.34);
 }
 
 .hah-account-avatar:active {
   transform: scale(0.96);
 }
 
-.hah-account-avatar.is-signed-out .hah-account-avatar-initials::after {
-  /* Use a generic person glyph when signed out — small inline SVG via
-     content is tricky; using a unicode-ish marker is simpler. */
-  content: '';
-}
-
 .hah-account-avatar.is-signed-out {
-  /* Render a generic user silhouette via SVG background when no
-     initials. Inline SVG data URI, white stroke. */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.7' stroke-linecap='round'><circle cx='12' cy='9' r='3.5'/><path d='M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>");
+  /* Generic user silhouette when no Microsoft account is attached.
+     Stroke colour follows the muted nav-rail palette rather than
+     pure white. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-opacity='0.62' stroke-width='1.7' stroke-linecap='round'><circle cx='12' cy='9' r='3.5'/><path d='M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>");
   background-size: 22px 22px;
   background-repeat: no-repeat;
 }
@@ -1449,21 +1440,23 @@ html, body {
   padding: 0;
   background: transparent;
   overflow: visible;
-  /* Top-layer positioning — anchored manually since CSS Anchor
-     Positioning isn't universally supported yet. Use fixed positioning
-     with right-aligned coords matching the avatar location. */
+  /* v0.8.228: anchored to the nav rail's bottom-left, not the
+     topbar's right. The avatar now sits at the bottom of the
+     nav rail (~56px wide). Flyout opens to the right of the rail
+     and rises from the bottom. CSS Anchor Positioning would be
+     cleaner but isn't broadly supported yet — fixed positioning
+     with manual coords works in all current browsers. */
   position: fixed;
-  top: calc(var(--desk-header-h) + 8px);
-  right: var(--desk-gap-5);
+  left: calc(var(--desk-nav-w) + 8px);
+  bottom: var(--desk-gap-5);
   width: 320px;
   z-index: 9000;
 }
 
 @media (display-mode: window-controls-overlay) {
-  /* Shift away from the OS controls overlay area on Windows. */
-  .hah-account-flyout {
-    right: max(var(--desk-gap-5), calc(100vw - env(titlebar-area-x) - env(titlebar-area-width)));
-  }
+  /* v0.8.228: flyout moved to nav-rail bottom-left, so no WCO
+     adjustment needed — the OS controls live on the opposite side
+     of the window from the flyout's anchor now. */
 }
 
 .hah-account-flyout::backdrop {
@@ -10092,9 +10085,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_227_topbar_48px_release.html',
-  source: 'hospital_at_home_board_v0_8_227_topbar_48px_source.zip',
-  builtAt: '2026-05-13T21:42:56.923799',
+  filename: 'hospital_at_home_board_v0_8_228_avatar_in_rail_release.html',
+  source: 'hospital_at_home_board_v0_8_228_avatar_in_rail_source.zip',
+  builtAt: '2026-05-13T21:51:13.126908',
   entry: 'desktop.html'
 };
 </script>
@@ -23466,10 +23459,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.227. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.228. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.227. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.228. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26264,24 +26257,10 @@ window.HAHBoard = window.HAHBoard || {};
             />
           </div>
 
-          <!-- v0.8.224: account avatar on the far right of the topbar.
-               Rendered by updateAccountAvatar() from state.actorIdentity.
-               When signed in: shows initials or photo, clicking opens
-               the account flyout (managed by Popover API). When not
-               signed in: shows a generic user icon, clicking opens
-               the flyout with a Sign-in CTA. -->
-          <div class="hah-header-group hah-header-group-right">
-            <button
-              type="button"
-              id="hahAccountAvatarBtn"
-              class="hah-account-avatar"
-              popovertarget="hahAccountFlyout"
-              aria-label="Account"
-              title="Account"
-            >
-              <span id="hahAccountAvatarInitials" class="hah-account-avatar-initials">?</span>
-            </button>
-          </div>
+          <!-- v0.8.228: account avatar moved from topbar to bottom
+               of the left nav rail (Slack/Teams/VS Code/Discord
+               pattern). The topbar reverts to its original
+               brand-left + search-centre layout from v0.8.203. -->
         </header>
 
         <nav class="hah-nav" id="hahNav">
@@ -26327,6 +26306,24 @@ window.HAHBoard = window.HAHBoard || {};
               <circle cx="12" cy="12" r="2.6"/>
               <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.76-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 0 1-4 0v-.09A1.6 1.6 0 0 0 9.2 19.4a1.6 1.6 0 0 0-1.76.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 0 1 0-4h.09A1.6 1.6 0 0 0 4.6 9.2a1.6 1.6 0 0 0-.32-1.76l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.76.32h.01A1.6 1.6 0 0 0 9.8 3.5V3a2 2 0 0 1 4 0v.09a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.76-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.76v.01c.26.6.84 1 1.47 1H21a2 2 0 0 1 0 4h-.09a1.6 1.6 0 0 0-1.51.97z"/>
             </svg>
+          </button>
+
+          <!-- v0.8.228: account avatar at the bottom of the nav rail.
+               Slack/Teams/VS Code/Discord all use this slot for the
+               current-user identity, separated from the navigation
+               items above by margin-top: auto so it sticks to the
+               bottom of the rail regardless of how many nav items
+               sit above it. Same Popover API wiring as before — just
+               anchored from the new location. -->
+          <button
+            type="button"
+            id="hahAccountAvatarBtn"
+            class="hah-account-avatar hah-account-avatar-in-rail"
+            popovertarget="hahAccountFlyout"
+            aria-label="Account"
+            title="Account"
+          >
+            <span id="hahAccountAvatarInitials" class="hah-account-avatar-initials">?</span>
           </button>
         </nav>
 
