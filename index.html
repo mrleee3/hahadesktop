@@ -644,16 +644,17 @@
   <style>
 /* inlined: css/desktop-shell.css */
 :root {
-  /* v0.8.226: header height now matches Edge's window-controls-overlay
-     band exactly via env(titlebar-area-height). The OS minimise /
-     maximise / close icons are rendered by Edge at a fixed height
-     (~40-44px on Windows 11) anchored to the top of the window — we
-     can't move them or resize them. The only way to get them to "fill
-     the bar" is to make our bar exactly the height they occupy.
-     env(titlebar-area-height) returns that height dynamically, so it
-     stays correct across DPI changes and future Edge updates.
-     Fallback 48px applies outside WCO mode (browser tab, non-WCO
-     standalone) where there's no overlay to align to. */
+  /* v0.8.227: header fixed at 48px. v0.8.226 tried matching
+     env(titlebar-area-height) so the OS controls would fill the bar
+     edge-to-edge — but Edge picked a smaller titlebar-area than Word
+     uses (~32-34px on this Windows 11 install vs Word's ~46px), and
+     the resulting bar was too thin to feel like a proper title bar.
+     Pragmatic decision: pick a height that looks right for the app
+     and accept that Edge's controls will sit at the top with ~14px
+     of bar below them. The dead-strip is small enough to read as
+     "intentional title-bar styling" rather than "broken layout",
+     and gives the in-bar content (search, avatar) room to breathe.
+     This is essentially Word's bar height. */
   --desk-header-h: 48px;
   --desk-nav-w: 56px;
   --desk-left-w: 292px;
@@ -788,15 +789,10 @@ html, body {
    titlebar-area-width) — the part of the window NOT covered by the
    titlebar area, which is where the OS controls sit. */
 @media (display-mode: window-controls-overlay) {
-  /* v0.8.226: in WCO mode, override the header height to match
-     Edge's titlebar-area-height exactly. This makes the OS controls
-     (which Edge places anchored to the top of the window) appear to
-     fill the entire bar rather than sit at the top of an oversized
-     bar. Resolved dynamically so DPI changes are picked up. Clamped
-     to a sane min/max so a malformed value can't break the layout. */
-  :root {
-    --desk-header-h: clamp(36px, env(titlebar-area-height, 48px), 56px);
-  }
+  /* v0.8.227: dropped the env(titlebar-area-height) override from
+     v0.8.226 — Edge's reported titlebar-area was too thin to look
+     right. Bar stays at the 48px default in WCO mode (matches Word's
+     bar height). OS controls sit at the top with ~14px below them. */
   .hah-header {
     padding-left: max(var(--desk-gap-5), env(titlebar-area-x, 0px));
     padding-right: max(var(--desk-gap-5), calc(100vw - env(titlebar-area-x) - env(titlebar-area-width)));
@@ -814,10 +810,9 @@ html, body {
 .hah-header .hah-search {
   width: 420px;
   max-width: 100%;
-  /* v0.8.226: 34 → 30 so it sits comfortably in both a 40px and a
-     48px bar. With a 40px bar that gives 5px breathing top/bottom;
-     with 48px, 9px. */
-  height: 30px;
+  /* v0.8.227: 30 → 32px to sit naturally in the 48px bar
+     (8px breathing top/bottom). */
+  height: 32px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.15);
@@ -1401,18 +1396,16 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* v0.8.226: 30 → 26 to match Word/Excel/OneNote (which use ~26px
-     avatars in their ~40px title bars). Fits cleanly in any bar 36px
-     and up. */
-  width: 26px;
-  height: 26px;
+  /* v0.8.227: 26 → 28 to look right in the 48px bar. */
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 255, 255, 0.42);
   background-color: rgba(255, 255, 255, 0.16);
   background-position: center;
   background-size: cover;
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -10099,9 +10092,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_226_topbar_wco_match_release.html',
-  source: 'hospital_at_home_board_v0_8_226_topbar_wco_match_source.zip',
-  builtAt: '2026-05-13T21:32:56.596928',
+  filename: 'hospital_at_home_board_v0_8_227_topbar_48px_release.html',
+  source: 'hospital_at_home_board_v0_8_227_topbar_48px_source.zip',
+  builtAt: '2026-05-13T21:42:56.923799',
   entry: 'desktop.html'
 };
 </script>
@@ -23473,10 +23466,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.226. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.227. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.226. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.227. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
