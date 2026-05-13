@@ -9539,18 +9539,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       background: #0a84ff;
       color: #fff; z-index: 10000; opacity: 1; visibility: visible; pointer-events: auto;
       overflow: hidden; transition: opacity .9s ease, visibility 0s linear .9s;
-      /* v0.8.217: dismissable on click — see splashClickToDismiss
-         handler in 22-desktop-shell.js. Cursor hint makes the
-         affordance discoverable.
-         v0.8.220: explicit `app-region: no-drag` because in PWA WCO
-         mode Edge treats the title-bar-overlay region (top ~30px of
-         the window) as a window-drag region by default. The splash
-         overlays that region as a fixed-position element, but Edge's
-         drag handling can still intercept pointer events in that
-         strip unless the element opts out. Setting no-drag on the
-         splash and all its children guarantees clicks land on our
-         handler rather than being interpreted as window-drag intent. */
-      cursor: pointer;
+      /* v0.8.222: cursor and click affordance moved to icon only —
+         see .app-splash-logo-wrap below. Body of splash no longer
+         indicates clickability. */
       -webkit-app-region: no-drag;
       app-region: no-drag;
     }
@@ -9559,6 +9550,30 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
     #hahDesktopSplash * {
       -webkit-app-region: no-drag;
       app-region: no-drag;
+    }
+    /* v0.8.222: only the icon is the click target now. Cursor
+       changes only when hovering the logo. Hover lifts it slightly
+       and brightens the surface; mouse-down presses it down for a
+       tactile feedback feel. The :active scale-down is the "pressed"
+       moment that gives the click a button-like response. */
+    #hahDesktopSplash .app-splash-logo-wrap {
+      cursor: pointer;
+      transition: transform 140ms cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    #hahDesktopSplash .app-splash-logo-wrap:hover .app-splash-logo {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 38px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.24), inset 0 -1px 0 rgba(255,255,255,.06);
+    }
+    #hahDesktopSplash .app-splash-logo-wrap:active .app-splash-logo,
+    #hahDesktopSplash .app-splash-logo-wrap.is-pressed .app-splash-logo {
+      transform: translateY(1px) scale(0.94);
+      box-shadow: 0 8px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.04);
+      transition: transform 100ms cubic-bezier(0.4, 0.0, 0.2, 1),
+                  box-shadow 100ms ease;
+    }
+    #hahDesktopSplash .app-splash-logo {
+      transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 180ms ease;
     }
     #hahDesktopSplash.hidden {
       opacity: 0; visibility: hidden; pointer-events: none;
@@ -9710,12 +9725,15 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
        to the JS-bound addEventListener. Sets `window.__hahSplashDismissNow`
        which the JS handler (when it runs) will detect and dismiss
        immediately. Means clicks landing during the brief window
-       before initDesktopShell runs are NOT lost. -->
-  <div id="hahDesktopSplash" aria-hidden="true" onclick="window.__hahSplashDismissNow = true; if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash();">
+       before initDesktopShell runs are NOT lost.
+       v0.8.222: click handler moved from splash wrapper to icon
+       only. Adds `is-pressed` class for visible feedback, waits
+       180ms so the press animation is perceptible, then dismisses. -->
+  <div id="hahDesktopSplash" aria-hidden="true">
     <div class="app-splash-glow app-splash-glow-a"></div>
     <div class="app-splash-glow app-splash-glow-b"></div>
     <div class="app-splash-stack">
-      <div class="app-splash-logo-wrap app-splash-animate">
+      <div class="app-splash-logo-wrap app-splash-animate" onclick="this.classList.add('is-pressed'); window.__hahSplashDismissNow = true; setTimeout(function() { if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash(); }, 180);">
         <div class="app-splash-logo">
           <svg class="app-splash-logo-svg" focusable="false" role="presentation" viewBox="0 0 96 96">
             <rect height="72" rx="22" width="72" x="12" y="12"></rect>
@@ -9738,9 +9756,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_221_splash_click_only_release.html',
-  source: 'hospital_at_home_board_v0_8_221_splash_click_only_source.zip',
-  builtAt: '2026-05-13T20:30:21.897346',
+  filename: 'hospital_at_home_board_v0_8_222_splash_icon_pressable_release.html',
+  source: 'hospital_at_home_board_v0_8_222_splash_icon_pressable_source.zip',
+  builtAt: '2026-05-13T20:35:56.865047',
   entry: 'desktop.html'
 };
 </script>
@@ -22742,10 +22760,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.221. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.222. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.221. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.222. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25466,10 +25484,18 @@ window.HAHBoard = window.HAHBoard || {};
   function bindSplashClickDismiss() {
     const splash = document.getElementById('hahDesktopSplash');
     if (!splash) return;
-    // Use pointerdown for snappier feel than click (no wait for up).
-    splash.addEventListener('pointerdown', () => {
-      window.__hahDismissSplash();
-    }, { once: true });
+    // v0.8.222: click target is now the icon only, not the whole
+    // splash surface. The inline onclick in HTML also targets the
+    // icon; this is the JS-bound backup. `is-pressed` class triggers
+    // the CSS press animation; 180ms delay before dismissal lets the
+    // user see the animation before fade-out starts.
+    const icon = splash.querySelector('.app-splash-logo-wrap');
+    if (icon) {
+      icon.addEventListener('pointerdown', () => {
+        icon.classList.add('is-pressed');
+        setTimeout(() => window.__hahDismissSplash(), 180);
+      }, { once: true });
+    }
     // If a click already landed during the parse-time gap, dismiss now.
     if (window.__hahSplashDismissNow) {
       window.__hahDismissSplash();
