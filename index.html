@@ -11,6 +11,44 @@
   <meta name="theme-color" content="#0a84ff" />
   <title>H@H Board</title>
 
+  <!-- v0.8.223: PWA cache-bust on launch.
+       Edge's PWA window has its own caching layer separate from the
+       browser HTTP cache, and it preserves resources across PWA
+       uninstall/reinstall. The `<meta http-equiv="Cache-Control">`
+       tags above are hints only — Edge ignores them in PWA mode.
+       Result: after the first install loads a fresh HTML, subsequent
+       PWA launches serve the cached version, even if the file on
+       GitHub Pages has been updated.
+       Fix: detect standalone-display mode, and if there's no `_r`
+       query param yet (or it's older than 5s, accounting for self-
+       triggered reloads from the update banner), replace location
+       with a unique `?_r=<timestamp>` URL. Forces the PWA to fetch a
+       fresh HTML on every launch — same URL space as the manifest's
+       start_url so the install isn't broken, just appended with a
+       cache-buster.
+       Skipped when running as a normal browser tab so refreshing in
+       Edge tab mode behaves normally and devtools history stays
+       readable. -->
+  <script>
+    (function () {
+      try {
+        var isStandalone =
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+          (window.matchMedia && window.matchMedia('(display-mode: window-controls-overlay)').matches) ||
+          window.navigator.standalone === true;
+        if (!isStandalone) return;
+        var url = new URL(window.location.href);
+        var existing = url.searchParams.get('_r');
+        var now = Date.now();
+        var existingNum = existing ? Number(existing) : 0;
+        // Already cache-busted within the last 5 seconds — don't loop.
+        if (existingNum && (now - existingNum) < 5000) return;
+        url.searchParams.set('_r', String(now));
+        window.location.replace(url.toString());
+      } catch (_) { /* fall through to normal load */ }
+    })();
+  </script>
+
   <!-- v0.8.202: PWA manifest. Built script replaces this placeholder
        with an inline data: URI carrying the manifest JSON and base64-
        embedded icons, so the single-file release HTML is fully
@@ -9756,9 +9794,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_222_splash_icon_pressable_release.html',
-  source: 'hospital_at_home_board_v0_8_222_splash_icon_pressable_source.zip',
-  builtAt: '2026-05-13T20:35:56.865047',
+  filename: 'hospital_at_home_board_v0_8_223_pwa_cache_bust_release.html',
+  source: 'hospital_at_home_board_v0_8_223_pwa_cache_bust_source.zip',
+  builtAt: '2026-05-13T20:45:14.225145',
   entry: 'desktop.html'
 };
 </script>
@@ -22760,10 +22798,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.222. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.223. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.222. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.223. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
