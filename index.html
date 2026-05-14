@@ -10059,24 +10059,197 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
         transform: none;
       }
     }
+
+    /* v0.8.231: sign-in panel — revealed when the user clicks the
+       icon and there's no signed-in identity. Fades in from below
+       so the appearance reads as "the splash is now asking for
+       something" rather than a jarring cut. */
+    .hah-splash-signin-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      margin-top: 8px;
+      width: 320px;
+      max-width: 90vw;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: appSplashFadeOnly .35s ease forwards;
+    }
+    .hah-splash-signin-panel[hidden] {
+      display: none;
+    }
+
+    .hah-splash-signin-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      height: 41px;
+      padding: 0 16px;
+      border: 1px solid #8c8c8c;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #5e5e5e;
+      font-weight: 600;
+      font-size: 15px;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, transform 100ms ease;
+    }
+    .hah-splash-signin-btn:hover {
+      background: #f3f3f3;
+      border-color: #5e5e5e;
+    }
+    .hah-splash-signin-btn:active {
+      background: #e6e6e6;
+      transform: scale(.98);
+    }
+    .hah-splash-signin-btn:disabled {
+      opacity: .65;
+      cursor: progress;
+    }
+    .hah-splash-signin-btn svg {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 21px;
+      display: block;
+    }
+
+    .hah-splash-signin-error {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(220, 38, 38, 0.16);
+      border: 1px solid rgba(220, 38, 38, 0.32);
+      color: #ffffff;
+      font-size: 13px;
+      line-height: 1.4;
+      text-align: left;
+    }
+    .hah-splash-signin-error[hidden] {
+      display: none;
+    }
+
+    .hah-splash-configure-link {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+      padding: 4px;
+      font-family: inherit;
+    }
+    .hah-splash-configure-link[hidden] {
+      display: none;
+    }
+    .hah-splash-configure-link:hover {
+      color: #ffffff;
+    }
+
+    /* v0.8.231: in-splash mini-config panel for entering a clientId
+       without leaving the splash. Mutually exclusive with the
+       sign-in panel — when this is shown the sign-in panel is hidden,
+       and vice versa. Same width/fade animation. */
+    .hah-splash-config-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 8px;
+      width: 360px;
+      max-width: 90vw;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: appSplashFadeOnly .35s ease forwards;
+      text-align: left;
+    }
+    .hah-splash-config-panel[hidden] {
+      display: none;
+    }
+    .hah-splash-config-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.82);
+    }
+    .hah-splash-config-input {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      font-size: 13px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .hah-splash-config-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    .hah-splash-config-input:focus {
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .hah-splash-config-hint {
+      font-size: 11px;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .hah-splash-config-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+    .hah-splash-config-cancel,
+    .hah-splash-config-save {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+    .hah-splash-config-save {
+      background: #ffffff;
+      color: #0a84ff;
+      border-color: #ffffff;
+    }
+    .hah-splash-config-cancel:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+    .hah-splash-config-save:hover {
+      background: #f0f6ff;
+    }
   </style>
 
   <!-- Splash markup — verbatim from mobile (only outer id changed and
        the click button stripped since desktop doesn't need a tappable
        icon for biometric/PIN gate).
-       v0.8.218: inline onclick attribute as a parse-time-bound backup
-       to the JS-bound addEventListener. Sets `window.__hahSplashDismissNow`
-       which the JS handler (when it runs) will detect and dismiss
-       immediately. Means clicks landing during the brief window
-       before initDesktopShell runs are NOT lost.
-       v0.8.222: click handler moved from splash wrapper to icon
-       only. Adds `is-pressed` class for visible feedback, waits
-       180ms so the press animation is perceptible, then dismisses. -->
+       v0.8.231: inline onclick removed in favour of a JS-bound
+       click handler that's state-aware (icon vs sign-in modes,
+       handles silent-restore-still-pending, error states). Parse-
+       time onclick fallback is no longer needed because the splash
+       can't be dismissed by a single click anymore — the user must
+       either be already signed in (silent restore) or complete an
+       interactive sign-in. Stale clicks before JS loads aren't
+       lost because the splash now reaches dismissal via identity
+       state, not via raw clicks. -->
   <div id="hahDesktopSplash" aria-hidden="true">
     <div class="app-splash-glow app-splash-glow-a"></div>
     <div class="app-splash-glow app-splash-glow-b"></div>
     <div class="app-splash-stack">
-      <div class="app-splash-logo-wrap app-splash-animate" onclick="this.classList.add('is-pressed'); window.__hahSplashDismissNow = true; setTimeout(function() { if (typeof window.__hahDismissSplash === 'function') window.__hahDismissSplash(); }, 180);">
+      <div class="app-splash-logo-wrap app-splash-animate" id="hahSplashLogoWrap">
         <div class="app-splash-logo">
           <svg class="app-splash-logo-svg" focusable="false" role="presentation" viewBox="0 0 96 96">
             <rect height="72" rx="22" width="72" x="12" y="12"></rect>
@@ -10092,6 +10265,41 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
         <div aria-label="Clinical workflow, simplified." class="app-splash-tagline" id="hahDesktopSplashTagline"><span class="app-splash-tagline-main">Clinical workflow</span><span class="app-splash-tagline-tail">simplified</span></div>
       </div>
       <div class="app-splash-company app-splash-animate">LK Medica Software Solutions</div>
+
+      <!-- v0.8.231: sign-in panel. Initially hidden; revealed by JS
+           when the user clicks the icon and there's no signed-in
+           identity to dismiss to. Contains:
+             - Inline error region (hidden until an error fires)
+             - Microsoft 4-square sign-in button
+             - "Configure app" link (visible only when clientId is
+               missing — escape hatch for first-time setup) -->
+      <div id="hahSplashSignInPanel" class="hah-splash-signin-panel" hidden>
+        <div id="hahSplashSignInError" class="hah-splash-signin-error" hidden></div>
+        <button type="button" id="hahSplashSignInBtn" class="hah-splash-signin-btn">
+          <svg viewBox="0 0 21 21" focusable="false">
+            <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+            <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          <span>Sign in with Microsoft</span>
+        </button>
+        <button type="button" id="hahSplashConfigureBtn" class="hah-splash-configure-link" hidden>Configure Microsoft app first</button>
+      </div>
+
+      <!-- v0.8.231: in-splash config mini-panel for the
+           "no clientId" escape hatch. Hidden by default; revealed
+           when the Configure link is clicked. Lets the user paste
+           a clientId without leaving the splash. -->
+      <div id="hahSplashConfigPanel" class="hah-splash-config-panel" hidden>
+        <label class="hah-splash-config-label" for="hahSplashClientIdInput">Microsoft application (client) ID</label>
+        <input type="text" id="hahSplashClientIdInput" class="hah-splash-config-input" placeholder="00000000-0000-0000-0000-000000000000" autocomplete="off" spellcheck="false" />
+        <div class="hah-splash-config-hint">From Microsoft Entra → App registrations → your app → Application (client) ID.</div>
+        <div class="hah-splash-config-actions">
+          <button type="button" id="hahSplashConfigCancelBtn" class="hah-splash-config-cancel">Cancel</button>
+          <button type="button" id="hahSplashConfigSaveBtn" class="hah-splash-config-save">Save &amp; continue</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -10099,9 +10307,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_230_signin_signout_fixes_release.html',
-  source: 'hospital_at_home_board_v0_8_230_signin_signout_fixes_source.zip',
-  builtAt: '2026-05-13T22:08:13.662202',
+  filename: 'hospital_at_home_board_v0_8_231_splash_signin_release.html',
+  source: 'hospital_at_home_board_v0_8_231_splash_signin_source.zip',
+  builtAt: '2026-05-14T07:49:05.974077',
   entry: 'desktop.html'
 };
 </script>
@@ -23477,10 +23685,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.230. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.231. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.230. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.231. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26164,11 +26372,13 @@ window.HAHBoard = window.HAHBoard || {};
   function initDesktopShell() {
     rootEl = document.getElementById('desktop-root');
     if (!rootEl) return;
-    // v0.8.217: wire click-anywhere-on-splash to dismiss it. Sets
-    // up the listener immediately so even if init takes time, the
-    // user can tap through. The dismiss timer continues to fire
-    // (5.6s) as the upper bound — whichever happens first wins.
-    bindSplashClickDismiss();
+    // v0.8.231: Phase 3 of Build B — splash-integrated sign-in.
+    // bindSplashAuthFlow replaces v0.8.217-222's bindSplashClickDismiss.
+    // Manages the splash state machine: icon-press → silent-restore
+    // check → either dismiss (signed in) or flip to sign-in panel.
+    // Starts the silent-restore promise immediately so the result is
+    // available the moment the user clicks the icon.
+    bindSplashAuthFlow();
     renderShell();
     bindShellEvents();
     bindResizeHandles();
@@ -26184,51 +26394,231 @@ window.HAHBoard = window.HAHBoard || {};
       window.HAHBoard.update.init();
     }
     startJsonUpdatePoller();
-    // v0.8.224: silent identity restoration. If MSAL has a cached
-    // account (from a previous sign-in), pull it through to the
-    // identity module without prompting — populates the topbar
-    // avatar and writer attribution on every launch.
-    if (window.HAHBoard.sharedJsonStore && typeof window.HAHBoard.sharedJsonStore.tryRestoreIdentitySilently === 'function') {
-      window.HAHBoard.sharedJsonStore.tryRestoreIdentitySilently().catch(function () {});
-    }
-    // v0.8.221: splash dismissal is click-only now — no auto-dismiss
-    // call at end of init. The splash stays up until the user clicks
-    // anywhere on it (via bindSplashClickDismiss bound at top of init).
+    // v0.8.231: silent identity restoration is now kicked off by
+    // bindSplashAuthFlow above (so the splash itself can await it
+    // when the user clicks the icon). The call here would be a
+    // duplicate.
   }
 
-  // v0.8.218: splash dismissal now happens through three independent
-  // paths, any of which suffices:
-  //   1. Inline `onclick` on the splash element (parse-time-bound,
-  //      works before any JS module loads — sets a flag on window).
-  //   2. addEventListener('pointerdown') wired in init — fires on
-  //      mouse-down rather than waiting for full click, more responsive.
-  //   3. The 5.6s timer in dismissDesktopSplash() (upper bound).
-  // The window.__hahDismissSplash function lets paths 1 and 2 share
-  // the same idempotent dismissal logic.
-  function bindSplashClickDismiss() {
+  // v0.8.231: splash auth flow state machine. The splash now blocks
+  // until the user is authenticated (or has interactively decided to
+  // configure the app for first-time setup). State transitions:
+  //
+  //   awaiting-icon-click   ← initial; icon visible, restore running
+  //     ↓ (icon clicked)
+  //   checking              ← waiting for silent restore promise
+  //     ↓ resolves                       ↓ resolves
+  //   (signed in: dismiss)            (not signed in: → awaiting-signin)
+  //                                       ↓ click sign-in button
+  //                                     signing-in
+  //                                       ↓ success / failure
+  //                                     (dismiss) / (signin-error → click button → signing-in)
+  //
+  // Plus an awaiting-config branch when the clientId is missing: the
+  // user can paste it inline, save, then return to awaiting-signin.
+  //
+  // The silent restore promise is created at the top of this function
+  // (not in init's main flow) so its result is reachable here. We
+  // store its resolution in `splashRestoreState` rather than awaiting
+  // it eagerly — that lets the icon click respond instantly when the
+  // result is already in.
+  let splashRestoreState = 'pending'; // 'pending' | 'signed-in' | 'signed-out' | 'error'
+  let splashRestorePromise = null;
+
+  function bindSplashAuthFlow() {
     const splash = document.getElementById('hahDesktopSplash');
     if (!splash) return;
-    // v0.8.222: click target is now the icon only, not the whole
-    // splash surface. The inline onclick in HTML also targets the
-    // icon; this is the JS-bound backup. `is-pressed` class triggers
-    // the CSS press animation; 180ms delay before dismissal lets the
-    // user see the animation before fade-out starts.
-    const icon = splash.querySelector('.app-splash-logo-wrap');
+    const icon = splash.querySelector('#hahSplashLogoWrap');
+    const signInPanel = splash.querySelector('#hahSplashSignInPanel');
+    const signInBtn = splash.querySelector('#hahSplashSignInBtn');
+    const signInError = splash.querySelector('#hahSplashSignInError');
+    const configureBtn = splash.querySelector('#hahSplashConfigureBtn');
+    const configPanel = splash.querySelector('#hahSplashConfigPanel');
+    const clientIdInput = splash.querySelector('#hahSplashClientIdInput');
+    const configCancelBtn = splash.querySelector('#hahSplashConfigCancelBtn');
+    const configSaveBtn = splash.querySelector('#hahSplashConfigSaveBtn');
+
+    // Kick off silent restore right away. Result feeds the icon-
+    // click handler below — whether it arrives before or after the
+    // click doesn't matter; the click handler awaits the promise.
+    splashRestorePromise = startSplashSilentRestore();
+
+    // Icon click: the optimistic-first interaction.
     if (icon) {
-      icon.addEventListener('pointerdown', () => {
+      icon.addEventListener('pointerdown', async () => {
+        if (icon.classList.contains('is-pressed')) return;
         icon.classList.add('is-pressed');
-        setTimeout(() => window.__hahDismissSplash(), 180);
+        // Wait for silent restore if it's still pending. In most
+        // cases this is already resolved; in the slow case the user
+        // sees the pressed icon for up to ~2s before action.
+        await splashRestorePromise.catch(() => {});
+        if (splashRestoreState === 'signed-in') {
+          // Brief delay so the press animation completes before fade.
+          setTimeout(() => dismissDesktopSplash(), 180);
+        } else {
+          // Not signed in — flip to sign-in panel.
+          showSplashSignInPanel();
+        }
       }, { once: true });
     }
-    // If a click already landed during the parse-time gap, dismiss now.
-    if (window.__hahSplashDismissNow) {
-      window.__hahDismissSplash();
+
+    if (signInBtn) {
+      signInBtn.addEventListener('click', () => {
+        runSplashSignIn(signInBtn, signInError);
+      });
+    }
+
+    if (configureBtn) {
+      configureBtn.addEventListener('click', () => {
+        if (signInPanel) signInPanel.hidden = true;
+        if (configPanel) configPanel.hidden = false;
+        if (clientIdInput) clientIdInput.focus();
+      });
+    }
+
+    if (configCancelBtn) {
+      configCancelBtn.addEventListener('click', () => {
+        if (configPanel) configPanel.hidden = true;
+        if (signInPanel) signInPanel.hidden = false;
+      });
+    }
+
+    if (configSaveBtn) {
+      configSaveBtn.addEventListener('click', () => {
+        const value = clientIdInput ? String(clientIdInput.value || '').trim() : '';
+        if (!value) {
+          if (clientIdInput) clientIdInput.focus();
+          return;
+        }
+        try {
+          const jsonStore = window.HAHBoard.sharedJsonStore;
+          if (jsonStore && typeof jsonStore.setClientId === 'function') {
+            jsonStore.setClientId(value);
+          }
+        } catch (_) { /* the next sign-in attempt will surface any error */ }
+        if (configPanel) configPanel.hidden = true;
+        if (signInPanel) signInPanel.hidden = false;
+        if (configureBtn) configureBtn.hidden = true;  // clientId now set
+        // Try to sign in immediately — the user already committed by
+        // saving the config, no reason to make them click again.
+        runSplashSignIn(signInBtn, signInError);
+      });
+    }
+
+    if (clientIdInput) {
+      clientIdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && configSaveBtn) {
+          e.preventDefault();
+          configSaveBtn.click();
+        }
+      });
     }
   }
 
-  // Expose immediately on the IIFE-internal scope's window so the
-  // inline onclick in HTML and the addEventListener handler above
-  // both go through the same code path.
+  // Kicks off the silent-restore call and tracks its outcome in
+  // splashRestoreState so the icon click handler can branch on it.
+  // Returns the promise so callers can await it directly.
+  function startSplashSilentRestore() {
+    const jsonStore = window.HAHBoard.sharedJsonStore;
+    if (!jsonStore || typeof jsonStore.tryRestoreIdentitySilently !== 'function') {
+      splashRestoreState = 'signed-out';
+      return Promise.resolve();
+    }
+    return jsonStore.tryRestoreIdentitySilently()
+      .then((restored) => {
+        splashRestoreState = restored ? 'signed-in' : 'signed-out';
+      })
+      .catch(() => {
+        splashRestoreState = 'error';
+      });
+  }
+
+  // Flips the splash from icon mode to sign-in mode. Hides the icon's
+  // press affordance (no longer the meaningful action) and reveals
+  // the sign-in button. If the clientId isn't configured, also
+  // reveals the "Configure app" link.
+  function showSplashSignInPanel() {
+    const splash = document.getElementById('hahDesktopSplash');
+    if (!splash) return;
+    const signInPanel = splash.querySelector('#hahSplashSignInPanel');
+    const configureBtn = splash.querySelector('#hahSplashConfigureBtn');
+    if (signInPanel) signInPanel.hidden = false;
+
+    // Check whether a clientId is configured. If not, surface the
+    // "Configure app" escape hatch.
+    let clientIdMissing = true;
+    try {
+      const jsonStore = window.HAHBoard.sharedJsonStore;
+      if (jsonStore && typeof jsonStore.getInfo === 'function') {
+        const info = jsonStore.getInfo();
+        const clientId = info && info.settings && info.settings.clientId;
+        clientIdMissing = !clientId;
+      }
+    } catch (_) {}
+    if (configureBtn) configureBtn.hidden = !clientIdMissing;
+  }
+
+  // Runs the MSAL sign-in popup, disabling the button during the
+  // attempt and either dismissing the splash on success or rendering
+  // an inline error on failure.
+  async function runSplashSignIn(btn, errEl) {
+    if (!btn) return;
+    if (btn.disabled) return;
+
+    // Pre-check: if clientId is missing, don't even try — show the
+    // configure-app affordance via the error region.
+    let clientId = '';
+    try {
+      const jsonStore = window.HAHBoard.sharedJsonStore;
+      const info = jsonStore && jsonStore.getInfo && jsonStore.getInfo();
+      clientId = (info && info.settings && info.settings.clientId) || '';
+    } catch (_) {}
+    if (!clientId) {
+      renderSplashSignInError(errEl, 'App not configured — set the Microsoft application (client) ID first.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.querySelector('span').textContent = 'Signing in…';
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = '';
+    }
+    try {
+      const jsonStore = window.HAHBoard.sharedJsonStore;
+      await jsonStore.signIn();
+      // Identity now signed in; dismiss splash.
+      dismissDesktopSplash();
+    } catch (err) {
+      // Restore the button so the user can retry.
+      btn.disabled = false;
+      btn.querySelector('span').textContent = 'Sign in with Microsoft';
+      renderSplashSignInError(errEl, friendlySignInError(err));
+    }
+  }
+
+  function renderSplashSignInError(errEl, msg) {
+    if (!errEl) return;
+    errEl.textContent = msg;
+    errEl.hidden = false;
+  }
+
+  function friendlySignInError(err) {
+    const code = err && err.errorCode;
+    const raw = err && err.message ? String(err.message) : String(err);
+    if (code === 'user_cancelled' || /user_cancelled|user closed/i.test(raw)) {
+      return 'Sign-in cancelled. Try again.';
+    }
+    if (code === 'popup_window_error' || /popup.*block/i.test(raw)) {
+      return 'Your browser blocked the sign-in popup. Allow popups for this site and try again.';
+    }
+    if (/network|fetch|failed to load/i.test(raw)) {
+      return "Couldn't reach Microsoft. Check your connection and try again.";
+    }
+    return 'Sign-in failed: ' + raw;
+  }
+
+  // Expose the dismiss helper for any caller (kept for compatibility).
   window.__hahDismissSplash = function () {
     dismissDesktopSplash();
   };
