@@ -10412,9 +10412,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_238_letterhead_smooth_release.html',
-  source: 'hospital_at_home_board_v0_8_238_letterhead_smooth_source.zip',
-  builtAt: '2026-05-15T18:13:20.245165',
+  filename: 'hospital_at_home_board_v0_8_239_round_slide_fix_release.html',
+  source: 'hospital_at_home_board_v0_8_239_round_slide_fix_source.zip',
+  builtAt: '2026-05-15T18:17:40.831453',
   entry: 'desktop.html'
 };
 </script>
@@ -17686,20 +17686,47 @@ window.HAHBoard = window.HAHBoard || {};
     if (!card) { _caseloadCardSnapshot = null; return; }
     _caseloadCardSnapshot = {
       height: card.offsetHeight,
-      state: card.getAttribute('data-zone-state')
+      state: card.getAttribute('data-zone-state'),
+      takenAt: Date.now()
     };
   }
 
   function applyCaseloadHeightTransition() {
     if (!_caseloadCardSnapshot) return;
     const snap = _caseloadCardSnapshot;
-    _caseloadCardSnapshot = null;
+
+    // v0.8.239: the store's setState is synchronous (each call triggers
+    // an immediate re-render via emit()), and the round-action handlers
+    // dispatch state in two beats — first a setState for animation
+    // timestamps and composer reset, then ops.startRound() / ops.endRound()
+    // etc. which calls saveState() → bumpRender() → another setState.
+    // The first re-render lands BEFORE the actual zone-state flip, so a
+    // naïve "consume snapshot on first afterRender" approach (which is
+    // what the v0.8.237 ship did) would burn the snapshot on a no-op
+    // render, leaving no snapshot for the real transition render that
+    // follows. Result: animation never fires, which is exactly what
+    // Henry reported ("there might be but honestly can't tell").
+    //
+    // Fix: only consume the snapshot when the zone-state attribute has
+    // actually changed. Intermediate no-op renders leave the snapshot
+    // intact. A 500 ms TTL safeguards against the snapshot leaking
+    // forever if for some reason the expected state change never
+    // arrives (e.g. a synchronous error inside ops.startRound before
+    // the saveState call).
+    if (Date.now() - (snap.takenAt || 0) > 500) {
+      _caseloadCardSnapshot = null;
+      return;
+    }
 
     const card = document.querySelector('.hah-caseload-card');
     if (!card) return;
 
     const newState = card.getAttribute('data-zone-state');
-    if (newState === snap.state) return; // no transition — bail
+    // No-op intermediate re-render — keep waiting for the real one.
+    if (newState === snap.state) return;
+
+    // Zone-state has flipped — consume snapshot and animate.
+    _caseloadCardSnapshot = null;
 
     const newH = card.offsetHeight;
     const oldH = snap.height;
@@ -24231,10 +24258,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.238. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.239. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.238. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.239. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
