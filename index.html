@@ -6201,6 +6201,21 @@ button.hah-pt-flag:active {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* v0.8.237: parallel entrance animations for the end-round and
+   reset-round transitions, mirroring the start-round zone-in pattern
+   above. Each freshly-mounted zone slides in from slightly above and
+   fades up over ~250 ms. Combined with the FLIP-based card-height
+   transition (applied by applyCaseloadHeightTransition in
+   26-desktop-patient.js), this turns the three round-state swaps into
+   a coherent slide rather than the previous instant content+height pop.
+   The keyframe is shared (hah-round-zone-in) — same visual character
+   across all three transitions keeps the feature reading as "one
+   animation" to the clinician. */
+.hah-round-summary.is-just-ended,
+.hah-round-start-btn.is-just-reset {
+  animation: hah-round-zone-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
 .hah-status-overlay {
   position: absolute;
   top: 50%;
@@ -10393,9 +10408,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_236_pdf_emdash_preview_2x_release.html',
-  source: 'hospital_at_home_board_v0_8_236_pdf_emdash_preview_2x_source.zip',
-  builtAt: '2026-05-15T17:54:00.420683',
+  filename: 'hospital_at_home_board_v0_8_237_round_slide_release.html',
+  source: 'hospital_at_home_board_v0_8_237_round_slide_source.zip',
+  builtAt: '2026-05-15T18:08:48.255447',
   entry: 'desktop.html'
 };
 </script>
@@ -17510,9 +17525,18 @@ window.HAHBoard = window.HAHBoard || {};
     // Round-start animation: when the round started within the last ~1s,
     // mark the zone for the fade-in animation. Reads from store state
     // directly (set by the start-round action handler).
+    // v0.8.237: same pattern extended to end-round and reset-round, so
+    // each fresh zone gets a parallel slide-in. Combined with the
+    // card-height FLIP transition (snapshot + animate height in
+    // afterRender), this turns the previously-jarring state swap into
+    // a coherent slide animation.
     const stateForAnim = store && typeof store.getState === 'function' ? store.getState() : {};
     const animAt = stateForAnim.patient && stateForAnim.patient.roundStartAnimAt;
+    const endAt = stateForAnim.patient && stateForAnim.patient.roundEndAnimAt;
+    const resetAt = stateForAnim.patient && stateForAnim.patient.roundResetAnimAt;
     const roundJustStarted = !!(animAt && (Date.now() - animAt) < 1000);
+    const roundJustEnded = !!(endAt && (Date.now() - endAt) < 1000);
+    const roundJustReset = !!(resetAt && (Date.now() - resetAt) < 1000);
 
     function tile(label, value, filterKey, alert) {
       const isActive  = filterKey && filterSet.has(filterKey);
@@ -17583,7 +17607,7 @@ window.HAHBoard = window.HAHBoard || {};
         : '0';
       zoneHtml = `
         <div class="hah-caseload-divider"></div>
-        <div class="hah-round-summary">
+        <div class="hah-round-summary${roundJustEnded ? ' is-just-ended' : ''}">
           <div class="hah-round-summary-head">
             <span class="hah-round-summary-title">Round complete</span>
           </div>
@@ -17607,7 +17631,7 @@ window.HAHBoard = window.HAHBoard || {};
       // ── Idle: Start round button ──
       zoneHtml = `
         <div class="hah-caseload-divider"></div>
-        <button type="button" class="hah-round-start-btn" data-patient-action="start-round">
+        <button type="button" class="hah-round-start-btn${roundJustReset ? ' is-just-reset' : ''}" data-patient-action="start-round">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px">
             <polygon points="6 4 20 12 6 20 6 4"></polygon>
           </svg>
@@ -17615,13 +17639,87 @@ window.HAHBoard = window.HAHBoard || {};
         </button>`;
     }
 
-    return `<section class="hah-card hah-caseload-card${activeRound ? ' is-round-active' : ''}">
+    // v0.8.237: zone-state attribute drives the card-height FLIP
+    // transition in afterRender. Snapshot captures this value before a
+    // state-change render, then the post-render hook compares old vs new
+    // and animates if it changed.
+    const zoneState = activeRound ? 'active' : (showSummary ? 'summary' : 'idle');
+
+    return `<section class="hah-card hah-caseload-card${activeRound ? ' is-round-active' : ''}" data-zone-state="${zoneState}">
       <div class="hah-caseload-head">
         <span class="hah-caseload-title">Caseload</span>
       </div>
       ${tilesBlock}
       ${zoneHtml}
     </section>`;
+  }
+
+  // v0.8.237: caseload-card height transition (FLIP technique).
+  //
+  // When the round state changes (idle ↔ active ↔ summary), the card's
+  // natural height jumps because the zone below the metric tiles swaps
+  // content of a different size. Before v0.8.237 this was an instant
+  // layout shift — visually jarring, especially alongside the existing
+  // patient-list cascade animation that fires on round-start.
+  //
+  // The fix: snapshot the card's height before each transitioning
+  // action handler dispatches, then in afterRender (post re-render)
+  // run the FLIP — set the card to its old height, force a reflow to
+  // commit, then transition to its new natural height. The zone inside
+  // the card gets its own slide-in animation (is-just-started /
+  // is-just-ended / is-just-reset), and combined with the card-height
+  // transition the whole thing reads as a coherent slide rather than
+  // a height pop + content swap.
+  //
+  // `overflow: hidden` is applied during the transition so the
+  // partially-visible new zone doesn't escape the card's animated
+  // bounds. Cleanup removes the inline styles after `transitionend`
+  // (with a setTimeout fallback in case `transitionend` doesn't fire,
+  // e.g. card unmounted mid-animation).
+  let _caseloadCardSnapshot = null;
+  function snapshotCaseloadCard() {
+    const card = document.querySelector('.hah-caseload-card');
+    if (!card) { _caseloadCardSnapshot = null; return; }
+    _caseloadCardSnapshot = {
+      height: card.offsetHeight,
+      state: card.getAttribute('data-zone-state')
+    };
+  }
+
+  function applyCaseloadHeightTransition() {
+    if (!_caseloadCardSnapshot) return;
+    const snap = _caseloadCardSnapshot;
+    _caseloadCardSnapshot = null;
+
+    const card = document.querySelector('.hah-caseload-card');
+    if (!card) return;
+
+    const newState = card.getAttribute('data-zone-state');
+    if (newState === snap.state) return; // no transition — bail
+
+    const newH = card.offsetHeight;
+    const oldH = snap.height;
+    // <4px delta isn't worth animating; <=0 means we can't measure.
+    if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) return;
+
+    // FLIP: pin to old height, force reflow, transition to new height.
+    card.style.height = oldH + 'px';
+    card.style.overflow = 'hidden';
+    // eslint-disable-next-line no-unused-expressions
+    card.offsetHeight; // force reflow to commit start state
+    card.style.transition = 'height 280ms cubic-bezier(0.4, 0, 0.2, 1)';
+    card.style.height = newH + 'px';
+
+    const cleanup = () => {
+      card.style.height = '';
+      card.style.overflow = '';
+      card.style.transition = '';
+      card.removeEventListener('transitionend', cleanup);
+    };
+    card.addEventListener('transitionend', cleanup, { once: true });
+    // Fallback in case transitionend doesn't fire (rare — card detached
+    // mid-animation, or transition cancelled by a follow-up render).
+    setTimeout(cleanup, 340);
   }
 
   function formatElapsed(ms) {
@@ -20021,6 +20119,10 @@ window.HAHBoard = window.HAHBoard || {};
     initBloodTooltip();
     initWsDragDrop();
     setupResponsivePatientLayout();
+    // v0.8.237: FLIP-animate the caseload card's height transition if
+    // a round start/end/reset just dispatched. Cheap when no snapshot
+    // is pending (the common case for every other re-render).
+    applyCaseloadHeightTransition();
     const vm = d.buildPatientWorkspaceModel(state);
     if (!vm) return;
 
@@ -20831,6 +20933,10 @@ window.HAHBoard = window.HAHBoard || {};
       // patient state. Render-time logic compares against Date.now() and
       // applies the cascade class only while within the animation window.
       // After that the timestamp ages out naturally and renders are clean.
+      // v0.8.237: snapshot the caseload card's height/state before the
+      // setState that triggers re-render, so afterRender can FLIP-animate
+      // the height change.
+      snapshotCaseloadCard();
       store.setState({
         patient: {
           composerByPatient: {},
@@ -20868,8 +20974,11 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
     if (action === 'end-round' && ops) {
+      // v0.8.237: snapshot for the height FLIP + stamp roundEndAnimAt
+      // so the new summary zone gets its slide-in.
+      snapshotCaseloadCard();
       const summary = ops.endRound({});
-      store.setState({ patient: { _roundEnded: Date.now() } });
+      store.setState({ patient: { _roundEnded: Date.now(), roundEndAnimAt: Date.now() } });
       return true;
     }
     if (action === 'dismiss-round-summary' && ops) {
@@ -20877,7 +20986,10 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
     if (action === 'reset-round' && ops) {
-      store.setState({ patient: { composerByPatient: {} } });
+      // v0.8.237: snapshot for the height FLIP + stamp roundResetAnimAt
+      // so the returning idle start-button gets its slide-in.
+      snapshotCaseloadCard();
+      store.setState({ patient: { composerByPatient: {}, roundResetAnimAt: Date.now() } });
       ops.clearLastRoundSummaryFlag();
       ops.resetAllBoardStatuses();
       return true;
@@ -24115,10 +24227,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.236. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.237. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.236. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.237. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
