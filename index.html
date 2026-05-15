@@ -1656,6 +1656,85 @@ html, body {
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   v0.8.232 — Idle timeout warning modal
+   ─────────────────────────────────────────────────────────────────── */
+
+.hah-idle-warning-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;  /* above flyout (9000) but below splash (10000)+1 */
+  background: rgba(15, 23, 42, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hahIdleFadeIn 200ms ease;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+@keyframes hahIdleFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.hah-idle-warning-panel {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 28px 32px 24px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.28);
+  color: var(--desk-text);
+  font-family: inherit;
+  text-align: center;
+}
+
+.hah-idle-warning-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.hah-idle-warning-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--desk-text-muted);
+  margin-bottom: 22px;
+}
+
+.hah-idle-warning-countdown {
+  font-weight: 700;
+  color: #dc2626;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}
+
+.hah-idle-warning-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.hah-idle-warning-stay {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 10px;
+  background: #0a84ff;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 140ms ease, transform 100ms ease;
+}
+.hah-idle-warning-stay:hover {
+  background: #0078e6;
+}
+.hah-idle-warning-stay:active {
+  transform: scale(0.97);
+}
+
 </style>
   <style>
 /* inlined: css/desktop-board.css */
@@ -10307,9 +10386,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_231_splash_signin_release.html',
-  source: 'hospital_at_home_board_v0_8_231_splash_signin_source.zip',
-  builtAt: '2026-05-14T07:49:05.974077',
+  filename: 'hospital_at_home_board_v0_8_233_force_signin_on_launch_release.html',
+  source: 'hospital_at_home_board_v0_8_233_force_signin_on_launch_source.zip',
+  builtAt: '2026-05-15T13:09:45.669778',
   entry: 'desktop.html'
 };
 </script>
@@ -11155,6 +11234,330 @@ window.HAHBoard = window.HAHBoard || {};
     isSignedIn,
     clear,
     computeInitials
+  };
+})();
+
+</script>
+  <script>
+/* inlined: js/22d-desktop-idle-timeout.js */
+/* ─── H@H Board — Desktop idle timeout (v0.8.232) ────────────────────
+   Hospital-standard idle timeout. Signs the user out after 30 minutes
+   of no activity, with a 60-second warning before the cutover. This
+   is an app-level enforcement layer on top of MSAL's own token
+   lifetime — MSAL has no idle concept for personal Microsoft
+   accounts (Entra-managed work/school accounts can configure this
+   via Conditional Access; consumer accounts cannot).
+
+   The module:
+   - Tracks lastActivityAt in localStorage. Throttled to 1 write per
+     10 seconds so we don't hammer storage on mousemove.
+   - Polls every 10 seconds for the idle elapsed time.
+   - At 29 minutes, shows a warning modal with a 60-second countdown
+     and a "Stay signed in" button. Any user activity (or button
+     click) resets the timer.
+   - At 30 minutes, signs the user out and reloads the app — the
+     splash then shows them the sign-in flow with an explanation.
+   - On app launch: if lastActivityAt is older than 30 min, treats
+     it as if the timeout fired while the app was closed. The splash
+     proceeds to sign-in mode with the same explanation.
+
+   What it does NOT do:
+   - Track activity from other clients (mobile app, browser tabs).
+     If a user is active on mobile but the desktop tab is idle, the
+     desktop times out. Each client tracks its own idle window
+     because activity is naturally local — they're separate sessions.
+   - Sign the user out across other Microsoft sessions. MSAL's
+     logout only touches the local cache and the current redirect.
+     Hospital-grade "sign out everywhere" requires Entra-side
+     session revocation, which consumer accounts can't do.
+──────────────────────────────────────────────────────────────────── */
+
+window.HAHBoard = window.HAHBoard || {};
+
+(function () {
+  // ── Configuration ──────────────────────────────────────────────────
+
+  // 30-minute idle window. Hospital systems (Epic, Cerner, Allscripts)
+  // commonly use 15-30 minutes. 30 is the relaxed end of the range.
+  const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  // Show the warning modal 60 seconds before the cutover.
+  const WARNING_MS = 60 * 1000;
+  // Poll interval. 10s is fine resolution for a 30-minute timeout
+  // and is cheap.
+  const POLL_INTERVAL_MS = 10 * 1000;
+  // Throttle writes to lastActivityAt — no point writing on every
+  // mousemove. 10s means at most 6 writes per minute of activity.
+  const ACTIVITY_THROTTLE_MS = 10 * 1000;
+
+  const LAST_ACTIVITY_KEY = 'hah_board_last_activity_at';
+
+  // ── State ──────────────────────────────────────────────────────────
+
+  let pollTimer = null;
+  let warningModal = null;
+  let countdownInterval = null;
+  let active = false;
+  let lastWriteAt = 0;
+
+  // ── Storage helpers ───────────────────────────────────────────────
+
+  function readLastActivity() {
+    try {
+      const raw = localStorage.getItem(LAST_ACTIVITY_KEY);
+      const n = raw ? Number(raw) : 0;
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch (_) { return 0; }
+  }
+
+  function writeLastActivity(ts) {
+    try {
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(ts));
+      lastWriteAt = ts;
+    } catch (_) {}
+  }
+
+  function clearLastActivity() {
+    try { localStorage.removeItem(LAST_ACTIVITY_KEY); } catch (_) {}
+    lastWriteAt = 0;
+  }
+
+  // ── Activity tracking ─────────────────────────────────────────────
+
+  function noteActivity() {
+    if (!active) return;
+    const now = Date.now();
+    if (now - lastWriteAt < ACTIVITY_THROTTLE_MS) return;
+    writeLastActivity(now);
+    // If a warning is showing and the user did something, dismiss it
+    // and reset the timer immediately — same as clicking "Stay
+    // signed in". Means a user scrolling or typing while the warning
+    // is up cancels it without needing to interact with the modal.
+    if (warningModal) {
+      hideWarningModal();
+    }
+  }
+
+  function attachActivityListeners() {
+    // Capture-phase listeners so they fire regardless of where in
+    // the DOM the event lands and what other handlers do to it.
+    const opts = { capture: true, passive: true };
+    document.addEventListener('click', noteActivity, opts);
+    document.addEventListener('keydown', noteActivity, opts);
+    document.addEventListener('mousemove', noteActivity, opts);
+    document.addEventListener('scroll', noteActivity, opts);
+    document.addEventListener('touchstart', noteActivity, opts);
+    document.addEventListener('focus', noteActivity, opts);
+    window.addEventListener('focus', noteActivity, opts);
+  }
+
+  function detachActivityListeners() {
+    const opts = { capture: true };
+    document.removeEventListener('click', noteActivity, opts);
+    document.removeEventListener('keydown', noteActivity, opts);
+    document.removeEventListener('mousemove', noteActivity, opts);
+    document.removeEventListener('scroll', noteActivity, opts);
+    document.removeEventListener('touchstart', noteActivity, opts);
+    document.removeEventListener('focus', noteActivity, opts);
+    window.removeEventListener('focus', noteActivity, opts);
+  }
+
+  // ── Polling and timeout enforcement ──────────────────────────────
+
+  function tick() {
+    if (!active) return;
+    const lastActivity = readLastActivity();
+    if (!lastActivity) {
+      // No baseline yet — set it now and skip this tick.
+      writeLastActivity(Date.now());
+      return;
+    }
+    const idle = Date.now() - lastActivity;
+    if (idle >= IDLE_TIMEOUT_MS) {
+      handleTimeout();
+    } else if (idle >= IDLE_TIMEOUT_MS - WARNING_MS) {
+      if (!warningModal) showWarningModal(lastActivity);
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  // ── Warning modal ────────────────────────────────────────────────
+
+  function showWarningModal(lastActivityTs) {
+    if (warningModal) return;
+    const modal = document.createElement('div');
+    modal.id = 'hahIdleWarningModal';
+    modal.className = 'hah-idle-warning-backdrop';
+    modal.innerHTML = [
+      '<div class="hah-idle-warning-panel" role="alertdialog" aria-labelledby="hahIdleWarningTitle">',
+      '<div class="hah-idle-warning-title" id="hahIdleWarningTitle">Are you still there?</div>',
+      '<div class="hah-idle-warning-body">',
+      'You\'ve been inactive for a while. For security, you\'ll be signed out in ',
+      '<span id="hahIdleWarningCountdown" class="hah-idle-warning-countdown">60</span>',
+      ' seconds.',
+      '</div>',
+      '<div class="hah-idle-warning-actions">',
+      '<button type="button" id="hahIdleWarningStayBtn" class="hah-idle-warning-stay">Stay signed in</button>',
+      '</div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(modal);
+    warningModal = modal;
+
+    const stayBtn = modal.querySelector('#hahIdleWarningStayBtn');
+    if (stayBtn) {
+      stayBtn.addEventListener('click', () => {
+        // Treated as activity — extends the session.
+        writeLastActivity(Date.now());
+        hideWarningModal();
+      });
+      // Focus the button so Enter dismisses by default.
+      setTimeout(() => { try { stayBtn.focus(); } catch (_) {} }, 0);
+    }
+
+    // Countdown text updates every 1s using the actual remaining
+    // time, not a local counter — survives tab throttling.
+    countdownInterval = setInterval(() => {
+      const lastActivity = readLastActivity();
+      const remaining = Math.max(0, IDLE_TIMEOUT_MS - (Date.now() - lastActivity));
+      const seconds = Math.ceil(remaining / 1000);
+      const el = document.getElementById('hahIdleWarningCountdown');
+      if (el) el.textContent = String(seconds);
+      if (remaining <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        handleTimeout();
+      }
+    }, 1000);
+  }
+
+  function hideWarningModal() {
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    if (warningModal) {
+      try { warningModal.remove(); } catch (_) {}
+      warningModal = null;
+    }
+  }
+
+  // ── Timeout enforcement ──────────────────────────────────────────
+
+  function handleTimeout() {
+    if (!active) return;
+    stop();
+    hideWarningModal();
+    clearLastActivity();
+    // Mark the reason so the splash can explain why the user is
+    // back at the sign-in screen. The flag is read by the splash
+    // auth flow on next launch.
+    try {
+      sessionStorage.setItem('hah_board_idle_signed_out', '1');
+    } catch (_) {}
+    // Sign out (clears MSAL cache + identity) and reload.
+    const jsonStore = window.HAHBoard.sharedJsonStore;
+    if (jsonStore && typeof jsonStore.signOutInteractive === 'function') {
+      // Don't await — we want the reload to happen even if logout
+      // hangs. The next-launch sign-in flow will still require
+      // re-auth because we're forcing the reload.
+      jsonStore.signOutInteractive().catch(() => {});
+    }
+    // Also clear identity directly in case the json store is missing.
+    if (window.HAHBoard.identity && typeof window.HAHBoard.identity.clear === 'function') {
+      window.HAHBoard.identity.clear();
+    }
+    // Brief delay so the user sees the warning's final "0 seconds"
+    // before reload, rather than an instant cut.
+    setTimeout(() => {
+      try { window.location.reload(); } catch (_) {}
+    }, 400);
+  }
+
+  // ── Public API ───────────────────────────────────────────────────
+
+  /**
+   * Start the idle watcher. Called by the shell after sign-in
+   * completes (or on launch if a session is already restored).
+   * Idempotent — calling twice is a no-op.
+   */
+  function start() {
+    if (active) return;
+    active = true;
+    writeLastActivity(Date.now());
+    attachActivityListeners();
+    startPolling();
+  }
+
+  /**
+   * Stop the idle watcher. Called when the user signs out
+   * explicitly (so we don't fire timeout on an already-signed-out
+   * session) or when the page unloads.
+   */
+  function stop() {
+    if (!active) return;
+    active = false;
+    detachActivityListeners();
+    stopPolling();
+    hideWarningModal();
+  }
+
+  /**
+   * Check on app launch whether the user was idle for too long
+   * while the app was closed. Returns true if the timeout has
+   * expired and the user should be forced to sign in fresh.
+   * Reading this also CLEARS the stored activity timestamp so a
+   * later silent restore doesn't immediately fail on the same
+   * stale value.
+   */
+  function checkLaunchTimeout() {
+    const lastActivity = readLastActivity();
+    if (!lastActivity) return false;
+    const idle = Date.now() - lastActivity;
+    if (idle >= IDLE_TIMEOUT_MS) {
+      // Clear so subsequent checks (or a quick re-sign-in attempt)
+      // don't keep flagging this as timed-out.
+      clearLastActivity();
+      try {
+        sessionStorage.setItem('hah_board_idle_signed_out', '1');
+      } catch (_) {}
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the most recent sign-out (within this page's
+   * sessionStorage scope) was caused by an idle timeout. The
+   * splash reads this to show the right "you were signed out for
+   * inactivity" message. Reading clears the flag so it only
+   * surfaces once.
+   */
+  function consumeIdleSignedOutFlag() {
+    try {
+      const val = sessionStorage.getItem('hah_board_idle_signed_out');
+      sessionStorage.removeItem('hah_board_idle_signed_out');
+      return val === '1';
+    } catch (_) { return false; }
+  }
+
+  window.HAHBoard.idleTimeout = {
+    start,
+    stop,
+    checkLaunchTimeout,
+    consumeIdleSignedOutFlag,
+    IDLE_TIMEOUT_MS,
+    WARNING_MS
   };
 })();
 
@@ -23685,10 +24088,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.231. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.233. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.231. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.233. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26448,9 +26851,12 @@ window.HAHBoard = window.HAHBoard || {};
       icon.addEventListener('pointerdown', async () => {
         if (icon.classList.contains('is-pressed')) return;
         icon.classList.add('is-pressed');
-        // Wait for silent restore if it's still pending. In most
-        // cases this is already resolved; in the slow case the user
-        // sees the pressed icon for up to ~2s before action.
+        // v0.8.233: splashRestoreState is always 'signed-out' now (no
+        // silent restore on launch — see startSplashSilentRestore).
+        // The promise.await + state check are kept to preserve the
+        // shape of the state machine for future re-introduction of
+        // gentler launch flows. Currently this always falls through
+        // to showSplashSignInPanel().
         await splashRestorePromise.catch(() => {});
         if (splashRestoreState === 'signed-in') {
           // Brief delay so the press animation completes before fade.
@@ -26515,34 +26921,47 @@ window.HAHBoard = window.HAHBoard || {};
     }
   }
 
-  // Kicks off the silent-restore call and tracks its outcome in
-  // splashRestoreState so the icon click handler can branch on it.
-  // Returns the promise so callers can await it directly.
+  // v0.8.233: silent restore is no longer used to gate splash dismissal.
+  // Every fresh launch requires interactive sign-in regardless of MSAL
+  // cache state. This closes the "close PWA → reopen → in" loophole
+  // that bypassed the v0.8.232 idle timeout entirely.
+  //
+  // MSAL's token cache is still useful — the Microsoft popup will be
+  // near-instant when a refresh token exists (the user typically just
+  // sees a brief Windows Hello biometric prompt instead of typing
+  // credentials). But the popup itself still appears, providing the
+  // proof-of-presence we need.
+  //
+  // Function name kept (`startSplashSilentRestore`) because the
+  // callsites and state machine reference it; the implementation
+  // simply marks restore as "signed-out" immediately. Returning a
+  // resolved promise so awaiters in the icon-click handler don't hang.
   function startSplashSilentRestore() {
-    const jsonStore = window.HAHBoard.sharedJsonStore;
-    if (!jsonStore || typeof jsonStore.tryRestoreIdentitySilently !== 'function') {
-      splashRestoreState = 'signed-out';
-      return Promise.resolve();
-    }
-    return jsonStore.tryRestoreIdentitySilently()
-      .then((restored) => {
-        splashRestoreState = restored ? 'signed-in' : 'signed-out';
-      })
-      .catch(() => {
-        splashRestoreState = 'error';
-      });
+    splashRestoreState = 'signed-out';
+    return Promise.resolve();
   }
 
   // Flips the splash from icon mode to sign-in mode. Hides the icon's
   // press affordance (no longer the meaningful action) and reveals
   // the sign-in button. If the clientId isn't configured, also
   // reveals the "Configure app" link.
+  // v0.8.232: when the previous session ended via the 30-minute idle
+  // timeout, surface that as an inline message above the sign-in
+  // button so the user knows why they're seeing this. Reading the
+  // flag clears it so it only shows once.
   function showSplashSignInPanel() {
     const splash = document.getElementById('hahDesktopSplash');
     if (!splash) return;
     const signInPanel = splash.querySelector('#hahSplashSignInPanel');
+    const signInError = splash.querySelector('#hahSplashSignInError');
     const configureBtn = splash.querySelector('#hahSplashConfigureBtn');
     if (signInPanel) signInPanel.hidden = false;
+
+    // Idle-timeout explanation (consumes the flag — only shows once).
+    const idle = window.HAHBoard && window.HAHBoard.idleTimeout;
+    if (idle && typeof idle.consumeIdleSignedOutFlag === 'function' && idle.consumeIdleSignedOutFlag()) {
+      renderSplashSignInError(signInError, 'Signed out after 30 minutes of inactivity. Sign in again to continue.');
+    }
 
     // Check whether a clientId is configured. If not, surface the
     // "Configure app" escape hatch.
@@ -26643,6 +27062,17 @@ window.HAHBoard = window.HAHBoard || {};
     setTimeout(() => {
       if (splash.parentNode) splash.parentNode.removeChild(splash);
     }, SPLASH_FADE_MS + 60);
+    // v0.8.232: dismissing the splash means the user is entering the
+    // app with an active session — start the idle timeout watcher.
+    // Idempotent; safe even if a quick double-dismiss tries to start
+    // it twice. Only starts if the user is actually signed in (silent
+    // restore could have failed but the splash dismissed for some
+    // other reason; in that case we don't want to start watching).
+    const identity = window.HAHBoard && window.HAHBoard.identity;
+    const idle = window.HAHBoard && window.HAHBoard.idleTimeout;
+    if (idle && identity && identity.isSignedIn && identity.isSignedIn()) {
+      idle.start();
+    }
   }
 
   function renderShell() {
@@ -26955,6 +27385,12 @@ window.HAHBoard = window.HAHBoard || {};
       // Close the flyout so the user sees the avatar update.
       const flyout = document.getElementById('hahAccountFlyout');
       if (flyout && typeof flyout.hidePopover === 'function') flyout.hidePopover();
+      // v0.8.232: start the idle watcher now that there's a session
+      // to protect. (Splash-driven sign-in starts the watcher via
+      // dismissDesktopSplash; this is the parallel path for avatar-
+      // driven sign-in mid-session.)
+      const idle = window.HAHBoard && window.HAHBoard.idleTimeout;
+      if (idle && typeof idle.start === 'function') idle.start();
     } catch (err) {
       window.alert('Sign-in failed: ' + (err && err.message ? err.message : err));
     }
@@ -26975,6 +27411,9 @@ window.HAHBoard = window.HAHBoard || {};
     if (!window.confirm('Sign out of your Microsoft account on this device?')) return;
     try {
       await jsonStore.signOutInteractive();
+      // v0.8.232: stop the idle watcher — no session left to protect.
+      const idle = window.HAHBoard && window.HAHBoard.idleTimeout;
+      if (idle && typeof idle.stop === 'function') idle.stop();
       // signOutInteractive() calls identity.clear() which pushes a
       // signed-out actorIdentity to the store. Subscribers fire,
       // renderFromState runs, the avatar updates. No manual refresh
