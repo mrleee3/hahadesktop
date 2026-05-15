@@ -10412,9 +10412,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_240_round_slide_waapi_release.html',
-  source: 'hospital_at_home_board_v0_8_240_round_slide_waapi_source.zip',
-  builtAt: '2026-05-15T19:08:15.541891',
+  filename: 'hospital_at_home_board_v0_8_241_round_slide_debug_release.html',
+  source: 'hospital_at_home_board_v0_8_241_round_slide_debug_source.zip',
+  builtAt: '2026-05-15T19:19:23.586016',
   entry: 'desktop.html'
 };
 </script>
@@ -17683,12 +17683,17 @@ window.HAHBoard = window.HAHBoard || {};
   let _caseloadCardSnapshot = null;
   function snapshotCaseloadCard() {
     const card = document.querySelector('.hah-caseload-card');
-    if (!card) { _caseloadCardSnapshot = null; return; }
+    if (!card) {
+      _caseloadCardSnapshot = null;
+      try { console.log('[hah-round-anim] snapshot — no card found'); } catch (_) {}
+      return;
+    }
     _caseloadCardSnapshot = {
       height: card.offsetHeight,
       state: card.getAttribute('data-zone-state'),
       takenAt: Date.now()
     };
+    try { console.log('[hah-round-anim] snapshot taken', _caseloadCardSnapshot); } catch (_) {}
   }
 
   function applyCaseloadHeightTransition() {
@@ -17715,6 +17720,7 @@ window.HAHBoard = window.HAHBoard || {};
     // the saveState call).
     if (Date.now() - (snap.takenAt || 0) > 500) {
       _caseloadCardSnapshot = null;
+      try { console.log('[hah-round-anim] snapshot expired (TTL > 500ms)'); } catch (_) {}
       return;
     }
 
@@ -17723,7 +17729,11 @@ window.HAHBoard = window.HAHBoard || {};
 
     const newState = card.getAttribute('data-zone-state');
     // No-op intermediate re-render — keep waiting for the real one.
-    if (newState === snap.state) return;
+    if (newState === snap.state) {
+      try { console.log('[hah-round-anim] render with same state — waiting', { state: newState }); } catch (_) {}
+      return;
+    }
+    try { console.log('[hah-round-anim] zone-state flipped', { from: snap.state, to: newState }); } catch (_) {}
 
     // Zone-state has flipped — consume snapshot and animate.
     _caseloadCardSnapshot = null;
@@ -17731,37 +17741,70 @@ window.HAHBoard = window.HAHBoard || {};
     const newH = card.offsetHeight;
     const oldH = snap.height;
     // <4px delta isn't worth animating; <=0 means we can't measure.
-    if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) return;
+    if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) {
+      try { console.log('[hah-round-anim] skip — delta too small', { oldH: oldH, newH: newH }); } catch (_) {}
+      return;
+    }
 
-    // v0.8.240: Web Animations API replaces the prior FLIP-via-CSS-
-    // transition approach (v0.8.237 / v0.8.239). The FLIP technique was
-    // correct in theory but unreliable in practice on this codepath:
-    // the card was just innerHTML-replaced into the DOM, and certain
-    // Chromium scheduling paths batched the "set old height + set new
-    // height" pair into a single style commit, with the transition
-    // never picking up a distinct start state. Force-reflow via
-    // offsetHeight didn't reliably separate the two on every render.
+    // v0.8.241: defer the animation start to the next frame via
+    // requestAnimationFrame. The round-action handlers dispatch a
+    // CASCADE of synchronous setStates (e.g. start-round: setState for
+    // roundStartAnimAt → setState from ops.startRound's saveState →
+    // setState from ops.enterPatient's saveState — three total). Each
+    // setState destroys and recreates the caseload card via
+    // `leftPane.innerHTML = renderLeftPane(state)`. If we start the
+    // WAAPI animation on the afterRender of render #2 (the one that
+    // flips zone-state), render #3 a millisecond later destroys the
+    // animated element and cancels the animation. WAAPI animations are
+    // bound to a specific DOM element; when that element is removed,
+    // the animation is gone.
     //
-    // WAAPI bypasses CSS transitions entirely — the engine drives the
-    // height value directly across the animation timeline. No force-
-    // reflow tricks, no inline-style cleanup race. The card's natural
-    // height is the final state (no fill: forwards needed), so when the
-    // animation ends, the card returns to its computed height with no
-    // residual inline styles. overflow: hidden is the one inline style
-    // still needed for the duration (so the new zone doesn't overflow
-    // the still-animating card bounds); it's cleared in onfinish.
-    card.style.overflow = 'hidden';
-    const anim = card.animate([
-      { height: oldH + 'px' },
-      { height: newH + 'px' }
-    ], {
-      duration: 320,
-      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fill: 'none'
+    // rAF defers until after the synchronous JS tick completes — by
+    // then all three setStates have fired and the final card element
+    // is in place. We re-query for the current card and animate that.
+    //
+    // Diagnostic logging behind a try/catch so it never blocks the
+    // animation. Henry can inspect via `[hah-round-anim]` filter in
+    // DevTools console.
+    try { console.log('[hah-round-anim] queueing rAF', { from: snap.state, to: newState, oldH: oldH, observedNewH: newH }); } catch (_) {}
+
+    requestAnimationFrame(function () {
+      const cardNow = document.querySelector('.hah-caseload-card');
+      if (!cardNow) {
+        try { console.log('[hah-round-anim] aborted — no card in DOM at rAF time'); } catch (_) {}
+        return;
+      }
+      // Re-measure: the card we're now animating may be a different
+      // instance than the one observed pre-rAF. Use ITS current natural
+      // height as the target.
+      const targetH = cardNow.offsetHeight;
+      if (targetH <= 0 || Math.abs(targetH - oldH) < 4) {
+        try { console.log('[hah-round-anim] aborted at rAF — height invalid or unchanged', { oldH: oldH, targetH: targetH }); } catch (_) {}
+        return;
+      }
+      cardNow.style.overflow = 'hidden';
+      const anim = cardNow.animate([
+        { height: oldH + 'px' },
+        { height: targetH + 'px' }
+      ], {
+        duration: 320,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        fill: 'none'
+      });
+      try { console.log('[hah-round-anim] animation started', { oldH: oldH, targetH: targetH, duration: 320, playState: anim.playState }); } catch (_) {}
+      const clearOverflow = function () {
+        const liveCard = document.querySelector('.hah-caseload-card');
+        if (liveCard) liveCard.style.overflow = '';
+      };
+      anim.addEventListener('finish', function () {
+        try { console.log('[hah-round-anim] finished'); } catch (_) {}
+        clearOverflow();
+      }, { once: true });
+      anim.addEventListener('cancel', function () {
+        try { console.log('[hah-round-anim] cancelled (element likely removed)'); } catch (_) {}
+        clearOverflow();
+      }, { once: true });
     });
-    const clearOverflow = () => { card.style.overflow = ''; };
-    anim.addEventListener('finish', clearOverflow, { once: true });
-    anim.addEventListener('cancel', clearOverflow, { once: true });
   }
 
   function formatElapsed(ms) {
@@ -24269,10 +24312,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.240. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.241. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.240. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.241. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
