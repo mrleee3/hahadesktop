@@ -10412,9 +10412,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_241_round_slide_debug_release.html',
-  source: 'hospital_at_home_board_v0_8_241_round_slide_debug_source.zip',
-  builtAt: '2026-05-15T19:19:23.586016',
+  filename: 'hospital_at_home_board_v0_8_243_pdf_match_preview_release.html',
+  source: 'hospital_at_home_board_v0_8_243_pdf_match_preview_source.zip',
+  builtAt: '2026-05-15T19:30:36.541632',
   entry: 'desktop.html'
 };
 </script>
@@ -17683,17 +17683,12 @@ window.HAHBoard = window.HAHBoard || {};
   let _caseloadCardSnapshot = null;
   function snapshotCaseloadCard() {
     const card = document.querySelector('.hah-caseload-card');
-    if (!card) {
-      _caseloadCardSnapshot = null;
-      try { console.log('[hah-round-anim] snapshot — no card found'); } catch (_) {}
-      return;
-    }
+    if (!card) { _caseloadCardSnapshot = null; return; }
     _caseloadCardSnapshot = {
       height: card.offsetHeight,
       state: card.getAttribute('data-zone-state'),
       takenAt: Date.now()
     };
-    try { console.log('[hah-round-anim] snapshot taken', _caseloadCardSnapshot); } catch (_) {}
   }
 
   function applyCaseloadHeightTransition() {
@@ -17720,7 +17715,6 @@ window.HAHBoard = window.HAHBoard || {};
     // the saveState call).
     if (Date.now() - (snap.takenAt || 0) > 500) {
       _caseloadCardSnapshot = null;
-      try { console.log('[hah-round-anim] snapshot expired (TTL > 500ms)'); } catch (_) {}
       return;
     }
 
@@ -17729,11 +17723,7 @@ window.HAHBoard = window.HAHBoard || {};
 
     const newState = card.getAttribute('data-zone-state');
     // No-op intermediate re-render — keep waiting for the real one.
-    if (newState === snap.state) {
-      try { console.log('[hah-round-anim] render with same state — waiting', { state: newState }); } catch (_) {}
-      return;
-    }
-    try { console.log('[hah-round-anim] zone-state flipped', { from: snap.state, to: newState }); } catch (_) {}
+    if (newState === snap.state) return;
 
     // Zone-state has flipped — consume snapshot and animate.
     _caseloadCardSnapshot = null;
@@ -17741,10 +17731,7 @@ window.HAHBoard = window.HAHBoard || {};
     const newH = card.offsetHeight;
     const oldH = snap.height;
     // <4px delta isn't worth animating; <=0 means we can't measure.
-    if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) {
-      try { console.log('[hah-round-anim] skip — delta too small', { oldH: oldH, newH: newH }); } catch (_) {}
-      return;
-    }
+    if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) return;
 
     // v0.8.241: defer the animation start to the next frame via
     // requestAnimationFrame. The round-action handlers dispatch a
@@ -17762,26 +17749,15 @@ window.HAHBoard = window.HAHBoard || {};
     // rAF defers until after the synchronous JS tick completes — by
     // then all three setStates have fired and the final card element
     // is in place. We re-query for the current card and animate that.
-    //
-    // Diagnostic logging behind a try/catch so it never blocks the
-    // animation. Henry can inspect via `[hah-round-anim]` filter in
-    // DevTools console.
-    try { console.log('[hah-round-anim] queueing rAF', { from: snap.state, to: newState, oldH: oldH, observedNewH: newH }); } catch (_) {}
 
     requestAnimationFrame(function () {
       const cardNow = document.querySelector('.hah-caseload-card');
-      if (!cardNow) {
-        try { console.log('[hah-round-anim] aborted — no card in DOM at rAF time'); } catch (_) {}
-        return;
-      }
+      if (!cardNow) return;
       // Re-measure: the card we're now animating may be a different
       // instance than the one observed pre-rAF. Use ITS current natural
       // height as the target.
       const targetH = cardNow.offsetHeight;
-      if (targetH <= 0 || Math.abs(targetH - oldH) < 4) {
-        try { console.log('[hah-round-anim] aborted at rAF — height invalid or unchanged', { oldH: oldH, targetH: targetH }); } catch (_) {}
-        return;
-      }
+      if (targetH <= 0 || Math.abs(targetH - oldH) < 4) return;
       cardNow.style.overflow = 'hidden';
       const anim = cardNow.animate([
         { height: oldH + 'px' },
@@ -17791,19 +17767,12 @@ window.HAHBoard = window.HAHBoard || {};
         easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
         fill: 'none'
       });
-      try { console.log('[hah-round-anim] animation started', { oldH: oldH, targetH: targetH, duration: 320, playState: anim.playState }); } catch (_) {}
       const clearOverflow = function () {
         const liveCard = document.querySelector('.hah-caseload-card');
         if (liveCard) liveCard.style.overflow = '';
       };
-      anim.addEventListener('finish', function () {
-        try { console.log('[hah-round-anim] finished'); } catch (_) {}
-        clearOverflow();
-      }, { once: true });
-      anim.addEventListener('cancel', function () {
-        try { console.log('[hah-round-anim] cancelled (element likely removed)'); } catch (_) {}
-        clearOverflow();
-      }, { once: true });
+      anim.addEventListener('finish', clearOverflow, { once: true });
+      anim.addEventListener('cancel', clearOverflow, { once: true });
     });
   }
 
@@ -24312,10 +24281,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.241. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.243. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.241. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.243. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25526,17 +25495,32 @@ window.HAHBoard = window.HAHBoard || {};
     // content blocks. Bold/italic/underline run formatting flows into
     // pdfmake's text-array shape (each run is its own object with
     // its own bold/italics/decoration flags).
+    //
+    // v0.8.243: source of truth for paragraph/list styling is the
+    // `.hah-dl-prev-body` block in css/desktop-discharge-letter.css —
+    // the live preview the clinician sees while drafting. Keep this
+    // function's emissions in sync with that CSS. Specifically:
+    //   - Left-aligned body, NO `alignment: 'justify'`. The v0.8.181
+    //     fix in the CSS dropped justify because it produces big
+    //     word-gaps on lines preceding <br> (which we map to '\n').
+    //     pdfmake reproduces the same bug, plus it just doesn't read
+    //     as a normal UK clinical letter — they're conventionally
+    //     left-aligned. Henry confirmed the preference in v0.8.243.
+    //   - 6pt bottom margin per paragraph (matches CSS `margin-bottom:
+    //     6px` on `.hah-dl-prev-body p`).
+    //   - List items: 12pt left indent, 2pt bottom (matches CSS
+    //     `padding-left: 1.4em` on ul/ol + `margin-bottom: 2px` on li).
     const sourceHtml = (opts.format === 'plain') ? plainTextToHtml(text) : text;
     const tokens = tokeniseLetterBody(sourceHtml);
     if (tokens.length === 0) {
-      // Defensive: render as plain text. v0.8.236: pass through the
+      // Defensive: render as plain text. v0.8.235: pass through the
       // glyph sanitiser so missing-font arrows don't render as tofu.
-      return [{ text: sanitiseTextForPdfmake(sourceHtml.replace(/<[^>]+>/g, '')), alignment: 'justify', margin: [0, 0, 0, 6] }];
+      return [{ text: sanitiseTextForPdfmake(sourceHtml.replace(/<[^>]+>/g, '')), margin: [0, 0, 0, 6] }];
     }
     return tokens.map((token) => {
       const isListItem = (token.style === 'list-item');
       // pdfmake text array: each run is { text, bold?, italics?, decoration? }
-      // v0.8.236: every run's text passes through sanitiseTextForPdfmake
+      // v0.8.235: every run's text passes through sanitiseTextForPdfmake
       // before reaching pdfmake — covers arrow glyphs the bundled Roboto
       // subset can't render. Bullet prefix below is ASCII-safe so doesn't
       // need it.
@@ -25556,13 +25540,11 @@ window.HAHBoard = window.HAHBoard || {};
         // matches the Word output's appearance.
         return {
           text: [{ text: '• ', bold: false }].concat(runs),
-          alignment: 'justify',
           margin: [12, 0, 0, 2]
         };
       }
       return {
         text: runs,
-        alignment: 'justify',
         margin: [0, 0, 0, 6]
       };
     });
