@@ -10412,9 +10412,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_239_round_slide_fix_release.html',
-  source: 'hospital_at_home_board_v0_8_239_round_slide_fix_source.zip',
-  builtAt: '2026-05-15T18:17:40.831453',
+  filename: 'hospital_at_home_board_v0_8_240_round_slide_waapi_release.html',
+  source: 'hospital_at_home_board_v0_8_240_round_slide_waapi_source.zip',
+  builtAt: '2026-05-15T19:08:15.541891',
   entry: 'desktop.html'
 };
 </script>
@@ -17733,24 +17733,35 @@ window.HAHBoard = window.HAHBoard || {};
     // <4px delta isn't worth animating; <=0 means we can't measure.
     if (oldH <= 0 || newH <= 0 || Math.abs(newH - oldH) < 4) return;
 
-    // FLIP: pin to old height, force reflow, transition to new height.
-    card.style.height = oldH + 'px';
+    // v0.8.240: Web Animations API replaces the prior FLIP-via-CSS-
+    // transition approach (v0.8.237 / v0.8.239). The FLIP technique was
+    // correct in theory but unreliable in practice on this codepath:
+    // the card was just innerHTML-replaced into the DOM, and certain
+    // Chromium scheduling paths batched the "set old height + set new
+    // height" pair into a single style commit, with the transition
+    // never picking up a distinct start state. Force-reflow via
+    // offsetHeight didn't reliably separate the two on every render.
+    //
+    // WAAPI bypasses CSS transitions entirely — the engine drives the
+    // height value directly across the animation timeline. No force-
+    // reflow tricks, no inline-style cleanup race. The card's natural
+    // height is the final state (no fill: forwards needed), so when the
+    // animation ends, the card returns to its computed height with no
+    // residual inline styles. overflow: hidden is the one inline style
+    // still needed for the duration (so the new zone doesn't overflow
+    // the still-animating card bounds); it's cleared in onfinish.
     card.style.overflow = 'hidden';
-    // eslint-disable-next-line no-unused-expressions
-    card.offsetHeight; // force reflow to commit start state
-    card.style.transition = 'height 280ms cubic-bezier(0.4, 0, 0.2, 1)';
-    card.style.height = newH + 'px';
-
-    const cleanup = () => {
-      card.style.height = '';
-      card.style.overflow = '';
-      card.style.transition = '';
-      card.removeEventListener('transitionend', cleanup);
-    };
-    card.addEventListener('transitionend', cleanup, { once: true });
-    // Fallback in case transitionend doesn't fire (rare — card detached
-    // mid-animation, or transition cancelled by a follow-up render).
-    setTimeout(cleanup, 340);
+    const anim = card.animate([
+      { height: oldH + 'px' },
+      { height: newH + 'px' }
+    ], {
+      duration: 320,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      fill: 'none'
+    });
+    const clearOverflow = () => { card.style.overflow = ''; };
+    anim.addEventListener('finish', clearOverflow, { once: true });
+    anim.addEventListener('cancel', clearOverflow, { once: true });
   }
 
   function formatElapsed(ms) {
@@ -24258,10 +24269,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.239. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.240. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.239. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.240. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
