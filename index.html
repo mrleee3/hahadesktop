@@ -10386,9 +10386,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_234_prompt_login_release.html',
-  source: 'hospital_at_home_board_v0_8_234_prompt_login_source.zip',
-  builtAt: '2026-05-15T13:21:25.665177',
+  filename: 'hospital_at_home_board_v0_8_235_pdf_glyphs_preview_crisp_release.html',
+  source: 'hospital_at_home_board_v0_8_235_pdf_glyphs_preview_crisp_source.zip',
+  builtAt: '2026-05-15T16:51:13.469219',
   entry: 'desktop.html'
 };
 </script>
@@ -24108,10 +24108,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.234. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.235. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.234. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.235. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25130,6 +25130,85 @@ window.HAHBoard = window.HAHBoard || {};
   // approximation of Calibri at small sizes. Trade-off acceptable for the
   // trial; can swap to a Calibri-equivalent VFS later.
 
+  // v0.8.235: glyph sanitiser for the PDF path.
+  //
+  // pdfmake's default vfs_fonts.js bundles a Roboto subset that covers
+  // basic Latin, Latin-1 Supplement, Latin Extended-A, and the General
+  // Punctuation glyphs we care about (en-dash, em-dash, bullets, curly
+  // quotes, ellipsis). It does NOT cover the Arrows block (U+2190–U+21FF)
+  // or any of the supplemental arrows blocks. When the medication-change
+  // formatter emits "→" (U+2192) for an adjust-type change, pdfmake hits
+  // a missing glyph and renders the .notdef tofu box — the bug visible
+  // in image 2 of the v0.8.234 report.
+  //
+  // This sanitiser runs over body text on its way into pdfmake and
+  // substitutes any arrow-family codepoint with an ASCII fallback. Only
+  // the PDF path uses it — the docx render and the live HTML preview
+  // both have OS font fallback chains and render the arrows correctly,
+  // so we keep the prettier glyphs there.
+  //
+  // Named replacements come first (so each common arrow gets a direction-
+  // appropriate ASCII form), then a catch-all sweep over the relevant
+  // Unicode arrow blocks replaces anything we forgot with "->" — better
+  // a slightly wrong direction than a tofu box. Extending this to other
+  // missing-glyph categories (e.g. mathematical operators, dingbats) is
+  // a copy-paste away if we hit them later.
+  //
+  // Blocks covered by the catch-all:
+  //   U+2190–U+21FF  Arrows
+  //   U+27F0–U+27FF  Supplemental Arrows-A
+  //   U+2900–U+297F  Supplemental Arrows-B
+  //   U+1F800–U+1F8FF Supplemental Arrows-C (supplementary plane)
+  //   U+2B00–U+2B11  Misc Symbols and Arrows (arrow-only sub-range; the
+  //                  rest of 2B00–2BFF holds stars, shapes etc that we
+  //                  don't want to clobber)
+
+  const PDFMAKE_ARROW_NAMED_MAP = {
+    '\u2190': '<-',   // ← LEFTWARDS ARROW
+    '\u2191': '^',    // ↑ UPWARDS ARROW
+    '\u2192': '->',   // → RIGHTWARDS ARROW   (the one med changes emits)
+    '\u2193': 'v',    // ↓ DOWNWARDS ARROW
+    '\u2194': '<->',  // ↔ LEFT RIGHT ARROW
+    '\u2195': '^v',   // ↕ UP DOWN ARROW
+    '\u21D0': '<=',   // ⇐ LEFTWARDS DOUBLE ARROW
+    '\u21D1': '^',    // ⇑ UPWARDS DOUBLE ARROW
+    '\u21D2': '=>',   // ⇒ RIGHTWARDS DOUBLE ARROW
+    '\u21D3': 'v',    // ⇓ DOWNWARDS DOUBLE ARROW
+    '\u21D4': '<=>',  // ⇔ LEFT RIGHT DOUBLE ARROW
+    '\u21A6': '|->',  // ↦ RIGHTWARDS ARROW FROM BAR
+    '\u27F5': '<-',   // ⟵ LONG LEFTWARDS ARROW
+    '\u27F6': '->',   // ⟶ LONG RIGHTWARDS ARROW
+    '\u27F7': '<->',  // ⟷ LONG LEFT RIGHT ARROW
+    '\u2794': '->',   // ➔ HEAVY WIDE-HEADED RIGHTWARDS ARROW
+    '\u279C': '->',   // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+    '\u27A1': '->',   // ➡ BLACK RIGHTWARDS ARROW
+    '\u21E8': '->',   // ⇨ RIGHTWARDS WHITE ARROW
+    '\u21E6': '<-',   // ⇦ LEFTWARDS WHITE ARROW
+    '\u21E7': '^',    // ⇧ UPWARDS WHITE ARROW
+    '\u21E9': 'v'     // ⇩ DOWNWARDS WHITE ARROW
+  };
+
+  // BMP arrow-block ranges, joined into one regex for the catch-all
+  // sweep that runs after the named map above.
+  const PDFMAKE_ARROW_BMP_RE = /[\u2190-\u21FF\u27F0-\u27FF\u2900-\u297F\u2B00-\u2B11]/g;
+  // Supplemental Arrows-C lives outside the BMP; use 'u' flag + escape.
+  const PDFMAKE_ARROW_SMP_RE = /[\u{1F800}-\u{1F8FF}]/gu;
+
+  function sanitiseTextForPdfmake(text) {
+    if (text == null) return '';
+    let out = String(text);
+    // Named replacements first — direction-aware fallbacks for common arrows.
+    const names = Object.keys(PDFMAKE_ARROW_NAMED_MAP);
+    for (let i = 0; i < names.length; i++) {
+      const key = names[i];
+      if (out.indexOf(key) !== -1) out = out.split(key).join(PDFMAKE_ARROW_NAMED_MAP[key]);
+    }
+    // Catch-all — any remaining codepoint in an arrows block becomes '->'.
+    // Direction is lost but the tofu box is gone, which is the priority.
+    out = out.replace(PDFMAKE_ARROW_BMP_RE, '->').replace(PDFMAKE_ARROW_SMP_RE, '->');
+    return out;
+  }
+
   function ensurePdfMakeLibrary() {
     if (typeof window !== 'undefined' && window.pdfMake) return window.pdfMake;
     throw new Error('pdfmake library not loaded. Check internet connection on first use.');
@@ -25234,16 +25313,21 @@ window.HAHBoard = window.HAHBoard || {};
     const sourceHtml = (opts.format === 'plain') ? plainTextToHtml(text) : text;
     const tokens = tokeniseLetterBody(sourceHtml);
     if (tokens.length === 0) {
-      // Defensive: render as plain text
-      return [{ text: sourceHtml.replace(/<[^>]+>/g, ''), alignment: 'justify', margin: [0, 0, 0, 6] }];
+      // Defensive: render as plain text. v0.8.235: pass through the
+      // glyph sanitiser so missing-font arrows don't render as tofu.
+      return [{ text: sanitiseTextForPdfmake(sourceHtml.replace(/<[^>]+>/g, '')), alignment: 'justify', margin: [0, 0, 0, 6] }];
     }
     return tokens.map((token) => {
       const isListItem = (token.style === 'list-item');
       // pdfmake text array: each run is { text, bold?, italics?, decoration? }
+      // v0.8.235: every run's text passes through sanitiseTextForPdfmake
+      // before reaching pdfmake — covers arrow glyphs the bundled Roboto
+      // subset can't render. Bullet prefix below is ASCII-safe so doesn't
+      // need it.
       const runs = token.runs.map((r) => {
         if (r.lineBreak) return '\n';
         return {
-          text: r.text,
+          text: sanitiseTextForPdfmake(r.text),
           bold: !!r.bold,
           italics: !!r.italic,
           decoration: r.underline ? 'underline' : undefined
@@ -26543,7 +26627,18 @@ window.HAHBoard = window.HAHBoard || {};
       const frameWidth = previewFrame.clientWidth;
       if (frameWidth > 0) {
         const scale = frameWidth / PAPER_W;
-        previewPaper.style.transform = 'scale(' + scale + ')';
+        // v0.8.235: was transform: scale(N) — that rasterises the rendered
+        // DOM at original size then bitmap-downscales, producing visibly
+        // blurry text in the preview. CSS `zoom` triggers a re-layout at
+        // the target scale instead, so text is laid out and antialiased
+        // at its actual rendered size. Modern Chromium/Edge/Safari/FF 126+
+        // all support `zoom` natively. Pagination math below reads
+        // previewBody.scrollHeight, which under `zoom` reports unzoomed
+        // local pixels — same coordinate system the translateY math
+        // operates in, so the page-flip behaviour is unaffected.
+        // Reset any stale transform first to avoid both being applied.
+        previewPaper.style.transform = '';
+        previewPaper.style.zoom = String(scale);
       }
     };
 
@@ -26766,6 +26861,8 @@ window.HAHBoard = window.HAHBoard || {};
     previewSnippet, countWords,
     // Body conversion (also testable)
     bodyToPdfMake,
+    // v0.8.235: glyph sanitiser for the PDF path (exported for tests)
+    sanitiseTextForPdfmake,
     // v0.8.166: HTML body migration + tokenisation
     plainTextToHtml, migrateLetterToHtml, tokeniseLetterBody
   };
