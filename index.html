@@ -9572,12 +9572,19 @@ button.hah-pt-flag:active {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* The "real-sized" A4 paper, rendered at 595×842 px (≈A4 at 72dpi).
-   Scaled via JS-applied transform to fit the frame. Content inside is
-   positioned in absolute pt-equivalent pixels matching the PDF margins. */
+/* The "real-sized" A4 paper, rendered at (595×842 × --pm) px.
+   v0.8.236: --pm (preview multiplier) doubles the source resolution so
+   transform: scale gives supersampled text rendering. The paper itself
+   ends up the same visible size — it's the source rasterisation that's
+   higher-density. All px values inside this scope use calc(N * var(--pm))
+   so changing the multiplier here cascades to every internal coordinate.
+   The matching JS constant `PREVIEW_SOURCE_MULT` in
+   33-desktop-discharge-letter.js must stay in lockstep with this value.
+   Scaled via JS-applied transform to fit the frame. */
 .hah-dl-preview-paper {
-  width: 595px;
-  height: 842px;
+  --pm: 2;
+  width: calc(595px * var(--pm));
+  height: calc(842px * var(--pm));
   background: white;
   position: absolute;
   top: 0;
@@ -9585,7 +9592,7 @@ button.hah-pt-flag:active {
   transform-origin: top left;
   /* transform: scale(...) set via JS based on frame width */
   font-family: 'Calibri', 'Carlito', 'Segoe UI', sans-serif;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--pm));
   line-height: 1.4;
   color: #1a1a1a;
 }
@@ -9594,16 +9601,16 @@ button.hah-pt-flag:active {
    25pt from top, extending nearly full width per the PDF spec. */
 .hah-dl-prev-header {
   position: absolute;
-  top: 25px;
-  left: 30px;
-  right: 30px;
+  top: calc(25px * var(--pm));
+  left: calc(30px * var(--pm));
+  right: calc(30px * var(--pm));
   text-align: center;
-  height: 60px;
+  height: calc(60px * var(--pm));
 }
 
 .hah-dl-prev-letterhead-img {
   max-width: 100%;
-  max-height: 60px;
+  max-height: calc(60px * var(--pm));
   height: auto;
   display: block;
   margin: 0 auto;
@@ -9623,10 +9630,10 @@ button.hah-pt-flag:active {
    between pages. Margins match the PDF: 65pt left/right. */
 .hah-dl-prev-body-area {
   position: absolute;
-  top: 92px;
-  left: 65px;
-  right: 65px;
-  bottom: 36px;
+  top: calc(92px * var(--pm));
+  left: calc(65px * var(--pm));
+  right: calc(65px * var(--pm));
+  bottom: calc(36px * var(--pm));
   overflow: hidden;
 }
 
@@ -9641,18 +9648,18 @@ button.hah-pt-flag:active {
 /* Footer region: bottom of paper, fixed across pages. */
 .hah-dl-prev-footer {
   position: absolute;
-  bottom: 12px;
-  left: 65px;
-  right: 65px;
+  bottom: calc(12px * var(--pm));
+  left: calc(65px * var(--pm));
+  right: calc(65px * var(--pm));
 }
 
 .hah-dl-prev-footer-line {
   border-top: 1px dotted #aaa;
-  margin-bottom: 4px;
+  margin-bottom: calc(4px * var(--pm));
 }
 
 .hah-dl-prev-footer-text {
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--pm));
   color: #777;
   font-style: italic;
 }
@@ -9660,26 +9667,26 @@ button.hah-pt-flag:active {
 /* Letter content elements within the body region. */
 .hah-dl-prev-sender {
   text-align: right;
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--pm));
   line-height: 1.3;
 }
 
 .hah-dl-prev-date {
   text-align: right;
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--pm));
 }
 
 .hah-dl-prev-recipient {
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--pm));
   line-height: 1.3;
 }
 
 .hah-dl-prev-salutation {
-  margin-bottom: 6px;
+  margin-bottom: calc(6px * var(--pm));
 }
 
 .hah-dl-prev-re {
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--pm));
 }
 
 .hah-dl-prev-body {
@@ -9693,11 +9700,11 @@ button.hah-pt-flag:active {
    * anyway; justify was an aesthetic choice that introduced a real bug
    * with no compensating benefit. */
   text-align: left;
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--pm));
 }
 
 .hah-dl-prev-body p {
-  margin: 0 0 6px 0;
+  margin: 0 0 calc(6px * var(--pm)) 0;
 }
 
 /* v0.8.166: rich-text body now contains <strong> and <ul>/<ol>/<li>
@@ -9706,11 +9713,11 @@ button.hah-pt-flag:active {
 .hah-dl-prev-body strong { font-weight: 700; }
 .hah-dl-prev-body ul,
 .hah-dl-prev-body ol {
-  margin: 0 0 6px 0;
+  margin: 0 0 calc(6px * var(--pm)) 0;
   padding-left: 1.4em;
 }
 .hah-dl-prev-body li {
-  margin: 0 0 2px 0;
+  margin: 0 0 calc(2px * var(--pm)) 0;
   /* v0.8.181: text-align: left removed — parent is no longer justified
    * (see comment on .hah-dl-prev-body) so the override is unnecessary. */
 }
@@ -9721,7 +9728,7 @@ button.hah-pt-flag:active {
 }
 
 .hah-dl-prev-signoff {
-  margin-top: 10px;
+  margin-top: calc(10px * var(--pm));
   line-height: 1.3;
 }
 
@@ -9729,7 +9736,7 @@ button.hah-pt-flag:active {
    string in signOffLines that was rendering as &nbsp;<br> and creating
    an extra blank line in field test. */
 .hah-dl-prev-signoff-name {
-  margin-top: 18px;
+  margin-top: calc(18px * var(--pm));
 }
 
 </style>
@@ -10386,9 +10393,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_235_pdf_glyphs_preview_crisp_release.html',
-  source: 'hospital_at_home_board_v0_8_235_pdf_glyphs_preview_crisp_source.zip',
-  builtAt: '2026-05-15T16:51:13.469219',
+  filename: 'hospital_at_home_board_v0_8_236_pdf_emdash_preview_2x_release.html',
+  source: 'hospital_at_home_board_v0_8_236_pdf_emdash_preview_2x_source.zip',
+  builtAt: '2026-05-15T17:54:00.420683',
   entry: 'desktop.html'
 };
 </script>
@@ -24108,10 +24115,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.235. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.236. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.235. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.236. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25130,7 +25137,7 @@ window.HAHBoard = window.HAHBoard || {};
   // approximation of Calibri at small sizes. Trade-off acceptable for the
   // trial; can swap to a Calibri-equivalent VFS later.
 
-  // v0.8.235: glyph sanitiser for the PDF path.
+  // v0.8.236: glyph sanitiser for the PDF path.
   //
   // pdfmake's default vfs_fonts.js bundles a Roboto subset that covers
   // basic Latin, Latin-1 Supplement, Latin Extended-A, and the General
@@ -25138,18 +25145,24 @@ window.HAHBoard = window.HAHBoard || {};
   // quotes, ellipsis). It does NOT cover the Arrows block (U+2190–U+21FF)
   // or any of the supplemental arrows blocks. When the medication-change
   // formatter emits "→" (U+2192) for an adjust-type change, pdfmake hits
-  // a missing glyph and renders the .notdef tofu box — the bug visible
-  // in image 2 of the v0.8.234 report.
+  // a missing glyph and renders the .notdef tofu box — the bug originally
+  // reported against v0.8.234.
   //
   // This sanitiser runs over body text on its way into pdfmake and
-  // substitutes any arrow-family codepoint with an ASCII fallback. Only
-  // the PDF path uses it — the docx render and the live HTML preview
-  // both have OS font fallback chains and render the arrows correctly,
-  // so we keep the prettier glyphs there.
+  // substitutes any arrow-family codepoint with an em-dash-based ASCII
+  // fallback. Em-dash (U+2014) IS in pdfmake's bundled Roboto subset
+  // (confirmed rendering in production — the "STOP Ramipril — AKI"
+  // pattern from the v0.8.235 field test) and produces a much more
+  // arrow-shaped glyph than the lightweight hyphen-minus would. So
+  // "→" becomes "—>", "←" becomes "<—", "↔" becomes "<—>", and so on.
+  //
+  // Only the PDF path uses the sanitiser — the docx render and the live
+  // HTML preview both have OS font fallback chains and render the
+  // original arrows correctly, so we keep the prettier glyphs there.
   //
   // Named replacements come first (so each common arrow gets a direction-
-  // appropriate ASCII form), then a catch-all sweep over the relevant
-  // Unicode arrow blocks replaces anything we forgot with "->" — better
+  // appropriate em-dash form), then a catch-all sweep over the relevant
+  // Unicode arrow blocks replaces anything we forgot with "—>" — better
   // a slightly wrong direction than a tofu box. Extending this to other
   // missing-glyph categories (e.g. mathematical operators, dingbats) is
   // a copy-paste away if we hit them later.
@@ -25164,28 +25177,28 @@ window.HAHBoard = window.HAHBoard || {};
   //                  don't want to clobber)
 
   const PDFMAKE_ARROW_NAMED_MAP = {
-    '\u2190': '<-',   // ← LEFTWARDS ARROW
-    '\u2191': '^',    // ↑ UPWARDS ARROW
-    '\u2192': '->',   // → RIGHTWARDS ARROW   (the one med changes emits)
-    '\u2193': 'v',    // ↓ DOWNWARDS ARROW
-    '\u2194': '<->',  // ↔ LEFT RIGHT ARROW
-    '\u2195': '^v',   // ↕ UP DOWN ARROW
-    '\u21D0': '<=',   // ⇐ LEFTWARDS DOUBLE ARROW
-    '\u21D1': '^',    // ⇑ UPWARDS DOUBLE ARROW
-    '\u21D2': '=>',   // ⇒ RIGHTWARDS DOUBLE ARROW
-    '\u21D3': 'v',    // ⇓ DOWNWARDS DOUBLE ARROW
-    '\u21D4': '<=>',  // ⇔ LEFT RIGHT DOUBLE ARROW
-    '\u21A6': '|->',  // ↦ RIGHTWARDS ARROW FROM BAR
-    '\u27F5': '<-',   // ⟵ LONG LEFTWARDS ARROW
-    '\u27F6': '->',   // ⟶ LONG RIGHTWARDS ARROW
-    '\u27F7': '<->',  // ⟷ LONG LEFT RIGHT ARROW
-    '\u2794': '->',   // ➔ HEAVY WIDE-HEADED RIGHTWARDS ARROW
-    '\u279C': '->',   // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
-    '\u27A1': '->',   // ➡ BLACK RIGHTWARDS ARROW
-    '\u21E8': '->',   // ⇨ RIGHTWARDS WHITE ARROW
-    '\u21E6': '<-',   // ⇦ LEFTWARDS WHITE ARROW
-    '\u21E7': '^',    // ⇧ UPWARDS WHITE ARROW
-    '\u21E9': 'v'     // ⇩ DOWNWARDS WHITE ARROW
+    '\u2190': '<\u2014',        // ← LEFTWARDS ARROW           → "<—"
+    '\u2191': '^',              // ↑ UPWARDS ARROW
+    '\u2192': '\u2014>',        // → RIGHTWARDS ARROW          → "—>"   (the one med changes emits)
+    '\u2193': 'v',              // ↓ DOWNWARDS ARROW
+    '\u2194': '<\u2014>',       // ↔ LEFT RIGHT ARROW          → "<—>"
+    '\u2195': '^v',             // ↕ UP DOWN ARROW
+    '\u21D0': '<=',             // ⇐ LEFTWARDS DOUBLE ARROW
+    '\u21D1': '^',              // ⇑ UPWARDS DOUBLE ARROW
+    '\u21D2': '=>',             // ⇒ RIGHTWARDS DOUBLE ARROW
+    '\u21D3': 'v',              // ⇓ DOWNWARDS DOUBLE ARROW
+    '\u21D4': '<=>',            // ⇔ LEFT RIGHT DOUBLE ARROW
+    '\u21A6': '|\u2014>',       // ↦ RIGHTWARDS ARROW FROM BAR → "|—>"
+    '\u27F5': '<\u2014',        // ⟵ LONG LEFTWARDS ARROW
+    '\u27F6': '\u2014>',        // ⟶ LONG RIGHTWARDS ARROW
+    '\u27F7': '<\u2014>',       // ⟷ LONG LEFT RIGHT ARROW
+    '\u2794': '\u2014>',        // ➔ HEAVY WIDE-HEADED RIGHTWARDS ARROW
+    '\u279C': '\u2014>',        // ➜ HEAVY ROUND-TIPPED RIGHTWARDS ARROW
+    '\u27A1': '\u2014>',        // ➡ BLACK RIGHTWARDS ARROW
+    '\u21E8': '\u2014>',        // ⇨ RIGHTWARDS WHITE ARROW
+    '\u21E6': '<\u2014',        // ⇦ LEFTWARDS WHITE ARROW
+    '\u21E7': '^',              // ⇧ UPWARDS WHITE ARROW
+    '\u21E9': 'v'               // ⇩ DOWNWARDS WHITE ARROW
   };
 
   // BMP arrow-block ranges, joined into one regex for the catch-all
@@ -25194,18 +25207,24 @@ window.HAHBoard = window.HAHBoard || {};
   // Supplemental Arrows-C lives outside the BMP; use 'u' flag + escape.
   const PDFMAKE_ARROW_SMP_RE = /[\u{1F800}-\u{1F8FF}]/gu;
 
+  // Default fallback for any arrow codepoint we don't name explicitly.
+  // Em-dash + ">" — visually closer to a real arrow than "->".
+  const PDFMAKE_ARROW_FALLBACK = '\u2014>';
+
   function sanitiseTextForPdfmake(text) {
     if (text == null) return '';
     let out = String(text);
-    // Named replacements first — direction-aware fallbacks for common arrows.
+    // Named replacements first — direction-aware em-dash fallbacks for
+    // common arrows.
     const names = Object.keys(PDFMAKE_ARROW_NAMED_MAP);
     for (let i = 0; i < names.length; i++) {
       const key = names[i];
       if (out.indexOf(key) !== -1) out = out.split(key).join(PDFMAKE_ARROW_NAMED_MAP[key]);
     }
-    // Catch-all — any remaining codepoint in an arrows block becomes '->'.
+    // Catch-all — any remaining codepoint in an arrows block becomes "—>".
     // Direction is lost but the tofu box is gone, which is the priority.
-    out = out.replace(PDFMAKE_ARROW_BMP_RE, '->').replace(PDFMAKE_ARROW_SMP_RE, '->');
+    out = out.replace(PDFMAKE_ARROW_BMP_RE, PDFMAKE_ARROW_FALLBACK)
+             .replace(PDFMAKE_ARROW_SMP_RE, PDFMAKE_ARROW_FALLBACK);
     return out;
   }
 
@@ -25313,14 +25332,14 @@ window.HAHBoard = window.HAHBoard || {};
     const sourceHtml = (opts.format === 'plain') ? plainTextToHtml(text) : text;
     const tokens = tokeniseLetterBody(sourceHtml);
     if (tokens.length === 0) {
-      // Defensive: render as plain text. v0.8.235: pass through the
+      // Defensive: render as plain text. v0.8.236: pass through the
       // glyph sanitiser so missing-font arrows don't render as tofu.
       return [{ text: sanitiseTextForPdfmake(sourceHtml.replace(/<[^>]+>/g, '')), alignment: 'justify', margin: [0, 0, 0, 6] }];
     }
     return tokens.map((token) => {
       const isListItem = (token.style === 'list-item');
       // pdfmake text array: each run is { text, bold?, italics?, decoration? }
-      // v0.8.235: every run's text passes through sanitiseTextForPdfmake
+      // v0.8.236: every run's text passes through sanitiseTextForPdfmake
       // before reaching pdfmake — covers arrow glyphs the bundled Roboto
       // subset can't render. Bullet prefix below is ASCII-safe so doesn't
       // need it.
@@ -26598,14 +26617,30 @@ window.HAHBoard = window.HAHBoard || {};
 
     // v0.8.150: A4 preview measurements. Paper is rendered at "real"
     // pt-equivalent pixels (595×842 = A4 at 72dpi) inside a frame whose
-    // height is set by CSS aspect-ratio (595/842). These constants match
-    // the PDF's pageMargins so what the clinician sees in preview is
-    // what they get in the export.
-    const PAPER_W = 595;
-    const PAPER_H = 842;
-    const BODY_TOP = 92;
-    const BODY_BOTTOM = 36;
-    const PAGE_CONTENT_H = PAPER_H - BODY_TOP - BODY_BOTTOM; // body region height per page
+    // v0.8.150: A4 preview measurements. Paper is rendered at "real"
+    // pt-equivalent pixels inside a frame whose height is set by CSS
+    // aspect-ratio (595/842). These constants match the PDF's pageMargins
+    // so what the clinician sees in preview is what they get in the
+    // export.
+    //
+    // v0.8.236: dimensions doubled (PREVIEW_SOURCE_MULT = 2) to render
+    // the preview at 2× source resolution. The paper is then scaled DOWN
+    // by JS-applied transform: scale to fit the frame, which produces
+    // visibly crisper text via supersampling — text is rasterised at
+    // 21px and the browser's image-downsampling produces a sharper
+    // result at the visible size than rasterising natively at ~7px ever
+    // could. Same trick as 2× density images on Retina displays.
+    //
+    // The matching CSS rules in desktop-discharge-letter.css read this
+    // multiplier from a custom property `--pm` declared on
+    // .hah-dl-preview-paper. If you change PREVIEW_SOURCE_MULT below,
+    // change --pm in the CSS to match (or vice versa).
+    const PREVIEW_SOURCE_MULT = 2;
+    const PAPER_W = 595 * PREVIEW_SOURCE_MULT;
+    const PAPER_H = 842 * PREVIEW_SOURCE_MULT;
+    const BODY_TOP = 92 * PREVIEW_SOURCE_MULT;
+    const BODY_BOTTOM = 36 * PREVIEW_SOURCE_MULT;
+    const PAGE_CONTENT_H = PAPER_H - BODY_TOP - BODY_BOTTOM; // body region height per page (in source pixels)
 
     // v0.8.166: updateWordCount defined below (in the input/toolbar
     // wiring block). Reads countWords(editor.innerHTML) which strips
@@ -26622,23 +26657,18 @@ window.HAHBoard = window.HAHBoard || {};
     // version: typing → preview frame height changed → right pane
     // re-anchored scroll → textarea pushed off-screen, looked like
     // focus loss.
+    //
+    // v0.8.236: transform: scale (not zoom). With a 2× source resolution
+    // it gives supersampled text rendering. The browser rasterises the
+    // paper at the source size (1190 wide, 21px text) and bitmap-
+    // downsamples to the visible size — the downsampling preserves more
+    // detail than direct rasterisation at small effective sizes would.
     const updateLayout = () => {
       if (!previewFrame || !previewPaper) return;
       const frameWidth = previewFrame.clientWidth;
       if (frameWidth > 0) {
         const scale = frameWidth / PAPER_W;
-        // v0.8.235: was transform: scale(N) — that rasterises the rendered
-        // DOM at original size then bitmap-downscales, producing visibly
-        // blurry text in the preview. CSS `zoom` triggers a re-layout at
-        // the target scale instead, so text is laid out and antialiased
-        // at its actual rendered size. Modern Chromium/Edge/Safari/FF 126+
-        // all support `zoom` natively. Pagination math below reads
-        // previewBody.scrollHeight, which under `zoom` reports unzoomed
-        // local pixels — same coordinate system the translateY math
-        // operates in, so the page-flip behaviour is unaffected.
-        // Reset any stale transform first to avoid both being applied.
-        previewPaper.style.transform = '';
-        previewPaper.style.zoom = String(scale);
+        previewPaper.style.transform = 'scale(' + scale + ')';
       }
     };
 
