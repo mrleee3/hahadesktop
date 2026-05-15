@@ -10386,9 +10386,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_233_force_signin_on_launch_release.html',
-  source: 'hospital_at_home_board_v0_8_233_force_signin_on_launch_source.zip',
-  builtAt: '2026-05-15T13:09:45.669778',
+  filename: 'hospital_at_home_board_v0_8_234_prompt_login_release.html',
+  source: 'hospital_at_home_board_v0_8_234_prompt_login_source.zip',
+  builtAt: '2026-05-15T13:21:25.665177',
   entry: 'desktop.html'
 };
 </script>
@@ -13182,10 +13182,30 @@ window.HAHBoard = window.HAHBoard || {};
     return msalApp;
   }
 
-  async function signIn() {
+  // v0.8.234: signIn now accepts an optional `promptMode` argument
+  // that controls the MSAL `prompt` parameter:
+  //   - 'login'          → forces credential check even if Microsoft
+  //                        already has a session for this user.
+  //                        Used by the splash on launch — every fresh
+  //                        launch should require proof of presence
+  //                        regardless of whether Microsoft thinks
+  //                        the user is "already signed in" (which
+  //                        was bypassing our auth gate entirely).
+  //   - 'select_account' → shows the account picker but doesn't force
+  //                        re-credentialling. Useful for the avatar's
+  //                        sign-in flow when the user is mid-session
+  //                        and wants to switch accounts.
+  //   - undefined/null   → MSAL default ('select_account' for fresh
+  //                        sign-ins, none for cache hits). Single
+  //                        sign-on. NOT recommended for the launch
+  //                        path since this is what created the
+  //                        "click-through" gap before v0.8.234.
+  async function signIn(promptMode) {
     try {
       const app = await getMsalApp();
-      const response = await app.loginPopup({ scopes: GRAPH_SCOPES });
+      const loginOpts = { scopes: GRAPH_SCOPES };
+      if (promptMode) loginOpts.prompt = promptMode;
+      const response = await app.loginPopup(loginOpts);
       const account = response && response.account;
       if (account) {
         app.setActiveAccount(account);
@@ -24088,10 +24108,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.233. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.234. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.233. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.234. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -27005,7 +27025,13 @@ window.HAHBoard = window.HAHBoard || {};
     }
     try {
       const jsonStore = window.HAHBoard.sharedJsonStore;
-      await jsonStore.signIn();
+      // v0.8.234: pass 'login' to force MSAL/Microsoft to actually
+      // verify the user's credentials rather than re-using an
+      // existing Microsoft session cookie. Without this, the popup
+      // flashes through silently when Microsoft already has a
+      // session for the user — which makes the sign-in gate purely
+      // cosmetic.
+      await jsonStore.signIn('login');
       // Identity now signed in; dismiss splash.
       dismissDesktopSplash();
     } catch (err) {
@@ -27381,7 +27407,12 @@ window.HAHBoard = window.HAHBoard || {};
         router.navigate({ view: 'settings' });
         return;
       }
-      await jsonStore.signIn();
+      // v0.8.234: pass 'select_account' so the user gets the
+      // account picker. This is the mid-session sign-in path
+      // (avatar-driven) — typically used to switch accounts or
+      // sign in for the first time mid-app. Doesn't force a
+      // credential check; the splash path uses 'login' for that.
+      await jsonStore.signIn('select_account');
       // Close the flyout so the user sees the avatar update.
       const flyout = document.getElementById('hahAccountFlyout');
       if (flyout && typeof flyout.hidePopover === 'function') flyout.hidePopover();
