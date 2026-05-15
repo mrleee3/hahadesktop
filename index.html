@@ -9629,15 +9629,19 @@ button.hah-pt-flag:active {
   height: auto;
   display: block;
   margin: 0 auto;
-  /* v0.8.181: preserve stroke contrast on aggressive scale-down. The
-   * letterhead source is ~1400px wide rendered into a ~535px-wide
-   * preview area, then transform-scaled by the parent. Without an
-   * explicit rendering hint, browsers' default bilinear filtering
-   * blends fine black strokes with the white background — visible to
-   * the clinician as "grey" letterhead. Crisp-edges keeps the
-   * pixel-level contrast intact even at small render sizes. */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  /* v0.8.181 → v0.8.238: had image-rendering: crisp-edges, intended to
+   * preserve stroke contrast on aggressive scale-down. Wrong call: the
+   * rule uses nearest-neighbour sampling which is correct for pixel
+   * art but produces visible aliasing/stair-stepping on the fine
+   * serifs of "L.K. MEDICA" (and other vector-like strokes in fine-
+   * line raster sources). Combined with the 2× preview supersampling
+   * (v0.8.236), the letterhead source at 1400×133 is rendered at
+   * ~1130 wide internal — needing real fractional-pixel sampling, not
+   * pixel-snapping. image-rendering: auto lets the browser use its
+   * default bilinear/bicubic pipeline, which produces smooth serifs.
+   * The PDF letterhead is unaffected — it renders at near-native
+   * source size and doesn't go through this CSS path. */
+  image-rendering: auto;
 }
 
 /* Body content area: clipped to one page-content-height, with the body
@@ -10408,9 +10412,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_237_round_slide_release.html',
-  source: 'hospital_at_home_board_v0_8_237_round_slide_source.zip',
-  builtAt: '2026-05-15T18:08:48.255447',
+  filename: 'hospital_at_home_board_v0_8_238_letterhead_smooth_release.html',
+  source: 'hospital_at_home_board_v0_8_238_letterhead_smooth_source.zip',
+  builtAt: '2026-05-15T18:13:20.245165',
   entry: 'desktop.html'
 };
 </script>
@@ -24227,10 +24231,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.237. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.238. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.237. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.238. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
