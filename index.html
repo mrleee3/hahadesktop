@@ -9758,6 +9758,191 @@ button.hah-pt-flag:active {
   margin-top: calc(18px * var(--pm));
 }
 
+/* ─── v0.8.244: full-size preview overlay ────────────────────────────── */
+
+/* Clickable preview frame — cursor + hover affordance. */
+.hah-dl-preview-frame {
+  cursor: zoom-in;
+  transition: box-shadow 160ms ease;
+}
+.hah-dl-preview-frame:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* Small expand-icon in the top-right of the preview frame, explicit
+   affordance so the clickable behaviour is discoverable without needing
+   the user to hover-and-guess. Click bubbles up to the same
+   dl-open-preview-modal handler the frame has. */
+.hah-dl-preview-expand-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #475569;
+  cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.hah-dl-preview-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.98);
+  color: #0a84ff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal overlay. Same z-index / backdrop-filter family as the ACP modal
+   so they sit at consistent depth. */
+.hah-dl-preview-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: hah-dl-preview-modal-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes hah-dl-preview-modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Container card. Width and max-height calibrated so a typical letter
+   (1-2 pages of A4) reads comfortably on a 1080p+ display without
+   needing to scroll the modal itself — the A4 aspect ratio dictates
+   the rest. */
+.hah-dl-preview-modal {
+  width: min(820px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.32);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: hah-dl-preview-modal-card-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes hah-dl-preview-modal-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hah-dl-preview-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 12px 18px;
+  border-bottom: 1px solid var(--desk-border);
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.hah-dl-preview-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--desk-text);
+  letter-spacing: -0.005em;
+}
+
+/* Pagination sits in the middle of the modal head — between title and
+   close button — mirroring the small preview's pagination affordance. */
+.hah-dl-preview-modal-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: 6px;
+  font-size: 12px;
+  color: var(--desk-text-muted);
+}
+
+.hah-dl-preview-modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--desk-border);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--desk-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: background 120ms ease;
+  flex-shrink: 0;
+}
+.hah-dl-preview-modal-close:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+
+/* Body region — flex column that the paper sits inside, centred. The
+   paper is supersampled at the same 2× (--pm: 2) resolution as the
+   small preview, then scaled via transform to fit the modal width.
+   updateModalLayout (in 33-desktop-discharge-letter.js) computes the
+   scale and applies it after the modal mounts, then re-applies on
+   window resize. */
+.hah-dl-preview-modal-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 18px;
+  background: #e9eef5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* The modal paper extends the base .hah-dl-preview-paper, but its
+   positioning needs to differ: the small preview's paper is absolutely
+   positioned inside its frame, while the modal paper sits inside a
+   sized wrap that pins its post-scale dimensions in the flex layout.
+   The wrap has the aspect ratio of A4; its width is constrained by
+   the modal body's max width. JS sets --paper-scale to the wrap-width
+   divided by the paper's PM=2 internal width (1190 px). The paper
+   itself is absolutely positioned inside the wrap and transform-scaled
+   to fill it. */
+.hah-dl-modal-paper-wrap {
+  position: relative;
+  width: 100%;
+  /* Cap so the paper never renders larger than a comfortable reading
+     size even on ultrawide monitors. */
+  max-width: 720px;
+  aspect-ratio: 595 / 842;
+  flex-shrink: 0;
+}
+
+.hah-dl-preview-paper--modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* width/height come from the base .hah-dl-preview-paper at PM=2:
+     1190px × 1684px. Don't override here. */
+  transform-origin: top left;
+  /* JS sets --paper-scale to (wrap.clientWidth / 1190). CSS fallback
+     (0.6) keeps things readable if JS hasn't run yet. */
+  transform: scale(var(--paper-scale, 0.6));
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.18);
+}
+
 </style>
   <style>
 /* inlined: css/desktop-pwa-install.css */
@@ -10412,9 +10597,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_243_pdf_match_preview_release.html',
-  source: 'hospital_at_home_board_v0_8_243_pdf_match_preview_source.zip',
-  builtAt: '2026-05-15T19:30:36.541632',
+  filename: 'hospital_at_home_board_v0_8_244_preview_modal_release.html',
+  source: 'hospital_at_home_board_v0_8_244_preview_modal_source.zip',
+  builtAt: '2026-05-15T19:42:40.913383',
   entry: 'desktop.html'
 };
 </script>
@@ -24281,10 +24466,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.243. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.244. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.243. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.244. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -25882,7 +26067,17 @@ window.HAHBoard = window.HAHBoard || {};
             <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-next" title="Next page" aria-label="Next page">›</button>
           </div>
         </div>
-        <div class="hah-dl-preview-frame" id="hahDlPreviewFrame">
+        <div class="hah-dl-preview-frame" id="hahDlPreviewFrame" data-patient-action="dl-open-preview-modal" title="Click to view full size">
+          <!-- v0.8.244: clickable to open full-size overlay. Pagination
+               buttons live in the label row above so don't conflict. -->
+          <button type="button" class="hah-dl-preview-expand-btn" data-patient-action="dl-open-preview-modal" aria-label="View full size" title="View full size">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"/>
+              <polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
           <!-- A4-aspect frame; the paper inside is rendered at "real" 595x842 px
                and CSS-scaled via transform to fit. Header (letterhead) sits
                fixed at top of every page, footer fixed at bottom of every page,
@@ -25905,7 +26100,51 @@ window.HAHBoard = window.HAHBoard || {};
         </button>
         ${!isSent ? `<button type="button" class="hah-dl-action-btn" data-patient-action="dl-mark-sent">✓ Mark sent</button>` : ''}
       </div>
-    </div>${renderClarifyModalIfActive(state, patient.id, c)}`;
+    </div>${renderClarifyModalIfActive(state, patient.id, c)}${renderPreviewModalIfActive(state)}`;
+  }
+
+  // v0.8.244: full-size letter preview overlay. Renders when
+  // state.patient.dlPreviewModalOpen is true. Mirrors the small preview
+  // pane's structure with its own paper element + IDs so updateContent
+  // can populate both papers in parallel — keeps the modal live-synced
+  // with the editor's textarea on every keystroke (cheap; same HTML
+  // string assigned to two elements). Pagination state is shared via
+  // currentPreviewPage (module-scoped), so the modal opens on whichever
+  // page the small preview was last viewing, and Prev/Next inside the
+  // modal use the same dl-preview-prev/next handlers that drive the
+  // small preview.
+  //
+  // No spec needed at render time — the inner header/body/footer regions
+  // start empty and are populated by updateContent (which runs once
+  // synchronously from bindLetterEditor right after this HTML mounts,
+  // then on every editor keystroke afterwards). Same shape as the small
+  // preview: HTML structure here, content from updateContent.
+  function renderPreviewModalIfActive(state) {
+    if (!state || !state.patient || !state.patient.dlPreviewModalOpen) return '';
+    return `<div class="hah-dl-preview-modal-overlay" id="hahDlPreviewModal" data-patient-action="dl-preview-modal-backdrop">
+      <div class="hah-dl-preview-modal" role="dialog" aria-modal="true" aria-label="Letter preview — full size">
+        <div class="hah-dl-preview-modal-head">
+          <span class="hah-dl-preview-modal-title">Letter preview</span>
+          <div class="hah-dl-preview-modal-pagination" id="hahDlModalPagination" style="display:none">
+            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-prev" title="Previous page" aria-label="Previous page">‹</button>
+            <span class="hah-dl-preview-page-label" id="hahDlModalPageLabel">Page 1 of 1</span>
+            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-next" title="Next page" aria-label="Next page">›</button>
+          </div>
+          <button type="button" class="hah-dl-preview-modal-close" data-patient-action="dl-close-preview-modal" aria-label="Close preview">×</button>
+        </div>
+        <div class="hah-dl-preview-modal-body">
+          <div class="hah-dl-modal-paper-wrap" id="hahDlModalPaperWrap">
+            <div class="hah-dl-preview-paper hah-dl-preview-paper--modal" id="hahDlModalPaper">
+              <div class="hah-dl-prev-header" id="hahDlModalHeader"></div>
+              <div class="hah-dl-prev-body-area">
+                <div class="hah-dl-prev-body-content" id="hahDlModalBodyContent"></div>
+              </div>
+              <div class="hah-dl-prev-footer" id="hahDlModalFooter"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }
 
   // v0.8.176: clarifying-questions modal. Renders only when
@@ -26448,6 +26687,26 @@ window.HAHBoard = window.HAHBoard || {};
       return true;
     }
 
+    // v0.8.244: full-size preview overlay. Three handlers mirror the
+    // existing ACP modal pattern (open/close/backdrop). The backdrop
+    // handler checks event.target.id so a click landing on inner
+    // content (paper, head, etc.) doesn't trigger close — only the
+    // overlay itself.
+    if (action === 'dl-open-preview-modal') {
+      api.store.setState({ patient: { dlPreviewModalOpen: true } });
+      return true;
+    }
+    if (action === 'dl-close-preview-modal') {
+      api.store.setState({ patient: { dlPreviewModalOpen: false } });
+      return true;
+    }
+    if (action === 'dl-preview-modal-backdrop') {
+      if (target && target.id === 'hahDlPreviewModal') {
+        api.store.setState({ patient: { dlPreviewModalOpen: false } });
+      }
+      return true;
+    }
+
     if (action === 'dl-export-pdf') {
       const letter = getDischargeLetter(vm.patient);
       const spec = buildLetterSpec(vm, letter);
@@ -26585,6 +26844,14 @@ window.HAHBoard = window.HAHBoard || {};
   let currentPreviewPage = 0;
   let dlPreviewUpdateRef = null;
   let dlPreviewResizeObserver = null;
+  // v0.8.244: module-scoped handlers for the full-size preview modal.
+  // Bound once per page lifetime — `bindLetterEditor` runs per render,
+  // so we guard against re-binding here. Kept attached for the life
+  // of the document; they cheaply no-op when the modal isn't open
+  // (the ESC handler checks state; the resize handler bails when the
+  // modal's wrap element isn't in the DOM).
+  let _modalEscHandler = null;
+  let _modalResizeHandler = null;
 
   // v0.8.153b: cross-render textarea preservation.
   //
@@ -26871,9 +27138,24 @@ window.HAHBoard = window.HAHBoard || {};
 
         const c = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
-        previewHeader.innerHTML = renderLetterPreviewHeader(spec, c);
-        previewBody.innerHTML = renderLetterPreviewBody(spec, c);
-        previewFooter.innerHTML = renderLetterPreviewFooter(spec, c);
+        const headerHtml = renderLetterPreviewHeader(spec, c);
+        const bodyHtml = renderLetterPreviewBody(spec, c);
+        const footerHtml = renderLetterPreviewFooter(spec, c);
+
+        previewHeader.innerHTML = headerHtml;
+        previewBody.innerHTML = bodyHtml;
+        previewFooter.innerHTML = footerHtml;
+
+        // v0.8.244: if the full-size preview modal is open, mirror the
+        // same HTML into its paper. The modal's IDs are duplicated
+        // (hahDlModalHeader/BodyContent/Footer) and live in a separate
+        // overlay subtree — cheap to populate alongside.
+        const modalHeader = document.getElementById('hahDlModalHeader');
+        const modalBody = document.getElementById('hahDlModalBodyContent');
+        const modalFooter = document.getElementById('hahDlModalFooter');
+        if (modalHeader) modalHeader.innerHTML = headerHtml;
+        if (modalBody) modalBody.innerHTML = bodyHtml;
+        if (modalFooter) modalFooter.innerHTML = footerHtml;
 
         // Measure body overflow → page count. Reading scrollHeight
         // forces a sync layout, but since the previewBody itself has
@@ -26890,15 +27172,22 @@ window.HAHBoard = window.HAHBoard || {};
         // Apply translation for current page (transform — no layout impact)
         const translateY = -(currentPreviewPage * PAGE_CONTENT_H);
         previewBody.style.transform = 'translateY(' + translateY + 'px)';
+        // v0.8.244: modal body uses the same pagination math.
+        if (modalBody) modalBody.style.transform = 'translateY(' + translateY + 'px)';
 
         // Update pagination controls. Note: toggling display: none/flex
         // can cause a small layout shift on the page-count transition.
         // Acceptable trade-off — happens rarely vs. on every keystroke.
+        const modalPagination = document.getElementById('hahDlModalPagination');
+        const modalPageLabel = document.getElementById('hahDlModalPageLabel');
         if (pageCount > 1) {
           if (previewPagination) previewPagination.style.display = '';
           if (previewPageLabel) previewPageLabel.textContent = 'Page ' + (currentPreviewPage + 1) + ' of ' + pageCount;
+          if (modalPagination) modalPagination.style.display = '';
+          if (modalPageLabel) modalPageLabel.textContent = 'Page ' + (currentPreviewPage + 1) + ' of ' + pageCount;
         } else {
           if (previewPagination) previewPagination.style.display = 'none';
+          if (modalPagination) modalPagination.style.display = 'none';
         }
       } catch (e) {
         // Preview is best-effort; never let it crash the editor
@@ -27034,6 +27323,60 @@ window.HAHBoard = window.HAHBoard || {};
       if (dlPreviewResizeObserver) dlPreviewResizeObserver.disconnect();
       dlPreviewResizeObserver = new ResizeObserver(() => updateLayout());
       dlPreviewResizeObserver.observe(previewFrame);
+    }
+
+    // v0.8.244: full-size preview modal. The modal renders into the
+    // same right-pane innerHTML on each re-render (gated by
+    // state.patient.dlPreviewModalOpen), so we wire layout + ESC
+    // handling here per bind. Mount/unmount happens automatically via
+    // re-render; we just need to set the paper's scale once it's in
+    // the DOM and refresh on window resize.
+    const modalWrap = pane.querySelector('#hahDlModalPaperWrap');
+    const modalPaper = pane.querySelector('#hahDlModalPaper');
+    const updateModalLayout = () => {
+      if (!modalWrap || !modalPaper) return;
+      const wrapW = modalWrap.clientWidth;
+      if (wrapW <= 0) return;
+      // PM=2 source is 1190 px wide (595 × 2). Scale to fit the wrap.
+      const scale = wrapW / (595 * 2);
+      modalPaper.style.setProperty('--paper-scale', String(scale));
+    };
+    if (modalWrap && modalPaper) {
+      // Initial layout, plus one rAF-deferred call so we catch the
+      // final size after the modal's open-animation has settled and
+      // the flex layout has resolved.
+      updateModalLayout();
+      requestAnimationFrame(updateModalLayout);
+      // Window resize: re-fit the paper. Module-scoped handler so we
+      // can detach it cleanly when the modal closes (next render
+      // without modal will see no #hahDlModalPaperWrap, but the
+      // listener would still fire harmlessly — detachment is for
+      // tidiness, not correctness).
+      if (!_modalResizeHandler) {
+        _modalResizeHandler = function () {
+          const wrap = document.getElementById('hahDlModalPaperWrap');
+          const paper = document.getElementById('hahDlModalPaper');
+          if (!wrap || !paper) return;
+          const w = wrap.clientWidth;
+          if (w <= 0) return;
+          paper.style.setProperty('--paper-scale', String(w / (595 * 2)));
+        };
+        window.addEventListener('resize', _modalResizeHandler);
+      }
+    }
+
+    // ESC closes the modal. Module-scoped handler bound once; the
+    // check inside reads current state each invocation so we don't
+    // need to rebind per render.
+    if (!_modalEscHandler) {
+      _modalEscHandler = function (ev) {
+        if (ev.key !== 'Escape') return;
+        const s = api.store.getState();
+        if (s && s.patient && s.patient.dlPreviewModalOpen) {
+          api.store.setState({ patient: { dlPreviewModalOpen: false } });
+        }
+      };
+      document.addEventListener('keydown', _modalEscHandler);
     }
   }
 
