@@ -9960,6 +9960,262 @@ button.hah-pt-flag:active {
 
 </style>
   <style>
+/* inlined: css/desktop-search.css */
+/* desktop-search.css
+ *
+ * Global search overlay, v0.8.250. New surface — built on the --hah-*
+ * design system from the start (STYLE.md) so it doesn't become Phase 2
+ * migration debt. The input itself keeps its existing white-on-blue
+ * header treatment (desktop-shell.css); this file is only the dropdown
+ * panel that drops onto the light app body.
+ *
+ * Positioning: the panel is a child of the centred header wrapper
+ * (.hah-header-group:nth-child(2), which is position:absolute and so
+ * acts as the containing block). top:100% + translateX(-50%) tethers it
+ * directly under the input and centres it — no JS geometry, matches
+ * Henry's "centred, attached to the box, not floating" requirement.
+ */
+
+.hah-search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-lg);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16),
+              0 2px 8px rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+  padding: var(--hah-gap-sm);
+  color: var(--desk-text);
+  /* Tiny entrance — settle, not bounce. */
+  animation: hahSearchPanelIn 130ms cubic-bezier(0.22, 0.78, 0.2, 1);
+}
+
+.hah-search-panel[hidden] { display: none; }
+
+@keyframes hahSearchPanelIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.hah-search-section-label {
+  font-size: var(--hah-text-xs);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--hah-tracking-wide);
+  padding: var(--hah-gap-sm) var(--hah-gap-sm) var(--hah-gap-xs);
+}
+
+.hah-search-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hah-search-empty {
+  padding: 18px var(--hah-gap-md);
+  font-size: var(--hah-text-md);
+  color: var(--desk-text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Result row ──────────────────────────────────────────────────────
+ * Outline = interactive, grey fill = hover, blue tint = selected
+ * (keyboard-active). Active ignores hover, per the design-system
+ * convention — a keyboard-selected row stays blue even under the cursor.
+ */
+.hah-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--hah-gap-sm);
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--hah-radius-sm);
+  background: transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--desk-text);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.hah-search-row:hover:not(.is-active) {
+  background: var(--hah-tint-context);
+}
+
+.hah-search-row.is-active {
+  background: var(--hah-accent-tint);
+  border-color: var(--hah-accent-edge);
+}
+
+.hah-search-avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--hah-radius-pill);
+  background: var(--hah-tint-context);
+  color: var(--desk-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--hah-text-xs);
+  font-weight: var(--hah-weight-title);
+  letter-spacing: 0.02em;
+}
+
+.hah-search-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hah-search-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hah-gap-xs);
+  min-width: 0;
+}
+
+.hah-search-name {
+  font-size: var(--hah-text-md);
+  font-weight: var(--hah-weight-title);
+  color: var(--desk-text);
+  letter-spacing: var(--hah-tracking-snug);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hah-search-hl {
+  background: rgba(47, 111, 237, 0.18);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+.hah-search-agesex {
+  flex: 0 0 auto;
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+}
+
+.hah-search-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+  min-width: 0;
+}
+
+.hah-search-dot {
+  color: var(--hah-border-hover);
+  padding: 0 1px;
+}
+
+.hah-search-los.is-good   { color: var(--hah-success-text); }
+.hah-search-los.is-warn   { color: #b45309; }
+.hah-search-los.is-danger { color: var(--hah-danger-text); }
+
+.hah-search-flags {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hah-search-flag {
+  font-size: 10px;
+  font-weight: var(--hah-weight-action);
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: var(--hah-radius-tag);
+  border: 1px solid var(--hah-border-faint);
+  color: var(--desk-text-muted);
+  white-space: nowrap;
+}
+
+.hah-search-flag.is-acp {
+  color: var(--hah-accent-text);
+  border-color: var(--hah-accent-edge);
+  background: var(--hah-accent-tint);
+}
+
+.hah-search-flag.is-dnar {
+  color: var(--hah-danger-text);
+  border-color: var(--hah-danger-edge);
+  background: var(--hah-danger-tint);
+}
+
+/* Discharged: Henry's call — italics + lighter, refined here. The whole
+ * row is dimmed (clearly secondary to active patients) and the label is
+ * an italic muted tag with the discharge date so it reads as "this
+ * person has left the service" at a glance without shouting. */
+.hah-search-row.is-discharged .hah-search-name,
+.hah-search-row.is-discharged .hah-search-meta,
+.hah-search-row.is-discharged .hah-search-avatar {
+  opacity: 0.62;
+}
+
+.hah-search-flag.is-discharged {
+  font-style: italic;
+  font-weight: var(--hah-weight-meta);
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--desk-text-muted);
+  background: var(--hah-tint-context);
+  border-color: var(--hah-border-faint);
+}
+
+.hah-search-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--hah-gap-md);
+  padding: var(--hah-gap-sm) var(--hah-gap-sm) var(--hah-gap-xs);
+  margin-top: 2px;
+  border-top: 1px solid var(--hah-border-faint);
+  font-size: var(--hah-text-xs);
+  color: var(--desk-text-muted);
+}
+
+.hah-search-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hah-search-footer kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border: 1px solid var(--hah-border);
+  border-bottom-width: 2px;
+  border-radius: var(--hah-radius-tag);
+  background: var(--hah-tint-context);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: var(--hah-weight-action);
+  color: var(--desk-text-muted);
+}
+
+</style>
+  <style>
 /* inlined: css/desktop-pwa-install.css */
 /* ─── H@H Board — PWA install affordance styles ─────────────────────────
    v0.8.202: styles for the banner (first launch) and chip (after dismiss)
@@ -10612,9 +10868,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_249_preview_modal_x_anchored_release.html',
-  source: 'hospital_at_home_board_v0_8_249_preview_modal_x_anchored_source.zip',
-  builtAt: '2026-05-16T08:41:15.202212',
+  filename: 'hospital_at_home_board_v0_8_250_global_search_release.html',
+  source: 'hospital_at_home_board_v0_8_250_global_search_source.zip',
+  builtAt: '2026-05-16T08:54:47.261021',
   entry: 'desktop.html'
 };
 </script>
@@ -24481,10 +24737,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.249. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.250. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.249. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.250. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -27484,6 +27740,714 @@ window.HAHBoard = window.HAHBoard || {};
 
 </script>
   <script>
+/* inlined: js/35-desktop-search.js */
+// 35-desktop-search.js
+//
+// Global search, v0.8.250. The header search box was inert chrome until
+// now; this module makes it a fast patient-navigation surface with a
+// focus-time overlay (recents) and a typed-query result list.
+//
+// Design (worked through with Henry, May 2026):
+//   - With a ~20-patient caseload this is a fast-navigation problem, not
+//     an information-retrieval one. The matcher optimises for "get me to
+//     the right patient in 1-2 keystrokes", not recall over a large corpus.
+//   - Selecting a result opens the patient detail view (router.goToPatient).
+//   - Discharged patients ARE included (Henry: searchable, not a dead end —
+//     you sometimes finish a letter for someone discharged yesterday) but
+//     rank below active ones and carry a muted/italic "Discharged" label.
+//   - Overlay is centred + tethered under the box: it's a child of the
+//     same centred header wrapper, so it inherits the centring for free
+//     and hugs the input with no positioning math.
+//   - No scope chips (Henry cut them with cohorts); the empty state is
+//     just Recent patients.
+//
+// Identifier note: JSON_SCHEMA.md marks identity.identifiers reserved and
+// unused — there is no NHS/hospital number on the in-memory patient. The
+// numeric-routing path (digits => identifier lookup) is implemented and
+// dormant: it only fires when records actually carry an `identifier`.
+// Flip-on is automatic the day identity.identifiers gets populated. See
+// OPEN_QUESTIONS.md.
+//
+// Module exports the pure matcher/ranker for tests (Node) and attaches a
+// UI controller to window.HAHBoard.search in the browser.
+
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------------
+  // Pure matching / ranking core (unit-tested in tests/search-match.test.js)
+  // ---------------------------------------------------------------------
+
+  // Scoring tiers. The gaps matter: any name hit must outrank any
+  // other-field hit (a surname match beats a diagnosis match), and the
+  // discharged penalty is smaller than the gap between strong and weak
+  // name tiers — so an exact-name match on a discharged patient still
+  // beats a weak contains-match on an active one (you typed their name;
+  // you want them) while a comparable match prefers the active patient.
+  var SCORE = {
+    NAME_EXACT: 1000,
+    NAME_WORD_EXACT: 620,
+    INITIALS: 560,
+    NAME_PREFIX: 520,
+    NAME_WORD_PREFIX: 460,
+    NAME_WORD_CONTAINS: 320,
+    NAME_CONTAINS: 240,
+    IDENTIFIER: 900,          // dormant until records carry `identifier`
+    FUZZY_BASE: 140,          // subsequence match on the name
+    OTHER_FIELD: 90,          // summary / pathway / referral / location
+    CURRENT_BOOST: 60,
+    PRIORITY_CRITICAL: 45,
+    PRIORITY_HIGH: 25,
+    DISCHARGED_PENALTY: -350
+  };
+
+  function normalizeText(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function tokenize(query) {
+    var n = normalizeText(query);
+    if (!n) return [];
+    return n.split(' ').filter(Boolean);
+  }
+
+  function nameWords(name) {
+    return normalizeText(name)
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+  }
+
+  function initialsOf(words) {
+    return words.map(function (w) { return w.charAt(0); }).join('');
+  }
+
+  // Order-preserving subsequence test: do all of needle's chars appear in
+  // haystack in order? Returns a small score scaled by how tight the
+  // match is (fewer skipped chars = better), or 0 if not a subsequence.
+  function fuzzySubsequenceScore(haystack, needle) {
+    if (!needle) return 0;
+    if (needle.length < 2) return 0; // single char is too noisy to fuzzy
+    var hi = 0;
+    var firstIdx = -1;
+    var lastIdx = -1;
+    for (var ni = 0; ni < needle.length; ni++) {
+      var ch = needle.charAt(ni);
+      var found = -1;
+      for (; hi < haystack.length; hi++) {
+        if (haystack.charAt(hi) === ch) { found = hi; hi++; break; }
+      }
+      if (found === -1) return 0;
+      if (firstIdx === -1) firstIdx = found;
+      lastIdx = found;
+    }
+    var span = (lastIdx - firstIdx + 1);
+    var tightness = needle.length / span; // 1.0 == contiguous
+    return Math.round(SCORE.FUZZY_BASE * tightness);
+  }
+
+  // Build the flat, lowercased record the matcher works on. Kept separate
+  // from scoring so tests can construct records directly.
+  function buildSearchRecord(summary, meta) {
+    meta = meta || {};
+    var name = summary && summary.name ? String(summary.name) : '';
+    var words = nameWords(name);
+    var age = summary && summary.age ? String(summary.age) : '';
+    var sex = summary && summary.sex ? String(summary.sex) : '';
+    return {
+      id: summary ? String(summary.id) : '',
+      name: name,
+      nameLc: normalizeText(name),
+      nameWords: words,
+      initials: initialsOf(words),
+      age: age,
+      sex: sex,
+      ageSex: [age, sex].filter(Boolean).join(''),
+      summaryLine: summary && summary.summaryLine ? String(summary.summaryLine) : '',
+      pathway: summary && summary.pathway ? String(summary.pathway) : '',
+      referralSource: summary && summary.referralSource ? String(summary.referralSource) : '',
+      location: summary && summary.location ? String(summary.location) : '',
+      admissionDate: summary && summary.admissionDate ? String(summary.admissionDate) : '',
+      priority: summary && summary.priority ? String(summary.priority) : '',
+      dnar: !!(summary && summary.dnar),
+      tepText: meta.tepText ? String(meta.tepText) : '',
+      // identifier is dormant: nothing populates it today (no schema field).
+      identifier: meta.identifier ? String(meta.identifier) : '',
+      discharged: !!meta.discharged,
+      dischargedAt: meta.dischargedAt || null,
+      isCurrent: !!meta.isCurrent
+    };
+  }
+
+  // Score one record against one term. Returns the best single-field
+  // score for the term, or 0 if the term matches nothing on this record.
+  function scoreTerm(rec, term) {
+    if (!term) return 0;
+
+    // Numeric-ish term => identifier lookup (dormant until populated).
+    if (rec.identifier && /^[0-9][0-9 ]*$/.test(term)) {
+      var idLc = rec.identifier.toLowerCase().replace(/\s+/g, '');
+      var tNum = term.replace(/\s+/g, '');
+      if (idLc === tNum) return SCORE.IDENTIFIER;
+      if (idLc.indexOf(tNum) !== -1 || idLc.slice(-tNum.length) === tNum) {
+        return SCORE.IDENTIFIER - 120;
+      }
+    }
+
+    var best = 0;
+    var nameLc = rec.nameLc;
+
+    if (nameLc === term) best = Math.max(best, SCORE.NAME_EXACT);
+
+    for (var i = 0; i < rec.nameWords.length; i++) {
+      var w = rec.nameWords[i];
+      if (w === term) best = Math.max(best, SCORE.NAME_WORD_EXACT);
+      else if (w.indexOf(term) === 0) best = Math.max(best, SCORE.NAME_WORD_PREFIX);
+      else if (w.indexOf(term) !== -1) best = Math.max(best, SCORE.NAME_WORD_CONTAINS);
+    }
+
+    if (nameLc.indexOf(term) === 0) best = Math.max(best, SCORE.NAME_PREFIX);
+    else if (nameLc.indexOf(term) !== -1) best = Math.max(best, SCORE.NAME_CONTAINS);
+
+    // Initials: short query matching the leading letters of the name
+    // words (e.g. "jt" -> "JSON test"). Only when it actually helps.
+    if (term.length >= 2 && term.length <= 5 && rec.initials &&
+        rec.initials.indexOf(term) === 0) {
+      best = Math.max(best, SCORE.INITIALS);
+    }
+
+    // Fuzzy / typo tolerance on the name (Henry enters phonetic spellings;
+    // staff mistype). Only counts if nothing stronger already matched.
+    if (best === 0) {
+      var fz = fuzzySubsequenceScore(nameLc.replace(/[^a-z0-9]+/g, ''), term.replace(/[^a-z0-9]+/g, ''));
+      if (fz > 0) best = Math.max(best, fz);
+    }
+
+    // Other clinical fields — always below any name hit by construction.
+    if (best < SCORE.OTHER_FIELD) {
+      var others = rec.summaryLine + ' ' + rec.pathway + ' ' +
+                   rec.referralSource + ' ' + rec.location;
+      if (normalizeText(others).indexOf(term) !== -1) {
+        best = Math.max(best, SCORE.OTHER_FIELD);
+      }
+    }
+
+    return best;
+  }
+
+  // Score a record against the full query. AND semantics across terms:
+  // every term must hit something. Returns total score, or null to
+  // exclude. Recency + clinical salience + discharged penalty applied
+  // once at the end so they tune order without letting a non-textual
+  // signal alone qualify a record.
+  function scoreRecord(rec, terms) {
+    if (!terms.length) return null;
+    var sum = 0;
+    for (var i = 0; i < terms.length; i++) {
+      var s = scoreTerm(rec, terms[i]);
+      if (s <= 0) return null;
+      sum += s;
+    }
+    if (rec.isCurrent) sum += SCORE.CURRENT_BOOST;
+    if (rec.priority === 'Critical') sum += SCORE.PRIORITY_CRITICAL;
+    else if (rec.priority === 'High') sum += SCORE.PRIORITY_HIGH;
+    if (rec.discharged) sum += SCORE.DISCHARGED_PENALTY;
+    return sum;
+  }
+
+  function searchPatients(records, query, options) {
+    options = options || {};
+    var limit = options.limit || 8;
+    var terms = tokenize(query);
+    if (!terms.length) return [];
+    var scored = [];
+    for (var i = 0; i < records.length; i++) {
+      var sc = scoreRecord(records[i], terms);
+      if (sc == null) continue;
+      scored.push({ record: records[i], score: sc });
+    }
+    scored.sort(function (a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      // Stable tie-break: active before discharged, then name A-Z.
+      if (a.record.discharged !== b.record.discharged) {
+        return a.record.discharged ? 1 : -1;
+      }
+      return a.record.nameLc.localeCompare(b.record.nameLc);
+    });
+    return scored.slice(0, limit);
+  }
+
+  // Highlight ranges (in the ORIGINAL name string) for the matched terms.
+  // Earliest non-overlapping occurrence per term; ranges merged so the
+  // renderer can wrap them in <mark> without nesting.
+  function computeNameHighlight(name, query) {
+    var terms = tokenize(query);
+    var lc = String(name == null ? '' : name).toLowerCase();
+    var ranges = [];
+    for (var t = 0; t < terms.length; t++) {
+      var idx = lc.indexOf(terms[t]);
+      if (idx !== -1) ranges.push([idx, idx + terms[t].length]);
+    }
+    if (!ranges.length) return [];
+    ranges.sort(function (a, b) { return a[0] - b[0]; });
+    var merged = [ranges[0].slice()];
+    for (var r = 1; r < ranges.length; r++) {
+      var last = merged[merged.length - 1];
+      if (ranges[r][0] <= last[1]) {
+        last[1] = Math.max(last[1], ranges[r][1]);
+      } else {
+        merged.push(ranges[r].slice());
+      }
+    }
+    return merged;
+  }
+
+  var core = {
+    normalizeText: normalizeText,
+    tokenize: tokenize,
+    nameWords: nameWords,
+    fuzzySubsequenceScore: fuzzySubsequenceScore,
+    buildSearchRecord: buildSearchRecord,
+    scoreTerm: scoreTerm,
+    scoreRecord: scoreRecord,
+    searchPatients: searchPatients,
+    computeNameHighlight: computeNameHighlight,
+    SCORE: SCORE
+  };
+
+  // ---------------------------------------------------------------------
+  // Browser UI controller
+  // ---------------------------------------------------------------------
+
+  function mountController() {
+    var HB = window.HAHBoard || {};
+    var RECENTS_KEY = 'hah_search_recents_v1';
+    var RECENTS_MAX = 6;
+    var DEBOUNCE_MS = 90;
+
+    var inputEl = null;
+    var panelEl = null;
+    var mounted = false;
+    var open = false;
+    var activeIndex = -1;
+    var currentItems = [];   // either {record} result entries or recents
+    var currentMode = 'recents'; // 'recents' | 'results'
+    var debounceTimer = null;
+    var suppressBlur = false;
+
+    function escapeHtml(value) {
+      var c = HB.components;
+      if (c && c.escapeHtml) return c.escapeHtml(value);
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function loadRecents() {
+      try {
+        var raw = window.localStorage.getItem(RECENTS_KEY);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(function (x) { return typeof x === 'string'; }) : [];
+      } catch (_) { return []; }
+    }
+
+    function pushRecent(id) {
+      if (!id) return;
+      try {
+        var list = loadRecents().filter(function (x) { return x !== String(id); });
+        list.unshift(String(id));
+        window.localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, RECENTS_MAX)));
+      } catch (_) {}
+    }
+
+    // Pull all patients (active + discharged), build search records.
+    function buildRecords() {
+      var derived = HB.derived;
+      var ops = HB.ops;
+      if (!derived || !derived.getPatientSourceBundle || !derived.buildPatientSummary) {
+        return { records: [], byId: {} };
+      }
+      var bundle = derived.getPatientSourceBundle();
+      var rows = (bundle && bundle.rows) || [];
+      var currentId = bundle && bundle.currentPatientId ? String(bundle.currentPatientId) : '';
+
+      var dischargedAtById = {};
+      if (ops && ops.getDischargedPatients) {
+        try {
+          (ops.getDischargedPatients() || []).forEach(function (d) {
+            if (d && d.patientId && !dischargedAtById[d.patientId]) {
+              dischargedAtById[d.patientId] = d.dischargedAt || null;
+            }
+          });
+        } catch (_) {}
+      }
+      var isDischarged = (ops && ops.isPatientDischarged)
+        ? function (id) { return ops.isPatientDischarged(id); }
+        : function () { return false; };
+
+      var records = [];
+      var byId = {};
+      for (var i = 0; i < rows.length; i++) {
+        var summary;
+        try { summary = derived.buildPatientSummary(rows[i]); } catch (_) { continue; }
+        if (!summary || !summary.id) continue;
+        var pid = String(summary.id);
+        var tepText = '';
+        if (ops && ops.getPatientState) {
+          try {
+            var ps = ops.getPatientState(pid) || {};
+            var acp = ps.acp || {};
+            tepText = String(acp.tep || acp.ceilingOfCare || '').trim();
+          } catch (_) {}
+        }
+        var rec = buildSearchRecord(summary, {
+          tepText: tepText,
+          discharged: isDischarged(pid),
+          dischargedAt: dischargedAtById[pid] || null,
+          isCurrent: currentId && pid === currentId
+        });
+        records.push(rec);
+        byId[pid] = rec;
+      }
+      return { records: records, byId: byId };
+    }
+
+    function formatDischargedLabel(iso) {
+      if (!iso) return 'Discharged';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return 'Discharged';
+      try {
+        return 'Discharged · ' + d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      } catch (_) {
+        return 'Discharged';
+      }
+    }
+
+    function losMeta(admissionDate) {
+      if (!admissionDate) return null;
+      var s = String(admissionDate).trim();
+      var ts = 0;
+      var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) ts = new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+      else { var f = new Date(s).getTime(); ts = isNaN(f) ? 0 : f; }
+      if (!ts) return null;
+      var start = new Date(ts);
+      var now = new Date();
+      var sd = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+      var nd = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      var days = Math.max(0, Math.floor((nd - sd) / 86400000));
+      var tone = days < 7 ? 'good' : (days === 7 ? 'warn' : 'danger');
+      return { text: 'LOS ' + days + 'd', tone: tone };
+    }
+
+    function nameHtml(rec, query) {
+      var name = rec.name || '';
+      var ranges = computeNameHighlight(name, query);
+      if (!ranges.length) return escapeHtml(name);
+      var out = '';
+      var cursor = 0;
+      for (var i = 0; i < ranges.length; i++) {
+        var a = ranges[i][0], b = ranges[i][1];
+        out += escapeHtml(name.slice(cursor, a));
+        out += '<mark class="hah-search-hl">' + escapeHtml(name.slice(a, b)) + '</mark>';
+        cursor = b;
+      }
+      out += escapeHtml(name.slice(cursor));
+      return out;
+    }
+
+    function initialsBadge(rec) {
+      var words = rec.nameWords || [];
+      var ini = '';
+      if (words.length >= 2) ini = (words[0].charAt(0) + words[words.length - 1].charAt(0));
+      else if (words.length === 1) ini = words[0].slice(0, 2);
+      return ini.toUpperCase() || '?';
+    }
+
+    function rowHtml(rec, query, idx, active) {
+      var metaParts = [];
+      if (rec.referralSource) metaParts.push(escapeHtml(rec.referralSource + ' referral'));
+      if (rec.admissionDate) metaParts.push('Adm ' + escapeHtml(rec.admissionDate));
+      var los = losMeta(rec.admissionDate);
+      if (los) metaParts.push('<span class="hah-search-los is-' + los.tone + '">' + escapeHtml(los.text) + '</span>');
+      if (rec.pathway && rec.pathway !== 'General') metaParts.push(escapeHtml(rec.pathway));
+
+      var flags = '';
+      if (rec.tepText) flags += '<span class="hah-search-flag is-acp" title="TEP documented">TEP</span>';
+      if (rec.dnar) flags += '<span class="hah-search-flag is-dnar" title="DNACPR documented">DNAR</span>';
+      if (rec.discharged) {
+        flags += '<span class="hah-search-flag is-discharged">' +
+          escapeHtml(formatDischargedLabel(rec.dischargedAt)) + '</span>';
+      }
+
+      var ageSex = rec.ageSex ? '<span class="hah-search-agesex">' + escapeHtml(rec.ageSex) + '</span>' : '';
+
+      return '' +
+        '<button type="button" role="option" class="hah-search-row' +
+          (rec.discharged ? ' is-discharged' : '') +
+          (active ? ' is-active' : '') +
+        '" data-search-idx="' + idx + '" aria-selected="' + (active ? 'true' : 'false') + '">' +
+          '<span class="hah-search-avatar">' + escapeHtml(initialsBadge(rec)) + '</span>' +
+          '<span class="hah-search-row-body">' +
+            '<span class="hah-search-row-top">' +
+              '<span class="hah-search-name">' + nameHtml(rec, query) + '</span>' +
+              ageSex +
+            '</span>' +
+            (metaParts.length ? '<span class="hah-search-meta">' + metaParts.join('<span class="hah-search-dot">·</span>') + '</span>' : '') +
+          '</span>' +
+          '<span class="hah-search-flags">' + flags + '</span>' +
+        '</button>';
+    }
+
+    function renderRecents() {
+      var built = buildRecords();
+      var ids = loadRecents();
+      // Seed with the current patient so "Recent" is never empty on a
+      // fresh install with an active patient open.
+      var bundle = HB.derived && HB.derived.getPatientSourceBundle
+        ? HB.derived.getPatientSourceBundle() : null;
+      var currentId = bundle && bundle.currentPatientId ? String(bundle.currentPatientId) : '';
+      if (currentId && ids.indexOf(currentId) === -1) ids = [currentId].concat(ids);
+
+      var recs = [];
+      for (var i = 0; i < ids.length && recs.length < 5; i++) {
+        if (built.byId[ids[i]]) recs.push(built.byId[ids[i]]);
+      }
+      currentItems = recs;
+      currentMode = 'recents';
+      activeIndex = recs.length ? 0 : -1;
+
+      var inner;
+      if (!recs.length) {
+        inner = '<div class="hah-search-empty">Start typing a patient name. Recently opened patients will appear here.</div>';
+      } else {
+        inner = '<div class="hah-search-section-label">Recent</div>' +
+          '<div class="hah-search-list" role="listbox">' +
+            recs.map(function (r, i) { return rowHtml(r, '', i, i === activeIndex); }).join('') +
+          '</div>';
+      }
+      panelEl.innerHTML = inner + footerHtml();
+    }
+
+    function renderResults(query) {
+      var built = buildRecords();
+      var results = searchPatients(built.records, query, { limit: 8 });
+      currentItems = results.map(function (r) { return r.record; });
+      currentMode = 'results';
+      activeIndex = currentItems.length ? 0 : -1;
+
+      var inner;
+      if (!currentItems.length) {
+        inner = '<div class="hah-search-empty">No patients match “' + escapeHtml(query.trim()) + '”.</div>';
+      } else {
+        inner = '<div class="hah-search-list" role="listbox">' +
+          currentItems.map(function (r, i) { return rowHtml(r, query, i, i === activeIndex); }).join('') +
+          '</div>';
+      }
+      panelEl.innerHTML = inner + footerHtml();
+    }
+
+    function footerHtml() {
+      return '<div class="hah-search-footer">' +
+        '<span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>' +
+        '<span><kbd>↵</kbd> open</span>' +
+        '<span><kbd>esc</kbd> close</span>' +
+      '</div>';
+    }
+
+    function renderPanel() {
+      var q = inputEl.value || '';
+      if (q.trim().length) renderResults(q);
+      else renderRecents();
+    }
+
+    function openPanel() {
+      if (open) { renderPanel(); return; }
+      open = true;
+      panelEl.hidden = false;
+      panelEl.classList.add('is-open');
+      inputEl.setAttribute('aria-expanded', 'true');
+      renderPanel();
+    }
+
+    function closePanel() {
+      if (!open) return;
+      open = false;
+      panelEl.classList.remove('is-open');
+      panelEl.hidden = true;
+      activeIndex = -1;
+      inputEl.setAttribute('aria-expanded', 'false');
+    }
+
+    function updateActive() {
+      var rows = panelEl.querySelectorAll('.hah-search-row');
+      for (var i = 0; i < rows.length; i++) {
+        var on = (i === activeIndex);
+        rows[i].classList.toggle('is-active', on);
+        rows[i].setAttribute('aria-selected', on ? 'true' : 'false');
+        if (on && rows[i].scrollIntoView) {
+          rows[i].scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+
+    function moveActive(delta) {
+      if (!currentItems.length) return;
+      activeIndex = (activeIndex + delta + currentItems.length) % currentItems.length;
+      updateActive();
+    }
+
+    function openRecord(rec) {
+      if (!rec || !rec.id) return;
+      pushRecent(rec.id);
+      closePanel();
+      inputEl.value = '';
+      inputEl.blur();
+      if (HB.router && HB.router.goToPatient) HB.router.goToPatient(rec.id);
+    }
+
+    function activateIndex(idx) {
+      if (idx < 0 || idx >= currentItems.length) return;
+      openRecord(currentItems[idx]);
+    }
+
+    function onInput() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        if (!open) openPanel();
+        else renderPanel();
+      }, DEBOUNCE_MS);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (!open) openPanel(); else moveActive(1); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); return; }
+      if (e.key === 'Enter') {
+        if (open && activeIndex >= 0) { e.preventDefault(); activateIndex(activeIndex); }
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (open) { e.preventDefault(); closePanel(); inputEl.blur(); }
+        return;
+      }
+    }
+
+    function onPanelMousedown(e) {
+      // Prevent the input blur from firing before the click handler so a
+      // row click isn't swallowed by the close-on-blur.
+      var row = e.target.closest ? e.target.closest('.hah-search-row') : null;
+      if (row) { suppressBlur = true; e.preventDefault(); }
+    }
+
+    function onPanelClick(e) {
+      var row = e.target.closest ? e.target.closest('.hah-search-row') : null;
+      if (!row) return;
+      var idx = parseInt(row.getAttribute('data-search-idx'), 10);
+      if (!isNaN(idx)) activateIndex(idx);
+    }
+
+    function onFocus() { openPanel(); }
+
+    function onBlur() {
+      if (suppressBlur) { suppressBlur = false; return; }
+      // Slight delay so a same-tick click on a row still resolves.
+      setTimeout(function () {
+        if (document.activeElement !== inputEl) closePanel();
+      }, 120);
+    }
+
+    function isTextInput(el) {
+      if (!el) return false;
+      var tag = (el.tagName || '').toLowerCase();
+      return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+    }
+
+    function onGlobalKeydown(e) {
+      // Cmd/Ctrl+K from anywhere focuses search.
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (inputEl) { inputEl.focus(); inputEl.select(); openPanel(); }
+        return;
+      }
+      // "/" focuses search when not already typing in a field.
+      if (e.key === '/' && !isTextInput(document.activeElement)) {
+        e.preventDefault();
+        if (inputEl) { inputEl.focus(); openPanel(); }
+      }
+    }
+
+    function ensurePanel() {
+      if (panelEl && panelEl.isConnected) return;
+      panelEl = document.createElement('div');
+      panelEl.id = 'hahSearchPanel';
+      panelEl.className = 'hah-search-panel';
+      panelEl.hidden = true;
+      panelEl.addEventListener('mousedown', onPanelMousedown);
+      panelEl.addEventListener('click', onPanelClick);
+      // Insert as a sibling right after the input, inside the centred
+      // header wrapper, so it inherits the centring and tethers to the box.
+      var wrap = inputEl.parentNode;
+      if (wrap) wrap.appendChild(panelEl);
+    }
+
+    function mount() {
+      var el = document.getElementById('hahGlobalSearch');
+      if (!el) return false;
+      if (mounted && inputEl === el && panelEl && panelEl.isConnected) return true;
+
+      inputEl = el;
+      inputEl.setAttribute('role', 'combobox');
+      inputEl.setAttribute('aria-autocomplete', 'list');
+      inputEl.setAttribute('aria-expanded', 'false');
+      inputEl.setAttribute('aria-controls', 'hahSearchPanel');
+      inputEl.setAttribute('autocomplete', 'off');
+
+      ensurePanel();
+
+      inputEl.addEventListener('input', onInput);
+      inputEl.addEventListener('keydown', onKeydown);
+      inputEl.addEventListener('focus', onFocus);
+      inputEl.addEventListener('blur', onBlur);
+
+      if (!mounted) {
+        document.addEventListener('keydown', onGlobalKeydown);
+      }
+      mounted = true;
+      return true;
+    }
+
+    return {
+      mount: mount,
+      pushRecent: pushRecent,
+      _core: core
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // Exports
+  // ---------------------------------------------------------------------
+
+  if (typeof window !== 'undefined') {
+    window.HAHBoard = window.HAHBoard || {};
+    var controller = mountController();
+    window.HAHBoard.search = {
+      mount: controller.mount,
+      pushRecent: controller.pushRecent,
+      // pure core also exposed for any in-app callers / debugging
+      core: core
+    };
+  }
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = core;
+  }
+})();
+
+</script>
+  <script>
 /* inlined: js/22-desktop-shell.js */
 (function () {
   window.HAHBoard = window.HAHBoard || {};
@@ -27508,6 +28472,13 @@ window.HAHBoard = window.HAHBoard || {};
     renderShell();
     bindShellEvents();
     bindResizeHandles();
+    // v0.8.250: wire the global search box (was inert chrome). The
+    // search module attaches its overlay to the centred header wrapper;
+    // mount() is idempotent and re-finds the input if the shell
+    // re-renders.
+    if (window.HAHBoard.search && typeof window.HAHBoard.search.mount === 'function') {
+      window.HAHBoard.search.mount();
+    }
     unsub = store.subscribe(renderFromState);
     router.initRouter();
     // Auto-reset board statuses if the last round was on a different day
@@ -27819,7 +28790,7 @@ window.HAHBoard = window.HAHBoard || {};
               id="hahGlobalSearch"
               class="hah-search"
               type="search"
-              placeholder="Search patients, tasks, cohorts…"
+              placeholder="Search patients…  (⌘K)"
               aria-label="Global search"
             />
           </div>
