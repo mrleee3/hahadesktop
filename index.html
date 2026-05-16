@@ -9841,15 +9841,22 @@ button.hah-pt-flag:active {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Close button + pagination float top-right. v0.8.247: the `right`
-   offset is set by JS (fitModalPaper) to sit in the gap between the
-   paper's right edge and the viewport edge, so it never overlaps the
-   letter regardless of letter/screen size. The 24px here is just a
-   pre-JS fallback. */
+/* v0.8.249: close button + pagination are absolutely positioned
+   children of .hah-dl-modal-paper-wrap (which is position: relative
+   and sized to the exact scaled paper box by JS). Anchoring to the
+   wrap's top-right corner with a negative offset places them just
+   OUTSIDE the letter's corner — in the backdrop — and they stay glued
+   there at any viewport size or paper scale, with zero JS positioning.
+   This replaces the v0.8.247/248 per-frame pixel math that kept
+   mis-placing the × (Henry's screenshots showed it landing on the
+   letterhead). The negative right/top push the pill up-and-right of
+   the paper corner; translateX(100%) on the pill itself moves it
+   fully clear of the paper edge. */
 .hah-dl-preview-modal-head {
-  position: fixed;
-  top: 20px;
-  right: 24px;
+  position: absolute;
+  top: -2px;
+  right: -16px;
+  transform: translateX(100%);
   z-index: 210;
   display: flex;
   align-items: center;
@@ -10605,9 +10612,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_247_preview_modal_fit_release.html',
-  source: 'hospital_at_home_board_v0_8_247_preview_modal_fit_source.zip',
-  builtAt: '2026-05-16T08:27:37.662761',
+  filename: 'hospital_at_home_board_v0_8_249_preview_modal_x_anchored_release.html',
+  source: 'hospital_at_home_board_v0_8_249_preview_modal_x_anchored_source.zip',
+  builtAt: '2026-05-16T08:41:15.202212',
   entry: 'desktop.html'
 };
 </script>
@@ -24474,10 +24481,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.247. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.249. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.247. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.249. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26131,17 +26138,22 @@ window.HAHBoard = window.HAHBoard || {};
     if (!state || !state.patient || !state.patient.dlPreviewModalOpen) return '';
     return `<div class="hah-dl-preview-modal-overlay" id="hahDlPreviewModal" data-patient-action="dl-preview-modal-backdrop">
       <div class="hah-dl-preview-modal" role="dialog" aria-modal="true" aria-label="Letter preview — full size">
-        <div class="hah-dl-preview-modal-head">
-          <span class="hah-dl-preview-modal-title">Letter preview</span>
-          <div class="hah-dl-preview-modal-pagination" id="hahDlModalPagination" style="display:none">
-            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-prev" title="Previous page" aria-label="Previous page">‹</button>
-            <span class="hah-dl-preview-page-label" id="hahDlModalPageLabel">Page 1 of 1</span>
-            <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-next" title="Next page" aria-label="Next page">›</button>
-          </div>
-          <button type="button" class="hah-dl-preview-modal-close" data-patient-action="dl-close-preview-modal" aria-label="Close preview">×</button>
-        </div>
+        <span class="hah-dl-preview-modal-title">Letter preview</span>
         <div class="hah-dl-preview-modal-body">
           <div class="hah-dl-modal-paper-wrap" id="hahDlModalPaperWrap">
+            <!-- v0.8.249: close button + pagination are children of the
+                 paper wrap, absolutely positioned to its top-right
+                 corner. This makes them hug the corner via pure CSS
+                 regardless of viewport size, paper scale, or JS timing
+                 — no per-frame pixel math. -->
+            <div class="hah-dl-preview-modal-head">
+              <div class="hah-dl-preview-modal-pagination" id="hahDlModalPagination" style="display:none">
+                <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-prev" title="Previous page" aria-label="Previous page">‹</button>
+                <span class="hah-dl-preview-page-label" id="hahDlModalPageLabel">Page 1 of 1</span>
+                <button type="button" class="hah-dl-preview-page-btn" data-patient-action="dl-preview-next" title="Next page" aria-label="Next page">›</button>
+              </div>
+              <button type="button" class="hah-dl-preview-modal-close" data-patient-action="dl-close-preview-modal" aria-label="Close preview">×</button>
+            </div>
             <div class="hah-dl-preview-paper hah-dl-preview-paper--modal" id="hahDlModalPaper">
               <div class="hah-dl-prev-header" id="hahDlModalHeader"></div>
               <div class="hah-dl-prev-body-area">
@@ -27385,30 +27397,12 @@ window.HAHBoard = window.HAHBoard || {};
       const paperH = PAPER_SRC_H * scale;
       wrap.style.width = paperW + 'px';
       wrap.style.height = paperH + 'px';
-      // v0.8.247: position the close button relative to the PAPER'S
-      // right edge, not the viewport corner. The paper is centred, so
-      // its right edge is at (viewportCentre + paperW/2). We want the
-      // × in the gap between that edge and the viewport edge. If that
-      // gap is too small (very wide letter on a narrow screen), fall
-      // back to pinning at the viewport corner — better slightly tight
-      // than off-screen.
-      const head = document.querySelector('.hah-dl-preview-modal-head');
-      if (head) {
-        const paperRightEdge = (vw / 2) + (paperW / 2);
-        const gap = vw - paperRightEdge; // space to the right of paper
-        // Place the × pill centred in that gap, but never closer than
-        // 16px to the viewport edge and never overlapping the paper.
-        const PILL_W = 44; // approx button width incl. breathing
-        let rightOffset;
-        if (gap >= PILL_W + 24) {
-          // Comfortable gap — centre the pill in it.
-          rightOffset = Math.max(16, (gap - PILL_W) / 2);
-        } else {
-          // Tight — pin near the viewport edge.
-          rightOffset = 16;
-        }
-        head.style.right = rightOffset + 'px';
-      }
+      // v0.8.249: close button + pagination are now CSS-positioned
+      // children of the wrap (absolute, anchored to its top-right
+      // corner). No JS positioning needed — they hug the corner
+      // automatically as the wrap resizes. This replaces the fragile
+      // per-frame pixel math of v0.8.247/248 that kept landing the ×
+      // in the wrong place.
     };
 
     if (modalWrap && modalPaper) {
