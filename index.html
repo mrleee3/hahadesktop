@@ -9800,11 +9800,13 @@ button.hah-pt-flag:active {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* ─── v0.8.245: chromeless full-size preview overlay ─────────────────── */
+/* ─── v0.8.246: chromeless full-size preview overlay, centred + fit ──── */
 
 /* Overlay backdrop. No container card — the paper floats directly on
-   the dimmed/blurred backdrop. A small floating × sits top-right of the
-   viewport. v0.8.245: Henry asked to drop the container chrome. */
+   the dimmed/blurred backdrop, centred both axes. v0.8.246: the paper
+   is scaled by JS to always fit the viewport (both width and height),
+   so the overlay no longer needs to scroll — switched from
+   align-items: flex-start + overflow: auto to fully centred. */
 .hah-dl-preview-modal-overlay {
   position: fixed;
   inset: 0;
@@ -9813,10 +9815,9 @@ button.hah-pt-flag:active {
   -webkit-backdrop-filter: blur(8px);
   z-index: 200;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  overflow: auto;
-  padding: 32px 24px 48px;
+  overflow: hidden;
   animation: hah-dl-preview-modal-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
@@ -9840,12 +9841,14 @@ button.hah-pt-flag:active {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Head is now invisible structurally — only the close button and
-   (optional) pagination float. No bar, no title, no border. */
+/* Close button + pagination float in the top-right CORNER OF THE
+   VIEWPORT, not over the paper. The JS fit math reserves 120px of
+   horizontal margin around the paper specifically so this pill sits
+   in clear backdrop space and never overlaps the letter. */
 .hah-dl-preview-modal-head {
   position: fixed;
-  top: 18px;
-  right: 22px;
+  top: 20px;
+  right: 24px;
   z-index: 210;
   display: flex;
   align-items: center;
@@ -9910,23 +9913,27 @@ button.hah-pt-flag:active {
   transform: scale(1.06);
 }
 
-/* Body region — just holds the paper wrap, centred. No padding/bg of
-   its own; the overlay handles spacing and scroll. */
+/* Body region — just holds the paper wrap, centred. */
 .hah-dl-preview-modal-body {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 }
 
-/* The modal paper sits inside a sized wrap that pins its post-scale
-   dimensions in the layout. The wrap has the A4 aspect ratio; the
-   paper inside is absolutely positioned and transform-scaled to fill
-   it. v0.8.245: max-width bumped 720 → 864 (+20%) per Henry. JS sets
-   --paper-scale to wrap.clientWidth / 1190 (1190 = 595 × PM=2). */
+/* The modal paper sits inside a wrap whose width/height are set
+   EXPLICITLY by the JS fitModalPaper() function to the exact
+   post-scale paper box (PAPER_SRC × scale). This makes the flex
+   centering on the overlay place the paper dead-centre both axes.
+   v0.8.246: removed the CSS aspect-ratio + max-width — the JS owns
+   the dimensions now (it scales to fit both viewport width AND
+   height, whichever is the binding constraint, so the whole letter
+   is always visible without scrolling). The CSS fallback width/height
+   below only matter for the brief moment before JS runs. */
 .hah-dl-modal-paper-wrap {
   position: relative;
-  width: min(864px, calc(100vw - 48px));
-  aspect-ratio: 595 / 842;
+  /* JS overwrites these inline. Fallback ≈ scale 0.62 of 1190×1684. */
+  width: 738px;
+  height: 1044px;
   flex-shrink: 0;
 }
 
@@ -9937,9 +9944,9 @@ button.hah-pt-flag:active {
   /* width/height come from the base .hah-dl-preview-paper at PM=2:
      1190px × 1684px. Don't override here. */
   transform-origin: top left;
-  /* JS sets --paper-scale to (wrap.clientWidth / 1190). CSS fallback
-     (0.72) keeps things readable if JS hasn't run yet. */
-  transform: scale(var(--paper-scale, 0.72));
+  /* JS sets --paper-scale via fitModalPaper(). CSS fallback (0.62)
+     keeps things readable if JS hasn't run yet. */
+  transform: scale(var(--paper-scale, 0.62));
   box-shadow: 0 12px 48px rgba(15, 23, 42, 0.28);
 }
 
@@ -10597,9 +10604,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_245_preview_modal_chromeless_release.html',
-  source: 'hospital_at_home_board_v0_8_245_preview_modal_chromeless_source.zip',
-  builtAt: '2026-05-16T08:12:47.682475',
+  filename: 'hospital_at_home_board_v0_8_246_preview_modal_centred_release.html',
+  source: 'hospital_at_home_board_v0_8_246_preview_modal_centred_source.zip',
+  builtAt: '2026-05-16T08:20:01.826110',
   entry: 'desktop.html'
 };
 </script>
@@ -24466,10 +24473,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.245. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.246. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.245. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.246. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -27333,34 +27340,55 @@ window.HAHBoard = window.HAHBoard || {};
     // the DOM and refresh on window resize.
     const modalWrap = pane.querySelector('#hahDlModalPaperWrap');
     const modalPaper = pane.querySelector('#hahDlModalPaper');
-    const updateModalLayout = () => {
-      if (!modalWrap || !modalPaper) return;
-      const wrapW = modalWrap.clientWidth;
-      if (wrapW <= 0) return;
-      // PM=2 source is 1190 px wide (595 × 2). Scale to fit the wrap.
-      const scale = wrapW / (595 * 2);
-      modalPaper.style.setProperty('--paper-scale', String(scale));
+
+    // v0.8.246: fit-to-viewport scaling. The paper is PM=2 source:
+    // 1190 × 1684 px (595×2 by 842×2). We want it as large as possible
+    // while (a) fitting the viewport WIDTH with margin and (b) fitting
+    // the viewport HEIGHT with margin, whichever is the tighter
+    // constraint — so the whole letter is always visible without the
+    // overlay needing to scroll, and it scales proportionally to the
+    // screen. The wrap is then sized to the EXACT post-scale paper
+    // dimensions so the flex centering (align/justify: center on the
+    // overlay) places it dead-centre both axes.
+    const PAPER_SRC_W = 595 * 2;   // 1190
+    const PAPER_SRC_H = 842 * 2;   // 1684
+    // Viewport budget: leave room around the paper. Horizontal margin
+    // is generous so the floating × (which sits in the top-right of
+    // that margin) never overlaps the paper. Vertical margin keeps the
+    // letter off the very top/bottom edges.
+    const H_MARGIN = 120; // total px reserved horizontally (60 each side-ish)
+    const V_MARGIN = 72;  // total px reserved vertically
+    const fitModalPaper = () => {
+      const wrap = document.getElementById('hahDlModalPaperWrap');
+      const paper = document.getElementById('hahDlModalPaper');
+      if (!wrap || !paper) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (vw <= 0 || vh <= 0) return;
+      const widthBudget = Math.max(280, vw - H_MARGIN);
+      const heightBudget = Math.max(360, vh - V_MARGIN);
+      // Scale to fit whichever budget is the binding constraint.
+      const scaleW = widthBudget / PAPER_SRC_W;
+      const scaleH = heightBudget / PAPER_SRC_H;
+      const scale = Math.min(scaleW, scaleH);
+      paper.style.setProperty('--paper-scale', String(scale));
+      // Size the wrap to the post-scale paper box so flex centering
+      // positions it correctly. Without this the wrap would keep its
+      // aspect-ratio intrinsic size and the centering would be off.
+      wrap.style.width = (PAPER_SRC_W * scale) + 'px';
+      wrap.style.height = (PAPER_SRC_H * scale) + 'px';
     };
+
     if (modalWrap && modalPaper) {
       // Initial layout, plus one rAF-deferred call so we catch the
       // final size after the modal's open-animation has settled and
       // the flex layout has resolved.
-      updateModalLayout();
-      requestAnimationFrame(updateModalLayout);
-      // Window resize: re-fit the paper. Module-scoped handler so we
-      // can detach it cleanly when the modal closes (next render
-      // without modal will see no #hahDlModalPaperWrap, but the
-      // listener would still fire harmlessly — detachment is for
-      // tidiness, not correctness).
+      fitModalPaper();
+      requestAnimationFrame(fitModalPaper);
+      // Window resize: re-fit. Module-scoped handler bound once per
+      // page lifetime; no-ops when the modal isn't mounted.
       if (!_modalResizeHandler) {
-        _modalResizeHandler = function () {
-          const wrap = document.getElementById('hahDlModalPaperWrap');
-          const paper = document.getElementById('hahDlModalPaper');
-          if (!wrap || !paper) return;
-          const w = wrap.clientWidth;
-          if (w <= 0) return;
-          paper.style.setProperty('--paper-scale', String(w / (595 * 2)));
-        };
+        _modalResizeHandler = function () { fitModalPaper(); };
         window.addEventListener('resize', _modalResizeHandler);
       }
     }
