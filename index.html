@@ -9841,10 +9841,11 @@ button.hah-pt-flag:active {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Close button + pagination float in the top-right CORNER OF THE
-   VIEWPORT, not over the paper. The JS fit math reserves 120px of
-   horizontal margin around the paper specifically so this pill sits
-   in clear backdrop space and never overlaps the letter. */
+/* Close button + pagination float top-right. v0.8.247: the `right`
+   offset is set by JS (fitModalPaper) to sit in the gap between the
+   paper's right edge and the viewport edge, so it never overlaps the
+   letter regardless of letter/screen size. The 24px here is just a
+   pre-JS fallback. */
 .hah-dl-preview-modal-head {
   position: fixed;
   top: 20px;
@@ -10604,9 +10605,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_246_preview_modal_centred_release.html',
-  source: 'hospital_at_home_board_v0_8_246_preview_modal_centred_source.zip',
-  builtAt: '2026-05-16T08:20:01.826110',
+  filename: 'hospital_at_home_board_v0_8_247_preview_modal_fit_release.html',
+  source: 'hospital_at_home_board_v0_8_247_preview_modal_fit_source.zip',
+  builtAt: '2026-05-16T08:27:37.662761',
   entry: 'desktop.html'
 };
 </script>
@@ -24473,10 +24474,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.246. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.247. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.246. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.247. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -27353,11 +27354,16 @@ window.HAHBoard = window.HAHBoard || {};
     const PAPER_SRC_W = 595 * 2;   // 1190
     const PAPER_SRC_H = 842 * 2;   // 1684
     // Viewport budget: leave room around the paper. Horizontal margin
-    // is generous so the floating × (which sits in the top-right of
-    // that margin) never overlaps the paper. Vertical margin keeps the
-    // letter off the very top/bottom edges.
-    const H_MARGIN = 120; // total px reserved horizontally (60 each side-ish)
+    // is generous so the floating × never overlaps the paper. Vertical
+    // margin keeps the letter off the very top/bottom edges.
+    const H_MARGIN = 120; // total px reserved horizontally
     const V_MARGIN = 72;  // total px reserved vertically
+    // v0.8.247: Henry asked for ~15% smaller. Applied as a multiplier
+    // on the fitted scale so it stays proportional to screen size —
+    // the letter is 85% of the largest size that would fit, leaving
+    // more backdrop margin around it (which also gives the close
+    // button clear space).
+    const FIT_FACTOR = 0.85;
     const fitModalPaper = () => {
       const wrap = document.getElementById('hahDlModalPaperWrap');
       const paper = document.getElementById('hahDlModalPaper');
@@ -27367,16 +27373,42 @@ window.HAHBoard = window.HAHBoard || {};
       if (vw <= 0 || vh <= 0) return;
       const widthBudget = Math.max(280, vw - H_MARGIN);
       const heightBudget = Math.max(360, vh - V_MARGIN);
-      // Scale to fit whichever budget is the binding constraint.
+      // Scale to fit whichever budget is the binding constraint, then
+      // shrink by FIT_FACTOR for breathing room.
       const scaleW = widthBudget / PAPER_SRC_W;
       const scaleH = heightBudget / PAPER_SRC_H;
-      const scale = Math.min(scaleW, scaleH);
+      const scale = Math.min(scaleW, scaleH) * FIT_FACTOR;
       paper.style.setProperty('--paper-scale', String(scale));
       // Size the wrap to the post-scale paper box so flex centering
-      // positions it correctly. Without this the wrap would keep its
-      // aspect-ratio intrinsic size and the centering would be off.
-      wrap.style.width = (PAPER_SRC_W * scale) + 'px';
-      wrap.style.height = (PAPER_SRC_H * scale) + 'px';
+      // positions it correctly.
+      const paperW = PAPER_SRC_W * scale;
+      const paperH = PAPER_SRC_H * scale;
+      wrap.style.width = paperW + 'px';
+      wrap.style.height = paperH + 'px';
+      // v0.8.247: position the close button relative to the PAPER'S
+      // right edge, not the viewport corner. The paper is centred, so
+      // its right edge is at (viewportCentre + paperW/2). We want the
+      // × in the gap between that edge and the viewport edge. If that
+      // gap is too small (very wide letter on a narrow screen), fall
+      // back to pinning at the viewport corner — better slightly tight
+      // than off-screen.
+      const head = document.querySelector('.hah-dl-preview-modal-head');
+      if (head) {
+        const paperRightEdge = (vw / 2) + (paperW / 2);
+        const gap = vw - paperRightEdge; // space to the right of paper
+        // Place the × pill centred in that gap, but never closer than
+        // 16px to the viewport edge and never overlapping the paper.
+        const PILL_W = 44; // approx button width incl. breathing
+        let rightOffset;
+        if (gap >= PILL_W + 24) {
+          // Comfortable gap — centre the pill in it.
+          rightOffset = Math.max(16, (gap - PILL_W) / 2);
+        } else {
+          // Tight — pin near the viewport edge.
+          rightOffset = 16;
+        }
+        head.style.right = rightOffset + 'px';
+      }
     };
 
     if (modalWrap && modalPaper) {
