@@ -9864,36 +9864,9 @@ button.hah-pt-flag:active {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
-/* Small expand-icon in the top-right of the preview frame, explicit
-   affordance so the clickable behaviour is discoverable without needing
-   the user to hover-and-guess. Click bubbles up to the same
-   dl-open-preview-modal handler the frame has. */
-.hah-dl-preview-expand-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 5;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  color: #475569;
-  cursor: zoom-in;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-.hah-dl-preview-expand-btn:hover {
-  background: rgba(255, 255, 255, 0.98);
-  color: #0a84ff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
+/* v0.8.264: .hah-dl-preview-expand-btn removed — the frame itself is
+   the click target for the same dl-open-preview-modal action; the
+   button was a redundant overlay sitting on the letterhead. */
 
 /* ─── v0.8.246: chromeless full-size preview overlay, centred + fit ──── */
 
@@ -11264,9 +11237,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_263_unify_edit_affordance_release.html',
-  source: 'hospital_at_home_board_v0_8_263_unify_edit_affordance_source.zip',
-  builtAt: '2026-05-17T19:45:52.030974',
+  filename: 'hospital_at_home_board_v0_8_264_remove_preview_expand_btn_release.html',
+  source: 'hospital_at_home_board_v0_8_264_remove_preview_expand_btn_source.zip',
+  builtAt: '2026-05-17T19:48:20.963443',
   entry: 'desktop.html'
 };
 </script>
@@ -25155,10 +25128,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.263. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.264. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.263. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.264. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26769,16 +26742,10 @@ window.HAHBoard = window.HAHBoard || {};
           </div>
         </div>
         <div class="hah-dl-preview-frame" id="hahDlPreviewFrame" data-patient-action="dl-open-preview-modal" title="Click to view full size">
-          <!-- v0.8.244: clickable to open full-size overlay. Pagination
-               buttons live in the label row above so don't conflict. -->
-          <button type="button" class="hah-dl-preview-expand-btn" data-patient-action="dl-open-preview-modal" aria-label="View full size" title="View full size">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 3 21 3 21 9"/>
-              <polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/>
-              <line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
-          </button>
+          <!-- v0.8.264: the standalone expand button was removed — it
+               duplicated the frame's own dl-open-preview-modal click
+               target and overlapped the letterhead. The frame's
+               cursor:zoom-in + hover shadow carry discoverability. -->
           <!-- A4-aspect frame; the paper inside is rendered at "real" 595x842 px
                and CSS-scaled via transform to fit. Header (letterhead) sits
                fixed at top of every page, footer fixed at bottom of every page,
