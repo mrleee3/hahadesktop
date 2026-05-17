@@ -10945,6 +10945,18 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       opacity: .65;
       cursor: progress;
     }
+    /* v0.8.257: only show a focus ring for genuine keyboard focus
+       (:focus-visible). Plain :focus is suppressed so the button never
+       appears pre-selected with a thick border when it fades in, or
+       after a mouse click. Keyboard users still get a clear, accessible
+       ring on Tab. */
+    .hah-splash-signin-btn:focus {
+      outline: none;
+    }
+    .hah-splash-signin-btn:focus-visible {
+      outline: 2px solid #2f6fed;
+      outline-offset: 2px;
+    }
     .hah-splash-signin-btn svg {
       width: 21px;
       height: 21px;
@@ -11149,9 +11161,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_256_splash_reveal_refine_release.html',
-  source: 'hospital_at_home_board_v0_8_256_splash_reveal_refine_source.zip',
-  builtAt: '2026-05-17T18:25:47.940963',
+  filename: 'hospital_at_home_board_v0_8_257_splash_timing_focus_release.html',
+  source: 'hospital_at_home_board_v0_8_257_splash_timing_focus_source.zip',
+  builtAt: '2026-05-17T18:32:22.537636',
   entry: 'desktop.html'
 };
 </script>
@@ -25022,10 +25034,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.256. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.257. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.256. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.257. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -29212,10 +29224,12 @@ window.HAHBoard = window.HAHBoard || {};
     //   tagline tail 1.0s @ 2.0s  → done ~3.00s
     //   company     1.8s @ 3.6s   → done ~5.40s   ← last thing moving
     // "Fully completed" = the company line finished fading: ~5.4s.
-    // 5600ms gives a ~0.2s beat of stillness before anything moves, so
-    // the lift reads as a deliberate new phase, not a continuation of
-    // the intro. Single number to tune if it feels too long/short.
-    const SPLASH_AUTO_REVEAL_MS = 5600;
+    // v0.8.257: Henry asked for this 25% shorter. 5600 → 4200ms. The
+    // company line is still fading as the lift begins now, but it's
+    // decorative and finishes under the rising stack — nothing is cut,
+    // it just overlaps the tail of the intro slightly. Single number
+    // to tune.
+    const SPLASH_AUTO_REVEAL_MS = 4200;
     let splashRevealed = false;
 
     function revealSplashSignIn() {
@@ -29229,16 +29243,13 @@ window.HAHBoard = window.HAHBoard || {};
       requestAnimationFrame(() => {
         requestAnimationFrame(() => splash.classList.add('signin-revealed'));
       });
-      // Focus the button only after the sequenced reveal has finished:
-      // lift ~0.85s, then panel fade starts at +0.7s and runs ~0.55s,
-      // so the panel is fully in ~1.25s after the class flips. Focus at
-      // ~1.4s so it never yanks focus mid-animation.
-      setTimeout(() => {
-        const b = splash.querySelector('#hahSplashSignInBtn');
-        if (b && typeof b.focus === 'function') {
-          try { b.focus({ preventScroll: true }); } catch (_) { b.focus(); }
-        }
-      }, 1400);
+      // v0.8.257: do NOT programmatically focus the button. Henry: it
+      // appeared already-selected (a thick focus ring) the moment it
+      // faded in, which read as "pre-selected". The button is still
+      // fully keyboard-reachable — Tab moves to it and then the normal
+      // :focus-visible ring shows, which is the correct, expected
+      // behaviour for keyboard users. Mouse users now see a clean
+      // button with no ring until they interact, as intended.
     }
 
     const splashRevealTimer = setTimeout(revealSplashSignIn, SPLASH_AUTO_REVEAL_MS);
