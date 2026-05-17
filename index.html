@@ -10393,7 +10393,18 @@ button.hah-pt-flag:active {
   border-radius: var(--hah-radius-lg);
   box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
   padding: var(--hah-gap-xl);
-  animation: hahSearchPanelIn 130ms cubic-bezier(0.22, 0.78, 0.2, 1);
+  /* v0.8.253: must NOT reuse hahSearchPanelIn — that keyframe carries
+     translateX(-50%) because the search dropdown centres itself via
+     left:50%. This panel is centred by its flex parent, so that
+     translateX shoved it half its width left for the 130ms animation
+     then snapped it back to centre (the visible left-flash Henry saw).
+     Centre-safe keyframe: opacity + translateY only, no X. */
+  animation: hahArchModalIn 130ms cubic-bezier(0.22, 0.78, 0.2, 1);
+}
+
+@keyframes hahArchModalIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .hah-arch-head {
@@ -11095,9 +11106,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_252_archived_letter_view_release.html',
-  source: 'hospital_at_home_board_v0_8_252_archived_letter_view_source.zip',
-  builtAt: '2026-05-17T16:01:34.177134',
+  filename: 'hospital_at_home_board_v0_8_253_archived_modal_flash_release.html',
+  source: 'hospital_at_home_board_v0_8_253_archived_modal_flash_source.zip',
+  builtAt: '2026-05-17T16:09:18.172618',
   entry: 'desktop.html'
 };
 </script>
@@ -24964,10 +24975,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.252. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.253. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.252. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.253. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
