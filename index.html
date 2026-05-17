@@ -10843,12 +10843,33 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
         animation: appSplashFadeOnly .3s ease forwards;
         transform: none;
       }
+      /* v0.8.255: no slide-up; the panel just fades, and the stack
+         doesn't translate. */
+      #hahDesktopSplash .hah-splash-signin-panel {
+        transition: opacity .25s ease;
+        transform: none;
+      }
+      #hahDesktopSplash.signin-revealed .app-splash-stack {
+        transform: translateY(0) scale(1);
+      }
     }
 
-    /* v0.8.231: sign-in panel — revealed when the user clicks the
-       icon and there's no signed-in identity. Fades in from below
-       so the appearance reads as "the splash is now asking for
-       something" rather than a jarring cut. */
+    /* v0.8.255: sign-in panel — auto-revealed once the splash intro
+       animations have settled (no icon click). The previous flow
+       required clicking the logo to surface this; Henry asked for the
+       splash to complete, then everything to slide up and the button
+       to fade in on its own.
+
+       Two coordinated motions, both keyed off the .signin-revealed
+       class the JS adds after the intro timeline:
+         1. .app-splash-stack shifts up a little so the (taller) content
+            stays optically centred once the panel is added below it,
+            rather than the whole block sitting low.
+         2. this panel eases from translateY+transparent to resting.
+       The earlier `animation: appSplashFadeOnly` one-shot is replaced
+       by a transition gated on the parent class so timing is driven by
+       JS, not an animation-delay that can't be coordinated with the
+       intro. */
     .hah-splash-signin-panel {
       display: flex;
       flex-direction: column;
@@ -10858,8 +10879,17 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       width: 320px;
       max-width: 90vw;
       opacity: 0;
-      transform: translateY(8px);
-      animation: appSplashFadeOnly .35s ease forwards;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity .5s ease, transform .6s cubic-bezier(.22,.78,.2,1);
+    }
+    #hahDesktopSplash.signin-revealed .hah-splash-signin-panel {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #hahDesktopSplash.signin-revealed .app-splash-stack {
+      transform: translateY(-26px) scale(1);
     }
     .hah-splash-signin-panel[hidden] {
       display: none;
@@ -11092,9 +11122,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_254_drop_patient_record_card_release.html',
-  source: 'hospital_at_home_board_v0_8_254_drop_patient_record_card_source.zip',
-  builtAt: '2026-05-17T16:24:36.231700',
+  filename: 'hospital_at_home_board_v0_8_255_splash_auto_signin_release.html',
+  source: 'hospital_at_home_board_v0_8_255_splash_auto_signin_source.zip',
+  builtAt: '2026-05-17T18:14:30.789899',
   entry: 'desktop.html'
 };
 </script>
@@ -24965,10 +24995,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.254. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.255. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.254. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.255. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -29136,30 +29166,61 @@ window.HAHBoard = window.HAHBoard || {};
     const configCancelBtn = splash.querySelector('#hahSplashConfigCancelBtn');
     const configSaveBtn = splash.querySelector('#hahSplashConfigSaveBtn');
 
-    // Kick off silent restore right away. Result feeds the icon-
-    // click handler below — whether it arrives before or after the
-    // click doesn't matter; the click handler awaits the promise.
+    // v0.8.255: silent restore is still kicked off (harmless, resolves
+    // immediately — see startSplashSilentRestore) so the state-machine
+    // scaffolding documented below survives for any future gentler
+    // launch flow. It no longer gates anything: the reveal is purely
+    // time/skip-driven now, and sign-in is always interactive.
     splashRestorePromise = startSplashSilentRestore();
 
-    // Icon click: the optimistic-first interaction.
-    if (icon) {
-      icon.addEventListener('pointerdown', async () => {
-        if (icon.classList.contains('is-pressed')) return;
-        icon.classList.add('is-pressed');
-        // v0.8.233: splashRestoreState is always 'signed-out' now (no
-        // silent restore on launch — see startSplashSilentRestore).
-        // The promise.await + state check are kept to preserve the
-        // shape of the state machine for future re-introduction of
-        // gentler launch flows. Currently this always falls through
-        // to showSplashSignInPanel().
-        await splashRestorePromise.catch(() => {});
-        if (splashRestoreState === 'signed-in') {
-          // Brief delay so the press animation completes before fade.
-          setTimeout(() => dismissDesktopSplash(), 180);
-        } else {
-          // Not signed in — flip to sign-in panel.
-          showSplashSignInPanel();
+    // v0.8.255: the sign-in panel now auto-reveals once the splash
+    // intro has settled — no icon click required (Henry's ask: splash
+    // completes, content slides up, button fades in on its own).
+    //
+    // Timing: the intro timeline runs logo (~0.6s) → title (.18s+.72s)
+    // → tagline main (1.1s+.9s = settles ~2.0s) → tail (2.0s+1.0s) →
+    // company (decorative, finishes ~5.4s). We don't wait for the
+    // decorative company line. Revealing at ~2.6s lets the eye read
+    // "Hospital at Home / Clinical workflow simplified" while the
+    // tagline tail and company finish fading in parallel underneath
+    // the rising stack — nothing is cut off, it just keeps going.
+    const SPLASH_AUTO_REVEAL_MS = 2600;
+    let splashRevealed = false;
+
+    function revealSplashSignIn() {
+      if (splashRevealed) return;
+      splashRevealed = true;
+      // Unhide the panel first (it's display:none until now). Adding
+      // .signin-revealed in the same frame as removing display:none can
+      // skip the transition in some engines (no intermediate style to
+      // animate from), so flip the class on the next frame.
+      showSplashSignInPanel();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => splash.classList.add('signin-revealed'));
+      });
+      // Move keyboard focus to the button so Enter/Space works without
+      // a mouse, but not so abruptly it yanks focus mid-animation.
+      setTimeout(() => {
+        const b = splash.querySelector('#hahSplashSignInBtn');
+        if (b && typeof b.focus === 'function') {
+          try { b.focus({ preventScroll: true }); } catch (_) { b.focus(); }
         }
+      }, 640);
+    }
+
+    const splashRevealTimer = setTimeout(revealSplashSignIn, SPLASH_AUTO_REVEAL_MS);
+
+    // The logo is no longer a required gate. It's kept as an optional
+    // "skip the wait" affordance — pressing it just brings the reveal
+    // forward instead of being the only way to get there. The press
+    // animation (.is-pressed) still fires for tactile feedback.
+    if (icon) {
+      icon.addEventListener('pointerdown', () => {
+        if (splashRevealed) return;
+        icon.classList.add('is-pressed');
+        clearTimeout(splashRevealTimer);
+        // Small delay so the press animation reads before the lift.
+        setTimeout(revealSplashSignIn, 140);
       }, { once: true });
     }
 
