@@ -10699,6 +10699,20 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       transition: transform 100ms cubic-bezier(0.4, 0.0, 0.2, 1),
                   box-shadow 100ms ease;
     }
+    /* v0.8.260: once the reveal has fired the logo's only job (optional
+       skip-ahead) is done — the pointerdown handler is {once:true} and
+       guards on splashRevealed, so it's already logically inert. Strip
+       the *appearance* of clickability too so it doesn't read as a
+       broken affordance: no pointer cursor, no hover lift, no press.
+       Keyed off the same .signin-revealed state as everything else. */
+    #hahDesktopSplash.signin-revealed .app-splash-logo-wrap {
+      cursor: default;
+      pointer-events: none;
+    }
+    #hahDesktopSplash.signin-revealed .app-splash-logo-wrap:hover .app-splash-logo {
+      transform: none;
+      box-shadow: 0 16px 34px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06);
+    }
     #hahDesktopSplash .app-splash-logo {
       transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
                   box-shadow 180ms ease;
@@ -11166,9 +11180,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_259_splash_button_delay_release.html',
-  source: 'hospital_at_home_board_v0_8_259_splash_button_delay_source.zip',
-  builtAt: '2026-05-17T18:45:11.787428',
+  filename: 'hospital_at_home_board_v0_8_260_splash_logo_inert_release.html',
+  source: 'hospital_at_home_board_v0_8_260_splash_logo_inert_source.zip',
+  builtAt: '2026-05-17T18:52:18.964109',
   entry: 'desktop.html'
 };
 </script>
@@ -25039,10 +25053,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.259. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.260. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.259. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.260. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
