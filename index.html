@@ -700,6 +700,60 @@
   pointer-events: auto;
 }
 
+/* ─── Canonical clinical flag (v0.8.265) ──────────────────────────────
+ * One shared design for the TEP / DNAR (and any future clinical-status)
+ * chips. Before this the patient header and the search results rendered
+ * the same concept with different size, shape AND colour: header was an
+ * amber-TEP / pink-DNAR full pill at 11px/800; search was a blue-TEP /
+ * red-DNAR small-radius tag at 10px. Henry: one design throughout, the
+ * patient header is the template. This lifts the header's exact colour
+ * identity + pill shape into a primitive. The interactive (button)
+ * behaviour stays defined alongside the header usage; this is the
+ * shared *visual* base both contexts use.
+ *
+ * Scale: .hah-flag is the header (full) size. .hah-flag--sm is the
+ * dense-list size for the search dropdown — same colours, same pill,
+ * dimensionally smaller so it doesn't crowd an 8-row result list.
+ *
+ * NOT for the search "Archived" status label — that is deliberately a
+ * separate muted/italic tag, not a clinical flag (Henry, v0.8.251).
+ */
+.hah-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.hah-flag.is-dnar {
+  background: #fbf2f8;
+  color: #8a2c6b;
+  border-color: #e7c7da;
+}
+
+.hah-flag.is-acp {
+  background: rgba(217, 119, 6, 0.1);
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+/* Compact variant — same identity, scaled for dense lists. */
+.hah-flag.hah-flag--sm {
+  min-height: 18px;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-shell.css */
@@ -5769,6 +5823,15 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
 
 /* ─── Patient header DNAR / ACP flags (matching mobile app) ──────────── */
 
+/* v0.8.265: clinical-flag visuals (base + is-acp/is-dnar colours) are
+   now the shared .hah-flag primitive in desktop-primitives.css — the
+   canonical TEP/DNAR design, with the patient header as the template
+   per Henry. .hah-pt-flag is kept as a thin alias so every existing
+   consumer (patient header, board rows, board briefing) inherits the
+   one identity automatically rather than each carrying its own copy;
+   only the interactive-button behaviour is defined here now. The
+   divergent .hah-search-flag set is retired (search now uses
+   .hah-flag.hah-flag--sm). */
 .hah-pt-flag {
   display: inline-flex;
   align-items: center;
@@ -5776,7 +5839,7 @@ input.hah-date-input.flatpickr-alt-input::placeholder {
   min-height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid rgba(15,23,42,0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -5802,16 +5865,21 @@ button.hah-pt-flag:active {
   transform: scale(0.97);
 }
 
+/* v0.8.265: .hah-pt-flag.is-dnar / .is-acp colour rules removed — they
+   duplicated the canonical .hah-flag colours in desktop-primitives.css.
+   To keep every existing consumer (which still writes only the
+   "hah-pt-flag is-acp/is-dnar" classes, not "hah-flag") on the one
+   identity, .hah-pt-flag.is-* simply re-points at the shared colours
+   here. Single source: change the colour once in the primitive. */
 .hah-pt-flag.is-dnar {
   background: #fbf2f8;
   color: #8a2c6b;
   border-color: #e7c7da;
 }
-
 .hah-pt-flag.is-acp {
-  background: rgba(217,119,6,0.1);
+  background: rgba(217, 119, 6, 0.1);
   color: #92400e;
-  border-color: rgba(217,119,6,0.4);
+  border-color: rgba(217, 119, 6, 0.4);
 }
 
 /* v0.8.254: Edit details, relocated from the removed Patient record
@@ -10363,47 +10431,32 @@ button.hah-pt-flag:active {
   gap: 4px;
 }
 
-.hah-search-flag {
-  font-size: 10px;
-  font-weight: var(--hah-weight-action);
-  letter-spacing: 0.03em;
-  padding: 2px 6px;
-  border-radius: var(--hah-radius-tag);
-  border: 1px solid var(--hah-border-faint);
-  color: var(--desk-text-muted);
-  white-space: nowrap;
-}
+/* v0.8.265: the divergent .hah-search-flag set (different size, shape
+   AND colour from the patient header) is retired. TEP/DNAR in search
+   now use the shared .hah-flag.hah-flag--sm primitive — one design,
+   header as the template. The "Archived" tag was NOT a clinical flag
+   (Henry, v0.8.251 + v0.8.265: keep it separate), so it gets its own
+   self-contained class rather than piggybacking on a flag base. */
 
-.hah-search-flag.is-acp {
-  color: var(--hah-accent-text);
-  border-color: var(--hah-accent-edge);
-  background: var(--hah-accent-tint);
-}
-
-.hah-search-flag.is-dnar {
-  color: var(--hah-danger-text);
-  border-color: var(--hah-danger-edge);
-  background: var(--hah-danger-tint);
-}
-
-/* Discharged: Henry's call — italics + lighter, refined here. The whole
- * row is dimmed (clearly secondary to active patients) and the label is
- * an italic muted tag with the discharge date so it reads as "this
- * person has left the service" at a glance without shouting. */
+/* Discharged row dim — unrelated to the flag styling; kept. */
 .hah-search-row.is-discharged .hah-search-name,
 .hah-search-row.is-discharged .hah-search-meta,
 .hah-search-row.is-discharged .hah-search-avatar {
   opacity: 0.62;
 }
 
-.hah-search-flag.is-discharged {
+.hah-search-archived-tag {
+  font-size: 10px;
   font-style: italic;
   font-weight: var(--hah-weight-meta);
   letter-spacing: 0.01em;
   text-transform: none;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--hah-radius-tag);
   color: var(--desk-text-muted);
   background: var(--hah-tint-context);
-  border-color: var(--hah-border-faint);
+  border: 1px solid var(--hah-border-faint);
 }
 
 /* ─── Archived-patient confirm modal (v0.8.252) ───────────────────────
@@ -11237,9 +11290,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_264_remove_preview_expand_btn_release.html',
-  source: 'hospital_at_home_board_v0_8_264_remove_preview_expand_btn_source.zip',
-  builtAt: '2026-05-17T19:48:20.963443',
+  filename: 'hospital_at_home_board_v0_8_265_unify_clinical_flag_release.html',
+  source: 'hospital_at_home_board_v0_8_265_unify_clinical_flag_source.zip',
+  builtAt: '2026-05-17T19:52:46.772270',
   entry: 'desktop.html'
 };
 </script>
@@ -18828,8 +18881,8 @@ window.HAHBoard = window.HAHBoard || {};
     // Both chips open the ACP modal when pressed (matches the Edit button
     // already on the ACP card; saves the user from scrolling to find it).
     const rightFlags = [
-      showTep  ? `<button type="button" class="hah-pt-flag is-acp" data-patient-action="open-acp-modal" title="Open ACP — TEP: ${c.escapeHtml(tepText)}">TEP</button>`  : '',
-      showDnar ? `<button type="button" class="hah-pt-flag is-dnar" data-patient-action="open-acp-modal" title="Open ACP — DNACPR documented">DNAR</button>` : ''
+      showTep  ? `<button type="button" class="hah-flag hah-pt-flag is-acp" data-patient-action="open-acp-modal" title="Open ACP — TEP: ${c.escapeHtml(tepText)}">TEP</button>`  : '',
+      showDnar ? `<button type="button" class="hah-flag hah-pt-flag is-dnar" data-patient-action="open-acp-modal" title="Open ACP — DNACPR documented">DNAR</button>` : ''
     ].filter(Boolean).join('');
 
     // v0.8.254: Edit details relocated here from the removed "Patient
@@ -25128,10 +25181,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.264. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.265. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.264. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.265. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -28736,10 +28789,10 @@ window.HAHBoard = window.HAHBoard || {};
       if (rec.pathway && rec.pathway !== 'General') metaParts.push(escapeHtml(rec.pathway));
 
       var flags = '';
-      if (rec.tepText) flags += '<span class="hah-search-flag is-acp" title="TEP documented">TEP</span>';
-      if (rec.dnar) flags += '<span class="hah-search-flag is-dnar" title="DNACPR documented">DNAR</span>';
+      if (rec.tepText) flags += '<span class="hah-flag hah-flag--sm is-acp" title="TEP documented">TEP</span>';
+      if (rec.dnar) flags += '<span class="hah-flag hah-flag--sm is-dnar" title="DNACPR documented">DNAR</span>';
       if (rec.discharged) {
-        flags += '<span class="hah-search-flag is-discharged">' +
+        flags += '<span class="hah-search-archived-tag">' +
           escapeHtml(formatDischargedLabel(rec.dischargedAt)) + '</span>';
       }
 
