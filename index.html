@@ -10898,8 +10898,13 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
       opacity: 0;
       transform: translate(-50%, 26px);
       pointer-events: none;
-      transition: opacity .5s ease .7s,
-                  transform .55s cubic-bezier(.22,.78,.2,1) .7s;
+      /* v0.8.259: delay 0.7s → 0.45s. Button now starts as the lift is
+         ~53% through (and into its gentle decel) rather than ~82% —
+         tightens the lift→button gap Henry felt was too long, while the
+         lift still clearly leads (it's the larger motion; the button is
+         mostly opacity + a 10px rise). */
+      transition: opacity .5s ease .45s,
+                  transform .55s cubic-bezier(.22,.78,.2,1) .45s;
     }
     #hahDesktopSplash.signin-revealed .hah-splash-signin-panel {
       opacity: 1;
@@ -11161,9 +11166,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_258_splash_wait_5000_release.html',
-  source: 'hospital_at_home_board_v0_8_258_splash_wait_5000_source.zip',
-  builtAt: '2026-05-17T18:40:40.716376',
+  filename: 'hospital_at_home_board_v0_8_259_splash_button_delay_release.html',
+  source: 'hospital_at_home_board_v0_8_259_splash_button_delay_source.zip',
+  builtAt: '2026-05-17T18:45:11.787428',
   entry: 'desktop.html'
 };
 </script>
@@ -25034,10 +25039,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.258. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.259. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.258. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.259. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
