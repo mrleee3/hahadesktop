@@ -666,7 +666,15 @@
   flex: 0 0 auto;
   border: none;
   background: transparent;
-  border-radius: var(--hah-radius-sm);
+  /* v0.8.266: round, not the square --hah-radius-sm. Henry: round
+     within a cluster. The log's delete button is a circle; the edit
+     pencil sitting next to it was square (v0.8.263 regression) — a
+     visible mismatch in an adjacent pair. Round fixes that cluster and
+     reads lighter for these quiet hover-revealed row actions. The
+     discharge-card icon strip stays square (.hah-dl-row-icon-btn) — a
+     visible multi-action toolbar, not adjacent to anything round, so
+     the difference there is harmless. */
+  border-radius: 999px;
   cursor: pointer;
   color: var(--desk-text-muted);
   display: inline-flex;
@@ -2825,6 +2833,19 @@ body.hah-ws-connecting .hah-ws-dot {
   gap: 9px;
   margin-bottom: 4px;
   padding-left: 4px;
+}
+
+/* v0.8.266: edit-details pencil, relocated from the patient header.
+   The spacer flexes to push the pencil to the right edge of the name
+   row; the pencil aligns to centre (not the row's text baseline) and
+   has a small negative top margin so it sits level with the name. */
+.hah-board-briefing-name-spacer {
+  flex: 1 1 auto;
+}
+.hah-board-briefing-edit {
+  align-self: center;
+  flex: 0 0 auto;
+  margin-top: -2px;
 }
 
 .hah-board-briefing-name {
@@ -5886,22 +5907,13 @@ button.hah-pt-flag:active {
    card. Neutral (not a clinical alert like TEP/DNAR) and icon-only —
    square-ish padding for a glyph rather than the wider text-pill the
    other flags use. */
-/* v0.8.263: .hah-pt-flag.is-edit removed. The header edit pencil now
-   uses the shared .hah-edit-btn affordance (hover-revealed on the
-   header bar) instead of being an always-visible bordered flag chip in
-   the TEP/DNAR cluster. Placement rule: .hah-pt-header-edit below. */
-
-/* The header bar is a sticky flex column (name row + meta row). The
-   edit pencil is taken out of flow and pinned to the top-right corner
-   so it doesn't reflow the name/meta or sit among the clinical chips.
-   Reveal/keyboard-focus behaviour comes from .hah-edit-btn--reveal +
-   the .hah-edit-host on .hah-pt-header-bar. */
-.hah-pt-header-edit {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  z-index: 2;
-}
+/* v0.8.263: .hah-pt-flag.is-edit removed (header pencil moved to the
+   shared .hah-edit-btn affordance).
+   v0.8.266: the patient-header edit pencil is removed ENTIRELY — it
+   was a rare action over-occupying the most-viewed bar and its
+   absolute placement collided with the TEP/DNAR cluster. Relocated to
+   the board right-pane briefing header. .hah-pt-header-edit CSS
+   removed with it. */
 
 /* ─── ACP card ───────────────────────────────────────────────────────── */
 
@@ -11290,9 +11302,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_265_unify_clinical_flag_release.html',
-  source: 'hospital_at_home_board_v0_8_265_unify_clinical_flag_source.zip',
-  builtAt: '2026-05-17T19:52:46.772270',
+  filename: 'hospital_at_home_board_v0_8_266_relocate_edit_round_buttons_release.html',
+  source: 'hospital_at_home_board_v0_8_266_relocate_edit_round_buttons_source.zip',
+  builtAt: '2026-05-17T20:00:21.757311',
   entry: 'desktop.html'
 };
 </script>
@@ -16946,6 +16958,23 @@ window.HAHBoard = window.HAHBoard || {};
   const router = window.HAHBoard.router;
   const ops = window.HAHBoard.ops;
 
+  // v0.8.266: the edit-details pencil, relocated here from the patient
+  // header (collided with TEP/DNAR there; rare action not earning header
+  // space). Same canonical pencil glyph as everywhere else (the
+  // discharge-card path). The edit modal + handler still live in the
+  // patient module — this pencil navigates to the patient page with the
+  // modal flagged open (see open-edit-patient-from-board below), rather
+  // than duplicating the whole modal into the board.
+  const EDIT_PENCIL_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2z"/><path d="M10 4l2 2"/></svg>';
+
+  // Same check as patientScreen.isJsonPatient — only JSON-backed
+  // patients have an editable shared record; demo/local ones don't, so
+  // the pencil is absent rather than a disabled mystery.
+  function rowIsJsonPatient(row) {
+    const raw = row && row.sourcePatient ? row.sourcePatient : null;
+    return !!(raw && raw.jsonRecord);
+  }
+
   const PATHWAYS = [
     { key: 'frailty', label: 'Frailty',  colour: '#c2410c', match: /\bfrail|geriatr|falls?|elderly/i },
     { key: 'resp',    label: 'Resp',     colour: '#2f6fed', match: /\bresp|lrti|pneumonia|cap|copd|asthma|bronch|covid|pleural/i },
@@ -17399,10 +17428,15 @@ window.HAHBoard = window.HAHBoard || {};
       showDnar ? '<span class="hah-pt-flag is-dnar">DNAR</span>' : ''
     ].filter(Boolean).join('');
 
+    const editPencil = rowIsJsonPatient(row)
+      ? `<button type="button" class="hah-edit-btn hah-board-briefing-edit" data-board-action="open-edit-patient-from-board" data-patient-id="${c.escapeHtml(row.id)}" title="Edit patient details" aria-label="Edit patient details">${EDIT_PENCIL_SVG}</button>`
+      : '';
+
     const header = `<div class="hah-board-briefing-header">
       <div class="hah-board-briefing-name-row">
         <span class="hah-board-briefing-name">${c.escapeHtml(row.name)}</span>
         ${ageSex ? `<span class="hah-board-briefing-agesex">${c.escapeHtml(ageSex)}</span>` : ''}
+        ${editPencil ? `<span class="hah-board-briefing-name-spacer"></span>${editPencil}` : ''}
       </div>
       ${metaParts.length ? `<div class="hah-board-briefing-sub">
         ${metaParts.map((p, i) => {
@@ -17632,6 +17666,21 @@ window.HAHBoard = window.HAHBoard || {};
       event.stopPropagation();
       const pid = target.getAttribute('data-patient-id');
       if (pid && router) router.goToPatient(pid);
+      return true;
+    }
+    // v0.8.266: edit-details pencil relocated from the patient header to
+    // the briefing. The edit modal + its handlers live in the patient
+    // module and render on the patient page (state.patient.
+    // editPatientModalOpen). So this navigates to the patient and flags
+    // the modal open in the same setState — the patient view renders
+    // straight into edit mode on arrival. Same destination as
+    // "Open patient page" but landing directly where the user intends.
+    if (action === 'open-edit-patient-from-board') {
+      event.stopPropagation();
+      const pid = target.getAttribute('data-patient-id');
+      if (!pid) return false;
+      store.setState({ selectedPatientId: pid, patient: { editPatientModalOpen: true } });
+      if (router) router.goToPatient(pid);
       return true;
     }
     if (action === 'toggle-catchup') {
@@ -18885,29 +18934,18 @@ window.HAHBoard = window.HAHBoard || {};
       showDnar ? `<button type="button" class="hah-flag hah-pt-flag is-dnar" data-patient-action="open-acp-modal" title="Open ACP — DNACPR documented">DNAR</button>` : ''
     ].filter(Boolean).join('');
 
-    // v0.8.254: Edit details relocated here from the removed "Patient
-    // record" card. Same action (open-edit-patient-record) and same
-    // gating the card had — only offered for JSON patients (the edit
-    // modal writes the shared record; demo/local patients had it
-    // disabled). For non-JSON patients it's simply absent rather than a
-    // disabled mystery pencil. Icon-only, sits with the other
-    // patient-level affordances; co-located with the demographics it
-    // edits (header meta row), which is why the standalone card was
-    // redundant.
-    // v0.8.263: converged onto the shared .hah-edit-btn affordance
-    // (pencil, no chrome, hover-revealed) — same pattern as the log and
-    // discharge-card edits now. It's NOT in the .hah-pt-header-alerts
-    // cluster anymore: that holds always-visible clinical chips
-    // (TEP/DNAR) and a reveal-on-hover control sharing that row would
-    // shift their position as it appears/disappears. It's now a
-    // top-right affordance on the header bar, revealed when the bar
-    // (.hah-edit-host) is hovered, or on keyboard focus.
-    const editFlag = isJsonPatient(patient)
-      ? `<button type="button" class="hah-edit-btn hah-edit-btn--reveal hah-pt-header-edit" data-patient-action="open-edit-patient-record" title="Edit patient details" aria-label="Edit patient details">${EDIT_PENCIL_SVG}</button>`
-      : '';
+    // v0.8.266: the edit-details pencil is removed from the patient
+    // header entirely. It was a rare action (details are set on upload,
+    // occasionally corrected) that didn't earn a permanent spot on the
+    // most-viewed bar in the app, and its absolute top-right placement
+    // collided with the TEP/DNAR cluster on patients carrying both.
+    // Relocated to the board's right-pane briefing header (see
+    // 25-desktop-board.js renderBriefing) — the "managing the caseload"
+    // surface where you'd notice a wrong detail and want to fix it. The
+    // edit modal + handler still live in the patient module; the board
+    // pencil navigates here with the modal flagged open.
 
-    return `<div class="hah-pt-header-bar hah-edit-host">
-      ${editFlag}
+    return `<div class="hah-pt-header-bar">
       <div class="hah-pt-header-top">
         <div class="hah-pt-header-main">
           <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
@@ -25181,10 +25219,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.265. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.266. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.265. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.266. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
