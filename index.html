@@ -5730,6 +5730,27 @@ button.hah-pt-flag:active {
   border-color: rgba(217,119,6,0.4);
 }
 
+/* v0.8.254: Edit details, relocated from the removed Patient record
+   card. Neutral (not a clinical alert like TEP/DNAR) and icon-only —
+   square-ish padding for a glyph rather than the wider text-pill the
+   other flags use. */
+.hah-pt-flag.is-edit {
+  background: rgba(15,23,42,0.04);
+  color: #475569;
+  border-color: rgba(15,23,42,0.10);
+  padding: 0 7px;
+  min-width: 26px;
+}
+
+.hah-pt-flag.is-edit svg {
+  display: block;
+}
+
+button.hah-pt-flag.is-edit:hover {
+  background: rgba(15,23,42,0.07);
+  filter: none;
+}
+
 /* ─── ACP card ───────────────────────────────────────────────────────── */
 
 /* v0.8.159: .hah-acp-edit-btn rules removed — ACP card now uses the
@@ -6325,44 +6346,9 @@ button.hah-pt-flag:active {
 
 
 /* ─── JSON patient record editor ─────────────────────────────────────── */
-.hah-record-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hah-record-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(25,45,72,0.055);
-}
-
-.hah-record-row:last-child {
-  border-bottom: 0;
-}
-
-.hah-record-row span {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--desk-text-muted);
-}
-
-.hah-record-row strong {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--desk-text);
-  text-align: right;
-}
-
-.hah-record-hint {
-  margin-top: 12px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--desk-text-muted);
-}
+/* v0.8.254: .hah-record-summary / .hah-record-row* / .hah-record-hint
+   removed with the Patient record card. .hah-record-check below is still
+   used by the edit modal (renderPatientRecordModal) — kept. */
 
 .hah-record-check {
   min-height: 36px;
@@ -11106,9 +11092,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_253_archived_modal_flash_release.html',
-  source: 'hospital_at_home_board_v0_8_253_archived_modal_flash_source.zip',
-  builtAt: '2026-05-17T16:09:18.172618',
+  filename: 'hospital_at_home_board_v0_8_254_drop_patient_record_card_release.html',
+  source: 'hospital_at_home_board_v0_8_254_drop_patient_record_card_source.zip',
+  builtAt: '2026-05-17T16:24:36.231700',
   entry: 'desktop.html'
 };
 </script>
@@ -18692,13 +18678,26 @@ window.HAHBoard = window.HAHBoard || {};
       showDnar ? `<button type="button" class="hah-pt-flag is-dnar" data-patient-action="open-acp-modal" title="Open ACP — DNACPR documented">DNAR</button>` : ''
     ].filter(Boolean).join('');
 
+    // v0.8.254: Edit details relocated here from the removed "Patient
+    // record" card. Same action (open-edit-patient-record) and same
+    // gating the card had — only offered for JSON patients (the edit
+    // modal writes the shared record; demo/local patients had it
+    // disabled). For non-JSON patients it's simply absent rather than a
+    // disabled mystery pencil. Icon-only, sits with the other
+    // patient-level affordances; co-located with the demographics it
+    // edits (header meta row), which is why the standalone card was
+    // redundant.
+    const editFlag = isJsonPatient(patient)
+      ? `<button type="button" class="hah-pt-flag is-edit" data-patient-action="open-edit-patient-record" title="Edit patient details" aria-label="Edit patient details"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`
+      : '';
+
     return `<div class="hah-pt-header-bar">
       <div class="hah-pt-header-top">
         <div class="hah-pt-header-main">
           <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
           ${ageSex ? `<span class="hah-pt-age-sex">${c.escapeHtml(ageSex)}</span>` : ''}
         </div>
-        <div class="hah-pt-header-alerts">${rightFlags}</div>
+        <div class="hah-pt-header-alerts">${editFlag}${rightFlags}</div>
       </div>
       ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map(renderPatientMetaPart).join('')}</div>` : ''}
     </div>`;
@@ -20128,25 +20127,14 @@ window.HAHBoard = window.HAHBoard || {};
     </div>`;
   }
 
-  function renderPatientRecordCard(vm) {
-    const patient = vm.patient;
-    const json = isJsonPatient(patient);
-    const raw = getJsonPatientRecord(patient);
-    const sub = json ? 'Saved in OneDrive JSON' : 'Local/demo patient';
-    return c.card('Patient record', `
-      <div class="hah-record-summary">
-        <div class="hah-record-row"><span>Referral</span><strong>${c.escapeHtml(vm.referralSource || '—')}</strong></div>
-        <div class="hah-record-row"><span>Admitted</span><strong>${c.escapeHtml(vm.admissionDate || '—')}</strong></div>
-        <div class="hah-record-row"><span>Pathway</span><strong>${c.escapeHtml(patient.pathway || '—')}</strong></div>
-        <div class="hah-record-row"><span>Source</span><strong>${c.escapeHtml(sub)}</strong></div>
-      </div>
-      <div class="hah-task-actions hah-task-actions--spaced">
-        <button type="button" class="hah-inline-pill${json ? ' is-primary' : ''}" data-patient-action="open-edit-patient-record"${json ? '' : ' disabled'}>Edit details</button>
-        <button type="button" class="hah-inline-pill" data-patient-action="open-tasks">Open tasks</button>
-      </div>
-      ${json ? '' : '<div class="hah-record-hint">Load JSON patients to edit the shared patient record.</div>'}
-    `, { subtitle: raw && raw.meta && raw.meta.updatedAt ? 'Updated ' + new Date(raw.meta.updatedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : sub });
-  }
+  // v0.8.254: renderPatientRecordCard removed. The card duplicated the
+  // header meta row (Referral / Admitted / Pathway) and carried a
+  // non-clinical "Source: Saved in OneDrive JSON" line. Its only
+  // load-bearing affordance, "Edit details", is relocated to the patient
+  // header (see renderPatientHeader → editFlag). "Open tasks" was
+  // dropped (tasks surface being reconsidered separately). The edit
+  // modal (renderPatientRecordModal) and its action handlers are
+  // unchanged — only the card wrapper is gone.
 
   function renderPatientRecordModal(vm) {
     const patient = vm.patient;
@@ -20273,8 +20261,7 @@ window.HAHBoard = window.HAHBoard || {};
     if (dlMatch && window.HAHBoard && window.HAHBoard.dischargeLetter) {
       const dl = window.HAHBoard.dischargeLetter;
       return c.stack([
-        dl.renderLetterPane(vm, state, { c: c }),
-        renderPatientRecordCard(vm)
+        dl.renderLetterPane(vm, state, { c: c })
       ]);
     }
 
@@ -20369,7 +20356,6 @@ window.HAHBoard = window.HAHBoard || {};
       // (a quiet status indicator for a stateful surface).
       headerRight: '<span class="hah-autosave-indicator" id="hahAutosaveIndicator"></span>'
     }),
-      renderPatientRecordCard(vm),
       `<button type="button" class="hah-discharge-btn" data-patient-action="discharge-patient">${isJsonPatient(vm.patient) ? 'Archive / discharge' : 'Discharge'}</button>`
     ]);
   }
@@ -21854,6 +21840,10 @@ window.HAHBoard = window.HAHBoard || {};
       router.goToTasks('patient-focus');
       return true;
     }
+    // v0.8.254: the only trigger for 'open-tasks' (the removed Patient
+    // record card's button) is gone. Handler intentionally retained —
+    // the patient-scoped tasks surface is being reconsidered separately
+    // and will re-wire to this. Not dead-by-oversight.
     if (action === 'open-tasks' && vm) {
       store.setState({ selectedPatientId: vm.patient.id, selectedTaskId: null, tasks: { savedView: 'patient-focus', filters: { patientId: vm.patient.id } } });
       router.goToTasks('patient-focus');
@@ -24975,10 +24965,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.253. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.254. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.253. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.254. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
