@@ -800,27 +800,52 @@ html, body {
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* v0.8.251: Microsoft-365-style search box. Henry didn't like the
+   translucent white-on-blue fill — wanted lighter, "more 365 like".
+   365's pattern: a near-solid pale box sitting in the branded bar with
+   dark text and a leading magnifier, going fully white on focus. The
+   search glyph is a background-image data-URI (no markup change, so the
+   panel-anchoring logic that inserts the dropdown as the input's
+   sibling is untouched). */
 .hah-header .hah-search {
-  width: 420px;
+  width: 460px;
   max-width: 100%;
   height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0 14px;
+  border-radius: var(--hah-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background-color: rgba(255, 255, 255, 0.92);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 13px center;
+  padding: 0 14px 0 36px;
   font-size: 14px;
+  font-family: inherit;
   outline: none;
-  color: #fff;
+  color: #1f2937;
+  transition: background-color 140ms ease, border-color 140ms ease,
+              box-shadow 140ms ease;
 }
 
 .hah-header .hah-search::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #64748b;
+}
+
+.hah-header .hah-search:hover {
+  background-color: rgba(255, 255, 255, 0.97);
 }
 
 .hah-header .hah-search:focus {
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(8, 47, 99, 0.18);
+}
+
+/* Hide the native clear "×" the type=search control adds in some
+   engines — we already have Escape/outside-click; the native glyph
+   collided visually with the new lighter treatment. */
+.hah-header .hah-search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .hah-header .hah-pill-btn,
@@ -10180,40 +10205,6 @@ button.hah-pt-flag:active {
   border-color: var(--hah-border-faint);
 }
 
-.hah-search-footer {
-  display: flex;
-  align-items: center;
-  gap: var(--hah-gap-md);
-  padding: var(--hah-gap-sm) var(--hah-gap-sm) var(--hah-gap-xs);
-  margin-top: 2px;
-  border-top: 1px solid var(--hah-border-faint);
-  font-size: var(--hah-text-xs);
-  color: var(--desk-text-muted);
-}
-
-.hah-search-footer span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.hah-search-footer kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border: 1px solid var(--hah-border);
-  border-bottom-width: 2px;
-  border-radius: var(--hah-radius-tag);
-  background: var(--hah-tint-context);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: var(--hah-weight-action);
-  color: var(--desk-text-muted);
-}
-
 </style>
   <style>
 /* inlined: css/desktop-pwa-install.css */
@@ -10868,9 +10859,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_250_global_search_release.html',
-  source: 'hospital_at_home_board_v0_8_250_global_search_source.zip',
-  builtAt: '2026-05-16T08:54:47.261021',
+  filename: 'hospital_at_home_board_v0_8_251_search_refinement_release.html',
+  source: 'hospital_at_home_board_v0_8_251_search_refinement_source.zip',
+  builtAt: '2026-05-17T15:40:00.193766',
   entry: 'desktop.html'
 };
 </script>
@@ -24737,10 +24728,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.250. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.251. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.250. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.251. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -28088,13 +28079,45 @@ window.HAHBoard = window.HAHBoard || {};
         ? function (id) { return ops.isPatientDischarged(id); }
         : function () { return false; };
 
+      // v0.8.251: the OneDrive JSON archived patients (the recycle-bin
+      // store the "Discharged patients" settings card lists) live in
+      // patientCache.archivedRows — a SEPARATE store from the local
+      // dischargedPatients recycle bin checked above. v0.8.250 only
+      // looked at the local one, so JSON-archived patients (the common
+      // case) never entered the index and "ws-test7" found nothing.
+      // Pull archivedRows via the same getInfo().patientCache path the
+      // settings card uses, so search and settings agree on what's
+      // archived. These are already mapped via mapJsonPatientToLegacyRaw
+      // (same raw shape as active rows), so buildPatientSummary works.
+      var archivedRows = [];
+      try {
+        var sj = HB.sharedJsonStore;
+        var info = sj && typeof sj.getInfo === 'function' ? sj.getInfo() : null;
+        var pc = info && info.patientCache ? info.patientCache : null;
+        if (pc && Array.isArray(pc.archivedRows)) archivedRows = pc.archivedRows;
+      } catch (_) {}
+
+      function archivedAtOf(rawRow) {
+        try {
+          var jr = rawRow && rawRow.sourcePatient && rawRow.sourcePatient.jsonRecord
+            ? rawRow.sourcePatient.jsonRecord : null;
+          var op = jr && jr.operational ? jr.operational : null;
+          return (op && op.archivedAt) ? op.archivedAt : null;
+        } catch (_) { return null; }
+      }
+
       var records = [];
       var byId = {};
-      for (var i = 0; i < rows.length; i++) {
+
+      function addRow(raw, opts) {
         var summary;
-        try { summary = derived.buildPatientSummary(rows[i]); } catch (_) { continue; }
-        if (!summary || !summary.id) continue;
+        try { summary = derived.buildPatientSummary(raw); } catch (_) { return; }
+        if (!summary || !summary.id) return;
         var pid = String(summary.id);
+        // De-dupe: an active row always wins over an archived copy of
+        // the same id (shouldn't happen — active/archived are disjoint
+        // in service.json — but be defensive).
+        if (byId[pid] && !byId[pid].discharged) return;
         var tepText = '';
         if (ops && ops.getPatientState) {
           try {
@@ -28105,24 +28128,41 @@ window.HAHBoard = window.HAHBoard || {};
         }
         var rec = buildSearchRecord(summary, {
           tepText: tepText,
-          discharged: isDischarged(pid),
-          dischargedAt: dischargedAtById[pid] || null,
-          isCurrent: currentId && pid === currentId
+          discharged: !!opts.discharged,
+          dischargedAt: opts.dischargedAt || null,
+          isCurrent: !opts.discharged && currentId && pid === currentId
         });
         records.push(rec);
         byId[pid] = rec;
       }
+
+      for (var i = 0; i < rows.length; i++) {
+        var aid = rows[i] && rows[i].id ? String(rows[i].id) : '';
+        addRow(rows[i], {
+          discharged: isDischarged(aid),
+          dischargedAt: dischargedAtById[aid] || null
+        });
+      }
+      for (var k = 0; k < archivedRows.length; k++) {
+        addRow(archivedRows[k], {
+          discharged: true,
+          dischargedAt: archivedAtOf(archivedRows[k])
+        });
+      }
       return { records: records, byId: byId };
     }
 
+    // Label uses "Archived" to match the per-row wording in the
+    // Settings "Discharged patients" card ("Archived 12 May") — that's
+    // the word Henry already sees for these, so search agrees with it.
     function formatDischargedLabel(iso) {
-      if (!iso) return 'Discharged';
+      if (!iso) return 'Archived';
       var d = new Date(iso);
-      if (isNaN(d.getTime())) return 'Discharged';
+      if (isNaN(d.getTime())) return 'Archived';
       try {
-        return 'Discharged · ' + d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        return 'Archived · ' + d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
       } catch (_) {
-        return 'Discharged';
+        return 'Archived';
       }
     }
 
@@ -28218,7 +28258,13 @@ window.HAHBoard = window.HAHBoard || {};
       }
       currentItems = recs;
       currentMode = 'recents';
-      activeIndex = recs.length ? 0 : -1;
+      // v0.8.251: don't pre-highlight a recent (Henry: the blue on the
+      // recent patient isn't wanted). -1 means nothing selected; the
+      // first ArrowDown still lands on index 0 via moveActive's wrap, so
+      // keyboard nav is unaffected. Results mode still pre-selects the
+      // top match (see renderResults) — that's the deliberate
+      // "Enter opens best match" behaviour and is unchanged.
+      activeIndex = -1;
 
       var inner;
       if (!recs.length) {
@@ -28226,15 +28272,19 @@ window.HAHBoard = window.HAHBoard || {};
       } else {
         inner = '<div class="hah-search-section-label">Recent</div>' +
           '<div class="hah-search-list" role="listbox">' +
-            recs.map(function (r, i) { return rowHtml(r, '', i, i === activeIndex); }).join('') +
+            recs.map(function (r, i) { return rowHtml(r, '', i, false); }).join('') +
           '</div>';
       }
-      panelEl.innerHTML = inner + footerHtml();
+      panelEl.innerHTML = inner;
     }
 
     function renderResults(query) {
       var built = buildRecords();
-      var results = searchPatients(built.records, query, { limit: 8 });
+      // v0.8.251: cap raised from 8 → 25 and the panel scrolls (Henry:
+      // "make list scrollable"). With a ~20-40 patient caseload 25
+      // effectively surfaces every reasonable match; the panel's
+      // max-height + overflow-y handles the overflow.
+      var results = searchPatients(built.records, query, { limit: 25 });
       currentItems = results.map(function (r) { return r.record; });
       currentMode = 'results';
       activeIndex = currentItems.length ? 0 : -1;
@@ -28247,15 +28297,7 @@ window.HAHBoard = window.HAHBoard || {};
           currentItems.map(function (r, i) { return rowHtml(r, query, i, i === activeIndex); }).join('') +
           '</div>';
       }
-      panelEl.innerHTML = inner + footerHtml();
-    }
-
-    function footerHtml() {
-      return '<div class="hah-search-footer">' +
-        '<span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>' +
-        '<span><kbd>↵</kbd> open</span>' +
-        '<span><kbd>esc</kbd> close</span>' +
-      '</div>';
+      panelEl.innerHTML = inner;
     }
 
     function renderPanel() {
@@ -28359,6 +28401,24 @@ window.HAHBoard = window.HAHBoard || {};
       }, 120);
     }
 
+    // v0.8.251: blur alone didn't close the panel when the user clicked
+    // elsewhere on the blue header — that region is a window-drag
+    // handle (-webkit-app-region: drag) so clicking it doesn't reliably
+    // move focus, leaving the panel stuck open until the user clicked
+    // into the page body (Henry: unintuitive). A document-level
+    // pointerdown (capture) handler closes the panel on any press that
+    // isn't the input or inside the panel — header, brand, anywhere.
+    function onDocPointerDown(e) {
+      if (!open) return;
+      var t = e.target;
+      if (t === inputEl) return;
+      if (panelEl && t && panelEl.contains && panelEl.contains(t)) return;
+      closePanel();
+      // Drop the text cursor too so the box visually deselects, matching
+      // the expectation that clicking away ends the search interaction.
+      if (document.activeElement === inputEl) inputEl.blur();
+    }
+
     function isTextInput(el) {
       if (!el) return false;
       var tag = (el.tagName || '').toLowerCase();
@@ -28414,6 +28474,9 @@ window.HAHBoard = window.HAHBoard || {};
 
       if (!mounted) {
         document.addEventListener('keydown', onGlobalKeydown);
+        // Capture phase so it runs before the header's drag region or
+        // any stopPropagation can swallow it.
+        document.addEventListener('pointerdown', onDocPointerDown, true);
       }
       mounted = true;
       return true;
@@ -28790,7 +28853,7 @@ window.HAHBoard = window.HAHBoard || {};
               id="hahGlobalSearch"
               class="hah-search"
               type="search"
-              placeholder="Search patients…  (⌘K)"
+              placeholder="Search"
               aria-label="Global search"
             />
           </div>
