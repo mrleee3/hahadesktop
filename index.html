@@ -9983,6 +9983,164 @@ button.hah-pt-flag:active {
   box-shadow: 0 12px 48px rgba(15, 23, 42, 0.28);
 }
 
+/* ─── Read-only letter viewer (v0.8.252) ──────────────────────────────
+ * Standalone overlay for an archived patient's discharge letter.
+ * Reuses the .hah-dl-prev-* content renderers (renderLetterPreviewHtml).
+ * Those rules are written as calc(... * var(--pm)); --pm only exists on
+ * .hah-dl-preview-paper (the editor's scaled A4). We set it here too so
+ * the inherited margins/sizes resolve — 1.7 gives a comfortably
+ * readable document size in the overlay. No scaling JS, natural flow.
+ */
+.hah-dl-ro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hah-dl-ro-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.hah-dl-ro-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 760px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 64px);
+  background: #fff;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-lg);
+  box-shadow: 0 28px 64px rgba(15, 23, 42, 0.30);
+  overflow: hidden;
+}
+
+.hah-dl-ro-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hah-gap-md);
+  padding: var(--hah-gap-md) var(--hah-gap-xl);
+  border-bottom: 1px solid var(--hah-border-faint);
+  background: var(--hah-tint-header);
+}
+
+.hah-dl-ro-head-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hah-gap-sm);
+  min-width: 0;
+}
+
+.hah-dl-ro-name {
+  font-size: var(--hah-text-lg);
+  font-weight: var(--hah-weight-display);
+  color: var(--desk-text);
+  letter-spacing: var(--hah-tracking-snug);
+}
+
+.hah-dl-ro-agesex {
+  font-size: var(--hah-text-sm);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+}
+
+.hah-dl-ro-badge {
+  font-size: 10px;
+  font-style: italic;
+  font-weight: var(--hah-weight-meta);
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: var(--hah-radius-pill);
+  background: var(--hah-tint-context);
+  border: 1px solid var(--hah-border-faint);
+  color: var(--desk-text-muted);
+}
+
+.hah-dl-ro-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-pill);
+  background: #fff;
+  color: var(--desk-text-muted);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hah-dl-ro-close:hover {
+  border-color: var(--hah-border-hover);
+  background: var(--hah-tint-context);
+}
+
+.hah-dl-ro-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--hah-gap-xl);
+  background: var(--hah-tint-context);
+  display: flex;
+  justify-content: center;
+}
+
+.hah-dl-ro-paper {
+  --pm: 1.7;
+  width: 100%;
+  max-width: 620px;
+  background: #fff;
+  border: 1px solid var(--hah-border-faint);
+  border-radius: var(--hah-radius-sm);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  padding: 40px 48px;
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', sans-serif;
+  color: #1a1a1a;
+}
+
+.hah-dl-ro-paper .hah-dl-prev-letterhead-img {
+  margin-bottom: 18px;
+}
+
+.hah-dl-ro-empty {
+  align-self: center;
+  margin: 40px 0;
+  font-size: var(--hah-text-md);
+  color: var(--desk-text-muted);
+}
+
+.hah-dl-ro-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hah-gap-md);
+  padding: var(--hah-gap-md) var(--hah-gap-xl);
+  border-top: 1px solid var(--hah-border-faint);
+  background: #fff;
+}
+
+.hah-dl-ro-foot-note {
+  font-size: var(--hah-text-xs);
+  color: var(--desk-text-muted);
+  min-width: 0;
+}
+
+.hah-dl-ro-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--hah-gap-sm);
+  flex: 0 0 auto;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-search.css */
@@ -10203,6 +10361,84 @@ button.hah-pt-flag:active {
   color: var(--desk-text-muted);
   background: var(--hah-tint-context);
   border-color: var(--hah-border-faint);
+}
+
+/* ─── Archived-patient confirm modal (v0.8.252) ───────────────────────
+ * Shown when an archived patient is selected from search. Tokenised,
+ * same vocabulary as the rest of the design system.
+ */
+.hah-arch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hah-arch-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.hah-arch-panel {
+  position: relative;
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  background: #fff;
+  border: 1px solid var(--hah-border);
+  border-radius: var(--hah-radius-lg);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+  padding: var(--hah-gap-xl);
+  animation: hahSearchPanelIn 130ms cubic-bezier(0.22, 0.78, 0.2, 1);
+}
+
+.hah-arch-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hah-gap-sm);
+  margin-bottom: var(--hah-gap-sm);
+}
+
+.hah-arch-name {
+  font-size: var(--hah-text-xl);
+  font-weight: var(--hah-weight-display);
+  color: var(--desk-text);
+  letter-spacing: var(--hah-tracking-snug);
+}
+
+.hah-arch-agesex {
+  font-size: var(--hah-text-md);
+  font-weight: var(--hah-weight-meta);
+  color: var(--desk-text-muted);
+}
+
+.hah-arch-status {
+  font-size: var(--hah-text-md);
+  color: var(--desk-text);
+  line-height: 1.5;
+  margin-bottom: var(--hah-gap-lg);
+}
+
+.hah-arch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hah-gap-sm);
+}
+
+.hah-arch-actions .hah-action {
+  width: 100%;
+  justify-content: center;
+}
+
+.hah-arch-note {
+  margin-top: var(--hah-gap-md);
+  font-size: var(--hah-text-xs);
+  color: var(--desk-text-muted);
+  line-height: 1.45;
 }
 
 </style>
@@ -10859,9 +11095,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_251_search_refinement_release.html',
-  source: 'hospital_at_home_board_v0_8_251_search_refinement_source.zip',
-  builtAt: '2026-05-17T15:40:00.193766',
+  filename: 'hospital_at_home_board_v0_8_252_archived_letter_view_release.html',
+  source: 'hospital_at_home_board_v0_8_252_archived_letter_view_source.zip',
+  builtAt: '2026-05-17T16:01:34.177134',
   entry: 'desktop.html'
 };
 </script>
@@ -24728,10 +24964,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.251. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.252. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.251. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.252. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -27092,6 +27328,116 @@ window.HAHBoard = window.HAHBoard || {};
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
+  // ─── Read-only letter viewer (v0.8.252) ────────────────────────────────
+  //
+  // Standalone, self-contained overlay for viewing an ARCHIVED patient's
+  // discharge letter without entering the editable patient workspace.
+  // Reached from global search → archived patient → "View discharge
+  // letter (read-only)".
+  //
+  // Deliberately NOT the patient workspace in a greyed-out mode. Per the
+  // design discussion: making the whole workspace safely read-only means
+  // neutralising every write affordance (composer, ACP save, board-status
+  // cycle, med-change add, letter autosave, task add) — miss one and it
+  // looks safe but isn't. This overlay sidesteps that entirely: it is
+  // preview + export only. There are no write paths to lock because none
+  // exist on this surface. Export stays enabled (re-printing a sent
+  // letter is read-only-safe and is the common real need).
+  //
+  // `patient` is the summary-shaped view-model (vm.patient). Builds its
+  // own DOM, binds its own handlers, removes itself on close.
+  function openReadOnlyLetter(patient) {
+    if (typeof document === 'undefined' || !patient) return;
+
+    const name = (patient && patient.name) ||
+      (patient && patient.identity && patient.identity.name) || 'Patient';
+    const ageSex = [patient.age || '', patient.sex || ''].filter(Boolean).join('');
+    const vm = { patient: patient };
+    const letter = getDischargeLetter(patient);
+    const spec = buildLetterSpec(vm, letter);
+    const hasBody = !!String((letter && letter.body) || '').trim();
+
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    // Remove any prior instance so repeated opens don't stack.
+    const prior = document.getElementById('hahDlReadOnly');
+    if (prior && prior.parentNode) prior.parentNode.removeChild(prior);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'hahDlReadOnly';
+    overlay.className = 'hah-dl-ro-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Discharge letter, read-only');
+
+    const paperInner = hasBody
+      ? `<div class="hah-dl-ro-paper">${renderLetterPreviewHtml(spec, { escape: esc })}</div>`
+      : `<div class="hah-dl-ro-empty">No discharge letter was generated for this patient.</div>`;
+
+    overlay.innerHTML = `
+      <div class="hah-dl-ro-backdrop" data-ro-action="close"></div>
+      <div class="hah-dl-ro-panel">
+        <div class="hah-dl-ro-head">
+          <div class="hah-dl-ro-head-main">
+            <span class="hah-dl-ro-name">${esc(name)}</span>
+            ${ageSex ? `<span class="hah-dl-ro-agesex">${esc(ageSex)}</span>` : ''}
+            <span class="hah-dl-ro-badge">Archived · read-only</span>
+          </div>
+          <button type="button" class="hah-dl-ro-close" data-ro-action="close" aria-label="Close">×</button>
+        </div>
+        <div class="hah-dl-ro-body">${paperInner}</div>
+        <div class="hah-dl-ro-foot">
+          <span class="hah-dl-ro-foot-note">This patient is off the active board. The letter cannot be edited here.</span>
+          <div class="hah-dl-ro-foot-actions">
+            ${hasBody ? `
+              <button type="button" class="hah-action" data-ro-action="export-pdf">Export PDF</button>
+              <button type="button" class="hah-action" data-ro-action="export-word">Export Word</button>` : ''}
+            <button type="button" class="hah-action hah-action-primary" data-ro-action="close">Close</button>
+          </div>
+        </div>
+      </div>`;
+
+    function cleanup() {
+      document.removeEventListener('keydown', onKey, true);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+    }
+    overlay.addEventListener('click', function (e) {
+      const t = e.target.closest ? e.target.closest('[data-ro-action]') : null;
+      if (!t) return;
+      const act = t.getAttribute('data-ro-action');
+      if (act === 'close') { cleanup(); return; }
+      if (act === 'export-pdf') {
+        const win = window.open('', '_blank');
+        if (win) win.document.write('<html><head><title>Generating PDF…</title></head><body style="font-family:sans-serif;padding:2rem;color:#666">Generating PDF…</body></html>');
+        renderPdf(spec).then((blob) => {
+          const url = URL.createObjectURL(blob);
+          if (win) win.location.href = url;
+          else triggerDownload(blob, buildFilename(vm, 'pdf'));
+        }).catch((err) => {
+          if (win) win.close();
+          window.alert('PDF generation failed: ' + (err && err.message ? err.message : err));
+        });
+        return;
+      }
+      if (act === 'export-word') {
+        renderDocx(spec).then((blob) => {
+          triggerDownload(blob, buildFilename(vm, 'docx'));
+        }).catch((err) => {
+          window.alert('Word doc generation failed: ' + (err && err.message ? err.message : err));
+        });
+        return;
+      }
+    });
+
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(overlay);
+  }
+
   // ─── afterRender hook (autosave wiring) ────────────────────────────────
   //
   // Called from 26-desktop-patient.js after the right pane is rendered in
@@ -27708,6 +28054,8 @@ window.HAHBoard = window.HAHBoard || {};
     renderDocx, renderPdf,
     // UI
     renderDischargeLetterCard, renderLetterPane, renderLetterPreviewHtml,
+    // v0.8.252: standalone read-only letter viewer (archived patients)
+    openReadOnlyLetter,
     // Action plumbing (called from 26-desktop-patient.js)
     handleDlAction, bindLetterEditor, cancelPendingDlSave, clearDlEditorPending,
     // Helpers (testable)
@@ -28027,6 +28375,8 @@ window.HAHBoard = window.HAHBoard || {};
     var currentMode = 'recents'; // 'recents' | 'results'
     var debounceTimer = null;
     var suppressBlur = false;
+    var lastRecordedPatientId = '';   // v0.8.252: recents = any patient opened
+    var archivedModalEl = null;       // v0.8.252: archived-patient confirm modal
 
     function escapeHtml(value) {
       var c = HB.components;
@@ -28344,11 +28694,190 @@ window.HAHBoard = window.HAHBoard || {};
 
     function openRecord(rec) {
       if (!rec || !rec.id) return;
-      pushRecent(rec.id);
+      // v0.8.252: archived patients don't route into the workspace (it
+      // can't resolve them, and silently opening an off-board record as
+      // if live is a small safety issue). Confirm dialog instead.
+      if (rec.discharged) {
+        closePanel();
+        inputEl.blur();
+        openArchivedModal(rec);
+        return;
+      }
       closePanel();
       inputEl.value = '';
       inputEl.blur();
+      // pushRecent is no longer called here — the store route
+      // subscription (recordRouteRecent) records the patient once the
+      // detail view actually opens, so ANY open (search, board,
+      // patient-list) counts, not just search-driven ones.
       if (HB.router && HB.router.goToPatient) HB.router.goToPatient(rec.id);
+    }
+
+    // ─── Archived-patient confirm modal ─────────────────────────────────
+    // Reached when an archived result is selected. Two paths: view the
+    // discharge letter read-only (the dominant real reason — finishing
+    // or re-printing a letter for someone discharged), or restore the
+    // patient to the active board (a TEAM action — writes service.json,
+    // reappears for everyone + mobile — so it's the secondary action,
+    // worded accordingly).
+    function closeArchivedModal() {
+      document.removeEventListener('keydown', onArchivedModalKey, true);
+      if (archivedModalEl && archivedModalEl.parentNode) {
+        archivedModalEl.parentNode.removeChild(archivedModalEl);
+      }
+      archivedModalEl = null;
+    }
+
+    function onArchivedModalKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeArchivedModal(); }
+    }
+
+    function findActiveSummaryForRestoreTarget(id) {
+      // After restore, route to the now-active patient if it resolved.
+      try {
+        var b = HB.derived && HB.derived.getPatientSourceBundle
+          ? HB.derived.getPatientSourceBundle() : null;
+        var rows = (b && b.rows) || [];
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i] && String(rows[i].id) === String(id)) return true;
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    function openArchivedModal(rec) {
+      closeArchivedModal();
+      var name = rec.name || 'Patient';
+      var ageSex = rec.ageSex || '';
+      var whenLabel = '';
+      if (rec.dischargedAt) {
+        var d = new Date(rec.dischargedAt);
+        if (!isNaN(d.getTime())) {
+          try {
+            whenLabel = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+          } catch (_) { whenLabel = ''; }
+        }
+      }
+
+      archivedModalEl = document.createElement('div');
+      archivedModalEl.className = 'hah-arch-overlay';
+      archivedModalEl.setAttribute('role', 'dialog');
+      archivedModalEl.setAttribute('aria-modal', 'true');
+      archivedModalEl.setAttribute('aria-label', 'Archived patient');
+      archivedModalEl.innerHTML =
+        '<div class="hah-arch-backdrop" data-arch-action="close"></div>' +
+        '<div class="hah-arch-panel">' +
+          '<div class="hah-arch-head">' +
+            '<span class="hah-arch-name">' + escapeHtml(name) + '</span>' +
+            (ageSex ? '<span class="hah-arch-agesex">' + escapeHtml(ageSex) + '</span>' : '') +
+          '</div>' +
+          '<div class="hah-arch-status">This patient has been archived' +
+            (whenLabel ? ' on ' + escapeHtml(whenLabel) : '') +
+            ' and is off the active board.</div>' +
+          '<div class="hah-arch-actions">' +
+            '<button type="button" class="hah-action hah-action-primary" data-arch-action="view-letter">View discharge letter (read-only)</button>' +
+            '<button type="button" class="hah-action" data-arch-action="restore">Restore to active board</button>' +
+            '<button type="button" class="hah-action" data-arch-action="close">Cancel</button>' +
+          '</div>' +
+          '<div class="hah-arch-note">Restoring returns this patient to the active board for the whole team.</div>' +
+        '</div>';
+
+      archivedModalEl.addEventListener('click', function (e) {
+        var t = e.target.closest ? e.target.closest('[data-arch-action]') : null;
+        if (!t) return;
+        var act = t.getAttribute('data-arch-action');
+        if (act === 'close') { closeArchivedModal(); return; }
+        if (act === 'view-letter') {
+          closeArchivedModal();
+          var dl = HB.dischargeLetter;
+          if (dl && typeof dl.openReadOnlyLetter === 'function') {
+            // Re-resolve the full summary so the letter spec has the
+            // patient's data (the flat search record doesn't carry it).
+            var summary = resolveSummaryById(rec.id);
+            dl.openReadOnlyLetter(summary || { name: rec.name, age: rec.age, sex: rec.sex });
+          }
+          return;
+        }
+        if (act === 'restore') {
+          var shared = HB.sharedJsonStore;
+          if (!shared || typeof shared.restoreArchivedPatientRecord !== 'function') {
+            window.alert('Restore is unavailable.');
+            return;
+          }
+          var btn = t;
+          btn.disabled = true;
+          btn.textContent = 'Restoring…';
+          shared.restoreArchivedPatientRecord(rec.id).then(function () {
+            closeArchivedModal();
+            // Land on the now-active patient if it resolved.
+            if (HB.router && HB.router.goToPatient && findActiveSummaryForRestoreTarget(rec.id)) {
+              HB.router.goToPatient(rec.id);
+            }
+          }).catch(function (err) {
+            btn.disabled = false;
+            btn.textContent = 'Restore to active board';
+            window.alert(err && err.message ? err.message : 'Could not restore this patient.');
+          });
+          return;
+        }
+      });
+
+      document.addEventListener('keydown', onArchivedModalKey, true);
+      document.body.appendChild(archivedModalEl);
+    }
+
+    // Rebuild the full summary for a patient id (active OR archived) so
+    // the read-only letter viewer has real patient data to build the
+    // letter spec from. The flat search record intentionally doesn't
+    // carry the whole summary.
+    function resolveSummaryById(id) {
+      var derived = HB.derived;
+      if (!derived || !derived.buildPatientSummary) return null;
+      var pid = String(id);
+      // Active source first.
+      try {
+        if (derived.getPatientSummaryById) {
+          var s = derived.getPatientSummaryById(pid);
+          if (s) return s;
+        }
+      } catch (_) {}
+      // Archived rows.
+      try {
+        var sj = HB.sharedJsonStore;
+        var info = sj && typeof sj.getInfo === 'function' ? sj.getInfo() : null;
+        var pc = info && info.patientCache ? info.patientCache : null;
+        var ar = pc && Array.isArray(pc.archivedRows) ? pc.archivedRows : [];
+        for (var i = 0; i < ar.length; i++) {
+          if (ar[i] && String(ar[i].id) === pid) {
+            return derived.buildPatientSummary(ar[i]);
+          }
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    // v0.8.252: record a "recent" whenever the patient detail view opens,
+    // however the user got there (search, board double-click, patient
+    // list). Fires off the store route. Guarded so re-renders of the
+    // same patient don't repeatedly push, and only active patients (in
+    // the live bundle) are recorded.
+    function recordRouteRecent(state) {
+      if (!state || !state.route) return;
+      if (state.route.view !== 'patient') { lastRecordedPatientId = ''; return; }
+      var id = String(state.route.entityId || state.selectedPatientId || '');
+      if (!id || id === lastRecordedPatientId) return;
+      var inActive = false;
+      try {
+        var b = HB.derived && HB.derived.getPatientSourceBundle
+          ? HB.derived.getPatientSourceBundle() : null;
+        var rows = (b && b.rows) || [];
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i] && String(rows[i].id) === id) { inActive = true; break; }
+        }
+      } catch (_) {}
+      if (!inActive) return;
+      lastRecordedPatientId = id;
+      pushRecent(id);
     }
 
     function activateIndex(idx) {
@@ -28477,6 +29006,14 @@ window.HAHBoard = window.HAHBoard || {};
         // Capture phase so it runs before the header's drag region or
         // any stopPropagation can swallow it.
         document.addEventListener('pointerdown', onDocPointerDown, true);
+        // v0.8.252: recents now track ANY patient open, not just
+        // search-driven ones. Watch the store route.
+        if (HB.store && typeof HB.store.subscribe === 'function') {
+          try {
+            recordRouteRecent(HB.store.getState());
+            HB.store.subscribe(recordRouteRecent);
+          } catch (_) {}
+        }
       }
       mounted = true;
       return true;
