@@ -11161,9 +11161,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_257_splash_timing_focus_release.html',
-  source: 'hospital_at_home_board_v0_8_257_splash_timing_focus_source.zip',
-  builtAt: '2026-05-17T18:32:22.537636',
+  filename: 'hospital_at_home_board_v0_8_258_splash_wait_5000_release.html',
+  source: 'hospital_at_home_board_v0_8_258_splash_wait_5000_source.zip',
+  builtAt: '2026-05-17T18:40:40.716376',
   entry: 'desktop.html'
 };
 </script>
@@ -25034,10 +25034,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.257. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.258. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.257. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.258. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -29224,12 +29224,12 @@ window.HAHBoard = window.HAHBoard || {};
     //   tagline tail 1.0s @ 2.0s  → done ~3.00s
     //   company     1.8s @ 3.6s   → done ~5.40s   ← last thing moving
     // "Fully completed" = the company line finished fading: ~5.4s.
-    // v0.8.257: Henry asked for this 25% shorter. 5600 → 4200ms. The
-    // company line is still fading as the lift begins now, but it's
-    // decorative and finishes under the rising stack — nothing is cut,
-    // it just overlaps the tail of the intro slightly. Single number
-    // to tune.
-    const SPLASH_AUTO_REVEAL_MS = 4200;
+    // v0.8.258: Henry tuned this to 5000ms (was 4200). The company line
+    // (3.6s delay + 1.8s fade) is ~78% through its fade when the lift
+    // starts — visually settled enough to read as "there" while the
+    // last fraction completes under the rising stack. Single number to
+    // tune.
+    const SPLASH_AUTO_REVEAL_MS = 5000;
     let splashRevealed = false;
 
     function revealSplashSignIn() {
