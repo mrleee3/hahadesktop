@@ -10843,53 +10843,74 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
         animation: appSplashFadeOnly .3s ease forwards;
         transform: none;
       }
-      /* v0.8.255: no slide-up; the panel just fades, and the stack
-         doesn't translate. */
+      /* v0.8.256: reduced motion — panel still must keep its
+         translateX(-50%) centring (it's absolutely positioned now);
+         only the vertical rise + the lift are removed. */
       #hahDesktopSplash .hah-splash-signin-panel {
         transition: opacity .25s ease;
-        transform: none;
+        transform: translate(-50%, 16px);
+      }
+      #hahDesktopSplash.signin-revealed .hah-splash-signin-panel {
+        transform: translate(-50%, 16px);
       }
       #hahDesktopSplash.signin-revealed .app-splash-stack {
         transform: translateY(0) scale(1);
       }
     }
 
-    /* v0.8.255: sign-in panel — auto-revealed once the splash intro
-       animations have settled (no icon click). The previous flow
-       required clicking the logo to surface this; Henry asked for the
-       splash to complete, then everything to slide up and the button
-       to fade in on its own.
+    /* v0.8.256: sign-in panel reveal. Splash intro completes, the
+       content lifts smoothly, then the sign-in button fades in.
 
-       Two coordinated motions, both keyed off the .signin-revealed
-       class the JS adds after the intro timeline:
-         1. .app-splash-stack shifts up a little so the (taller) content
-            stays optically centred once the panel is added below it,
-            rather than the whole block sitting low.
-         2. this panel eases from translateY+transparent to resting.
-       The earlier `animation: appSplashFadeOnly` one-shot is replaced
-       by a transition gated on the parent class so timing is driven by
-       JS, not an animation-delay that can't be coordinated with the
-       intro. */
+       The v0.8.255 version had the panel
+       in the stack's flex flow, so un-hiding it popped it into the
+       layout at full height in one frame — the flex column re-centred
+       instantly (the "jump") while the -26px transform tweened on top,
+       both at once. Henry: wait for the splash to fully finish, then a
+       smooth lift, THEN the button fades — not all together.
+
+       Fix is structural, not just timing: the panel is now absolutely
+       positioned *below* the stack (the stack is already
+       position:relative). Absolute children don't contribute to the
+       stack's content height, so revealing the panel causes ZERO
+       reflow — the lift becomes a pure transform tween (inherently
+       smooth) and the panel fade is fully independent and can be
+       sequenced after it. The panel still rides the lift because it's
+       a descendant of the transformed stack.
+
+       Sequence, keyed off .signin-revealed (added by JS only once the
+       intro timeline has fully completed — see shell SPLASH_AUTO_
+       REVEAL_MS):
+         1. stack lifts up (transform only, ~0.85s, gentle decel)
+         2. ~0.7s later (lift ~80% done) the panel fades in with only
+            a small 10px rise — mostly opacity, so it reads as "appears"
+            not "moves", keeping total motion low. */
     .hah-splash-signin-panel {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-top: 0;
       display: flex;
       flex-direction: column;
       align-items: stretch;
       gap: 12px;
-      margin-top: 8px;
       width: 320px;
       max-width: 90vw;
       opacity: 0;
-      transform: translateY(14px);
+      transform: translate(-50%, 26px);
       pointer-events: none;
-      transition: opacity .5s ease, transform .6s cubic-bezier(.22,.78,.2,1);
+      transition: opacity .5s ease .7s,
+                  transform .55s cubic-bezier(.22,.78,.2,1) .7s;
     }
     #hahDesktopSplash.signin-revealed .hah-splash-signin-panel {
       opacity: 1;
-      transform: translateY(0);
+      transform: translate(-50%, 16px);
       pointer-events: auto;
     }
+    /* The lift: transform only, starts immediately on reveal, longer +
+       gentle so it glides rather than snaps. No delay — this is step 1. */
     #hahDesktopSplash.signin-revealed .app-splash-stack {
-      transform: translateY(-26px) scale(1);
+      transform: translateY(-34px) scale(1);
+      transition: transform .85s cubic-bezier(.22,.78,.2,1);
     }
     .hah-splash-signin-panel[hidden] {
       display: none;
@@ -10969,17 +10990,23 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
        sign-in panel — when this is shown the sign-in panel is hidden,
        and vice versa. Same width/fade animation. */
     .hah-splash-config-panel {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-top: 0;
       display: flex;
       flex-direction: column;
       align-items: stretch;
       gap: 8px;
-      margin-top: 8px;
       width: 360px;
       max-width: 90vw;
       opacity: 0;
-      transform: translateY(8px);
+      transform: translate(-50%, 16px);
       animation: appSplashFadeOnly .35s ease forwards;
       text-align: left;
+    }
+    #hahDesktopSplash.signin-revealed .hah-splash-config-panel {
+      transform: translate(-50%, 16px);
     }
     .hah-splash-config-panel[hidden] {
       display: none;
@@ -11122,9 +11149,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_255_splash_auto_signin_release.html',
-  source: 'hospital_at_home_board_v0_8_255_splash_auto_signin_source.zip',
-  builtAt: '2026-05-17T18:14:30.789899',
+  filename: 'hospital_at_home_board_v0_8_256_splash_reveal_refine_release.html',
+  source: 'hospital_at_home_board_v0_8_256_splash_reveal_refine_source.zip',
+  builtAt: '2026-05-17T18:25:47.940963',
   entry: 'desktop.html'
 };
 </script>
@@ -24995,10 +25022,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.255. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.256. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.255. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.256. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -29173,18 +29200,22 @@ window.HAHBoard = window.HAHBoard || {};
     // time/skip-driven now, and sign-in is always interactive.
     splashRestorePromise = startSplashSilentRestore();
 
-    // v0.8.255: the sign-in panel now auto-reveals once the splash
-    // intro has settled — no icon click required (Henry's ask: splash
-    // completes, content slides up, button fades in on its own).
+    // v0.8.256: wait for the splash intro to FULLY complete before
+    // revealing sign-in (Henry: "wait until the splash has fully
+    // completed", then a smooth lift, then the button fades — not all
+    // at once / not while the intro is still animating).
     //
-    // Timing: the intro timeline runs logo (~0.6s) → title (.18s+.72s)
-    // → tagline main (1.1s+.9s = settles ~2.0s) → tail (2.0s+1.0s) →
-    // company (decorative, finishes ~5.4s). We don't wait for the
-    // decorative company line. Revealing at ~2.6s lets the eye read
-    // "Hospital at Home / Clinical workflow simplified" while the
-    // tagline tail and company finish fading in parallel underneath
-    // the rising stack — nothing is cut off, it just keeps going.
-    const SPLASH_AUTO_REVEAL_MS = 2600;
+    // Intro timeline (from the splash CSS animation declarations):
+    //   logo        .58s @ .06s   → done ~0.64s
+    //   title       .72s @ .18s   → done ~0.90s
+    //   tagline main .9s @ 1.1s   → done ~2.00s
+    //   tagline tail 1.0s @ 2.0s  → done ~3.00s
+    //   company     1.8s @ 3.6s   → done ~5.40s   ← last thing moving
+    // "Fully completed" = the company line finished fading: ~5.4s.
+    // 5600ms gives a ~0.2s beat of stillness before anything moves, so
+    // the lift reads as a deliberate new phase, not a continuation of
+    // the intro. Single number to tune if it feels too long/short.
+    const SPLASH_AUTO_REVEAL_MS = 5600;
     let splashRevealed = false;
 
     function revealSplashSignIn() {
@@ -29198,14 +29229,16 @@ window.HAHBoard = window.HAHBoard || {};
       requestAnimationFrame(() => {
         requestAnimationFrame(() => splash.classList.add('signin-revealed'));
       });
-      // Move keyboard focus to the button so Enter/Space works without
-      // a mouse, but not so abruptly it yanks focus mid-animation.
+      // Focus the button only after the sequenced reveal has finished:
+      // lift ~0.85s, then panel fade starts at +0.7s and runs ~0.55s,
+      // so the panel is fully in ~1.25s after the class flips. Focus at
+      // ~1.4s so it never yanks focus mid-animation.
       setTimeout(() => {
         const b = splash.querySelector('#hahSplashSignInBtn');
         if (b && typeof b.focus === 'function') {
           try { b.focus({ preventScroll: true }); } catch (_) { b.focus(); }
         }
-      }, 640);
+      }, 1400);
     }
 
     const splashRevealTimer = setTimeout(revealSplashSignIn, SPLASH_AUTO_REVEAL_MS);
