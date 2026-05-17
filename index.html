@@ -640,6 +640,66 @@
   gap: var(--hah-gap-sm);
 }
 
+/* ─── Canonical edit affordance (v0.8.263) ────────────────────────────
+ * One shared pattern for every "edit this thing" control. Before this
+ * there were three divergent ones: the patient-header pencil (bordered
+ * chip, always visible), the log-entry "Edit" (bordered text pill,
+ * hover-revealed) and the discharge-card icon button (borderless icon,
+ * always visible). Henry: converge them — pencil everywhere, no button
+ * chrome, hidden by default and revealed on hover of the row/bar/card
+ * it belongs to (the quietest of the three behaviours). The discharge
+ * card's .hah-dl-row-icon-btn was the visual template; this generalises
+ * it and adds the hover-reveal.
+ *
+ * Usage:
+ *   <button class="hah-edit-btn" ...><svg.../></button>
+ * For hover-reveal, add .hah-edit-btn--reveal to the button AND mark
+ * its hover container with .hah-edit-host:
+ *   <div class="hah-edit-host"> ... <button class="hah-edit-btn
+ *     hah-edit-btn--reveal">…</button> </div>
+ * The button stays visible on keyboard focus even when not hovered, so
+ * it's reachable without a mouse.
+ */
+.hah-edit-btn {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  border-radius: var(--hah-radius-sm);
+  cursor: pointer;
+  color: var(--desk-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  transition: background 120ms ease, color 120ms ease, opacity 140ms ease;
+}
+
+.hah-edit-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.hah-edit-btn:hover {
+  background: var(--hah-accent-tint);
+  color: var(--hah-accent-text);
+}
+
+/* Hover-reveal variant: invisible until the host is hovered, or until
+ * the button itself receives keyboard focus (accessibility). */
+.hah-edit-btn--reveal {
+  opacity: 0;
+  pointer-events: none;
+}
+.hah-edit-host:hover .hah-edit-btn--reveal,
+.hah-edit-btn--reveal:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 </style>
   <style>
 /* inlined: css/desktop-shell.css */
@@ -737,6 +797,12 @@ html, body {
      applies only inside a PWA window. */
   -webkit-app-region: drag;
   app-region: drag;
+  /* v0.8.262: while the search panel is open the header's drag region
+     is suspended (class added by the search controller) so a press on
+     the header is delivered to JS as a normal pointerdown and dismisses
+     the panel. Without this the OS consumes the press for window-drag
+     before JS sees it, and clicking the header never closed the panel.
+     Drag is restored the moment the panel closes. */
   /* v0.8.206: needed so the absolutely-positioned search wrapper
      centres inside the header (which spans the full window width)
      rather than escaping to the document root. */
@@ -764,6 +830,15 @@ html, body {
 .hah-header input,
 .hah-header a,
 .hah-header [role="button"] {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* v0.8.262: search panel open → header is not a window-drag region, so
+   a press anywhere on it reaches JS (onDocPointerDown) and closes the
+   panel. Scoped to the open state only; normal window-dragging is
+   unaffected the rest of the time. */
+.hah-desktop-app.hah-search-open .hah-header {
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
@@ -951,6 +1026,22 @@ html, body {
 
 .hah-resize-handle[data-resize="left"]  { grid-area: handle-l; }
 .hah-resize-handle[data-resize="right"] { grid-area: handle-r; }
+
+/* v0.8.261: the board screen has no left pane (it duplicated the top
+   metrics strip — see board renderLeftPane). Collapse the left grid
+   column and its resize handle to zero for the board route; main is
+   minmax(0,1fr) so it absorbs the freed width automatically. Other
+   screens keep --desk-left-w untouched. The empty left pane is also
+   made inert so it can't eat clicks or show a scrollbar. */
+.hah-desktop-app[data-route="board"] {
+  grid-template-columns: var(--desk-nav-w) 0 0 minmax(0, 1fr) 6px var(--desk-right-w);
+}
+.hah-desktop-app[data-route="board"] .hah-left-pane {
+  display: none;
+}
+.hah-desktop-app[data-route="board"] .hah-resize-handle[data-resize="left"] {
+  display: none;
+}
 
 .hah-resize-handle::after {
   content: '';
@@ -3350,35 +3441,28 @@ body.hah-ws-connecting .hah-ws-dot {
   transition: opacity 140ms ease, background 140ms ease;
 }
 
-.hah-log-edit {
+/* v0.8.263: .hah-log-edit removed — the log edit now uses the shared
+   .hah-edit-btn / .hah-edit-host pattern (see desktop-primitives.css).
+   The delete button kept its hover-reveal, previously bundled into the
+   same selector as the old .hah-log-edit; it now reveals via the
+   shared .hah-edit-host on .hah-log-entry. Spacing between the edit
+   pencil and delete preserved. */
+/* v0.8.263: the log entry's action cluster (edit pencil + delete) is
+   pushed to the right of the entry bar. This was previously
+   margin-left:auto on .hah-log-edit; the edit pencil now leads the
+   cluster so it carries the auto-margin here. Scoped to the log bar so
+   the shared .hah-edit-btn isn't given an auto-margin everywhere. */
+.hah-log-entry-bar .hah-edit-btn {
   margin-left: auto;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  border: 1px solid var(--desk-border);
-  background: transparent;
-  color: var(--desk-text-muted);
-  font-size: 10.5px;
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
-.hah-log-edit + .hah-log-delete {
+.hah-edit-btn + .hah-log-delete {
   margin-left: 4px;
 }
 
-.hah-log-entry:hover .hah-log-delete,
-.hah-log-entry:hover .hah-log-edit {
+.hah-edit-host:hover .hah-log-delete,
+.hah-log-delete:focus-visible {
   opacity: 1;
-}
-
-.hah-log-edit:hover {
-  background: rgba(47,111,237,0.08);
-  border-color: rgba(47,111,237,0.3);
-  color: rgba(47,111,237,0.95);
 }
 
 .hah-log-delete:hover {
@@ -5734,21 +5818,21 @@ button.hah-pt-flag:active {
    card. Neutral (not a clinical alert like TEP/DNAR) and icon-only —
    square-ish padding for a glyph rather than the wider text-pill the
    other flags use. */
-.hah-pt-flag.is-edit {
-  background: rgba(15,23,42,0.04);
-  color: #475569;
-  border-color: rgba(15,23,42,0.10);
-  padding: 0 7px;
-  min-width: 26px;
-}
+/* v0.8.263: .hah-pt-flag.is-edit removed. The header edit pencil now
+   uses the shared .hah-edit-btn affordance (hover-revealed on the
+   header bar) instead of being an always-visible bordered flag chip in
+   the TEP/DNAR cluster. Placement rule: .hah-pt-header-edit below. */
 
-.hah-pt-flag.is-edit svg {
-  display: block;
-}
-
-button.hah-pt-flag.is-edit:hover {
-  background: rgba(15,23,42,0.07);
-  filter: none;
+/* The header bar is a sticky flex column (name row + meta row). The
+   edit pencil is taken out of flow and pinned to the top-right corner
+   so it doesn't reflow the name/meta or sit among the clinical chips.
+   Reveal/keyboard-focus behaviour comes from .hah-edit-btn--reveal +
+   the .hah-edit-host on .hah-pt-header-bar. */
+.hah-pt-header-edit {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
 }
 
 /* ─── ACP card ───────────────────────────────────────────────────────── */
@@ -11180,9 +11264,9 @@ window.HAHBoard__LETTERHEAD_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSU
 
   <script>
 window.__HAH_BOARD_BUILD__ = {
-  filename: 'hospital_at_home_board_v0_8_260_splash_logo_inert_release.html',
-  source: 'hospital_at_home_board_v0_8_260_splash_logo_inert_source.zip',
-  builtAt: '2026-05-17T18:52:18.964109',
+  filename: 'hospital_at_home_board_v0_8_263_unify_edit_affordance_release.html',
+  source: 'hospital_at_home_board_v0_8_263_unify_edit_affordance_source.zip',
+  builtAt: '2026-05-17T19:45:52.030974',
   entry: 'desktop.html'
 };
 </script>
@@ -16897,20 +16981,23 @@ window.HAHBoard = window.HAHBoard || {};
 
   // ── Left pane ─────────────────────────────────────────────────────────
   // Deferred — reuse caseload card from patient screen without round controls.
-  // For now, still render the caseload card (it keeps continuity across screens).
+  // v0.8.261: the board's left pane is removed. It rendered the
+  // Caseload card (Total / Avg LOS / Over 7d / Discharge today) — the
+  // exact same four figures already shown in the service-metrics strip
+  // across the top of the main pane, so it was pure on-screen
+  // duplication. The only other thing the pane could have carried was
+  // "Start board round", which is deliberately a patient-page action
+  // (a round is composed per-patient; you select a patient to run it),
+  // so the board needs no launcher. Returning empty; the shell zeroes
+  // the left column + its resize handle for data-route="board" and the
+  // freed width flows to the main table (it's minmax(0,1fr)).
+  //
+  // computeCaseloadMetrics / renderCaseloadCard on patientScreen are
+  // untouched — the patient screen still uses them; only the board's
+  // call site is gone.
 
-  function renderLeftPane(state) {
-    const vm = d.buildBoardViewModel(state);
-    const patientScreen = window.HAHBoard.patientScreen;
-
-    if (!patientScreen || !patientScreen.computeCaseloadMetrics || !patientScreen.renderCaseloadCard) {
-      return c.card('Caseload', '<div class="hah-board-sub">Caseload data unavailable.</div>');
-    }
-
-    const rows = vm.rows || [];
-    const metrics = patientScreen.computeCaseloadMetrics(rows);
-    const caseloadHtml = patientScreen.renderCaseloadCard(metrics, new Set());
-    return caseloadHtml;
+  function renderLeftPane() {
+    return '';
   }
 
   // ── Main pane ────────────────────────────────────────────────────────
@@ -17791,6 +17878,12 @@ window.HAHBoard = window.HAHBoard || {};
     { key: 'resp_mdm',    label: 'Resp MDM'     },
     { key: 'other',       label: 'Other'        }
   ];
+
+  // v0.8.263: the one canonical edit pencil. Same path as the discharge
+  // card's iconSvg.edit (the chosen template) so every "edit" glyph in
+  // the app is visually identical. 16-viewBox, 1.5 stroke; sized by
+  // .hah-edit-btn svg in desktop-primitives.css.
+  const EDIT_PENCIL_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2z"/><path d="M10 4l2 2"/></svg>';
 
   // ─── v0.8.148: composer autosave race fix ────────────────────────────────
   //
@@ -18775,17 +18868,26 @@ window.HAHBoard = window.HAHBoard || {};
     // patient-level affordances; co-located with the demographics it
     // edits (header meta row), which is why the standalone card was
     // redundant.
+    // v0.8.263: converged onto the shared .hah-edit-btn affordance
+    // (pencil, no chrome, hover-revealed) — same pattern as the log and
+    // discharge-card edits now. It's NOT in the .hah-pt-header-alerts
+    // cluster anymore: that holds always-visible clinical chips
+    // (TEP/DNAR) and a reveal-on-hover control sharing that row would
+    // shift their position as it appears/disappears. It's now a
+    // top-right affordance on the header bar, revealed when the bar
+    // (.hah-edit-host) is hovered, or on keyboard focus.
     const editFlag = isJsonPatient(patient)
-      ? `<button type="button" class="hah-pt-flag is-edit" data-patient-action="open-edit-patient-record" title="Edit patient details" aria-label="Edit patient details"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`
+      ? `<button type="button" class="hah-edit-btn hah-edit-btn--reveal hah-pt-header-edit" data-patient-action="open-edit-patient-record" title="Edit patient details" aria-label="Edit patient details">${EDIT_PENCIL_SVG}</button>`
       : '';
 
-    return `<div class="hah-pt-header-bar">
+    return `<div class="hah-pt-header-bar hah-edit-host">
+      ${editFlag}
       <div class="hah-pt-header-top">
         <div class="hah-pt-header-main">
           <span class="hah-pt-name">${c.escapeHtml(patient.name)}</span>
           ${ageSex ? `<span class="hah-pt-age-sex">${c.escapeHtml(ageSex)}</span>` : ''}
         </div>
-        <div class="hah-pt-header-alerts">${editFlag}${rightFlags}</div>
+        <div class="hah-pt-header-alerts">${rightFlags}</div>
       </div>
       ${metaParts.length ? `<div class="hah-pt-meta-row">${metaParts.map(renderPatientMetaPart).join('')}</div>` : ''}
     </div>`;
@@ -18918,13 +19020,13 @@ window.HAHBoard = window.HAHBoard || {};
       // was committed.
       forDischargeSummary ? `<div class="hah-log-field"><div class="hah-log-field-label">For discharge summary</div>${forDischargeBody}</div>` : ''
     ].filter(Boolean);
-    return `<div class="hah-log-entry${isLatest ? ' is-latest' : ''}${isMobile ? ' is-mobile-review' : ''}">
+    return `<div class="hah-log-entry hah-edit-host${isLatest ? ' is-latest' : ''}${isMobile ? ' is-mobile-review' : ''}">
       <div class="hah-log-entry-bar">
         <span class="hah-log-entry-date${isLatest ? ' is-today' : ''}">${formatEntryDate(enc.timestamp)}</span>
         <span class="hah-log-entry-type">${c.escapeHtml(typeLabel)}</span>
         <span class="hah-log-author">${c.escapeHtml(enc.author || '')}</span>
-        ${isMobile ? '' : `<button type="button" class="hah-log-edit" data-patient-action="edit-encounter"
-          data-encounter-id="${c.escapeHtml(enc.id)}" title="Edit entry">Edit</button>`}
+        ${isMobile ? '' : `<button type="button" class="hah-edit-btn hah-edit-btn--reveal" data-patient-action="edit-encounter"
+          data-encounter-id="${c.escapeHtml(enc.id)}" title="Edit entry" aria-label="Edit entry">${EDIT_PENCIL_SVG}</button>`}
         <button type="button" class="hah-log-delete" data-patient-action="delete-encounter"
           data-encounter-id="${c.escapeHtml(enc.id)}" title="Delete">×</button>
       </div>
@@ -25053,10 +25155,10 @@ window.HAHBoard = window.HAHBoard || {};
 
   function formatGovernanceFooter(letter) {
     if (!letter || !letter.generatedAt) {
-      return 'Manually composed in H@H Board v0.8.260. Reviewed by [clinician].';
+      return 'Manually composed in H@H Board v0.8.263. Reviewed by [clinician].';
     }
     const at = new Date(letter.generatedAt);
-    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.260. Reviewed and edited by [clinician].';
+    return 'Draft generated ' + formatDate(at) + ' from H@H Board v0.8.263. Reviewed and edited by [clinician].';
   }
 
   // ─── Initial body stitching ────────────────────────────────────────────
@@ -26504,8 +26606,20 @@ window.HAHBoard = window.HAHBoard || {};
     const iconBtn = (action, title, glyph) =>
       `<button type="button" class="hah-dl-row-icon-btn" data-patient-action="${action}" title="${c.escapeHtml(title)}" aria-label="${c.escapeHtml(title)}">${glyph}</button>`;
 
+    // v0.8.263: edit converges onto the shared .hah-edit-btn affordance
+    // (same pencil glyph everywhere). The other strip actions (Word,
+    // Email, Mark sent) are NOT edit affordances so they keep
+    // hah-dl-row-icon-btn. This strip stays always-visible: it's a
+    // multi-action row, and hiding 3–4 actions until hover would be
+    // worse UX than the single-pencil cases the reveal variant is for.
+    // .hah-edit-btn and .hah-dl-row-icon-btn share the same metrics, so
+    // the pencil sits flush in the strip. iconSvg.edit is already the
+    // canonical pencil path (it's the template the shared SVG copied),
+    // so no glyph change is needed.
+    const editBtn = `<button type="button" class="hah-edit-btn" data-patient-action="dl-open-editor" title="Edit" aria-label="Edit">${iconSvg.edit}</button>`;
+
     const iconStrip = isDraft
-      ? iconBtn('dl-open-editor', 'Edit', iconSvg.edit)
+      ? editBtn
         + iconBtn('dl-export-docx', 'Open as Word', iconSvg.word)
         + iconBtn('dl-export-email', 'Email with Word attachment', iconSvg.email)
         + iconBtn('dl-mark-sent', 'Mark as sent', iconSvg.sent)
@@ -28751,6 +28865,20 @@ window.HAHBoard = window.HAHBoard || {};
       panelEl.hidden = false;
       panelEl.classList.add('is-open');
       inputEl.setAttribute('aria-expanded', 'true');
+      // v0.8.262: the real reason "click the header to dismiss" never
+      // worked. The header is -webkit-app-region: drag; in a PWA/WCO
+      // window the OS compositor swallows pointerdowns on a drag region
+      // BEFORE the browser's JS pipeline sees them — so onDocPointerDown
+      // (capture-phase though it is) never fires for a press on the bare
+      // blue header. v0.8.251's "closes on any press, header included"
+      // was wrong about exactly that surface. Fix: while the panel is
+      // open, mark the app so CSS drops the header's drag region — a
+      // press on the header then registers as a normal pointerdown,
+      // reaches onDocPointerDown, and closes the panel. Drag is restored
+      // the instant the panel closes, so window-dragging is unaffected
+      // outside this brief window.
+      var app = document.getElementById('hahDesktopApp');
+      if (app) app.classList.add('hah-search-open');
       renderPanel();
     }
 
@@ -28761,6 +28889,8 @@ window.HAHBoard = window.HAHBoard || {};
       panelEl.hidden = true;
       activeIndex = -1;
       inputEl.setAttribute('aria-expanded', 'false');
+      var app = document.getElementById('hahDesktopApp');
+      if (app) app.classList.remove('hah-search-open');
     }
 
     function updateActive() {
@@ -30103,6 +30233,15 @@ window.HAHBoard = window.HAHBoard || {};
     leftPane.innerHTML  = renderLeftPane(state);
     mainPane.innerHTML  = renderMainPane(state);
     rightPane.innerHTML = renderRightPane(state);
+    // v0.8.261: expose the active route on the app container so CSS can
+    // do per-screen layout. The board screen uses this to collapse the
+    // (now-removed) left pane + its resize handle and hand that width
+    // to the main table — see .hah-desktop-app[data-route="board"] in
+    // desktop-shell.css. No other screen is affected.
+    if (app) {
+      const rv = (state && state.route && state.route.view) || '';
+      if (app.getAttribute('data-route') !== rv) app.setAttribute('data-route', rv);
+    }
     const screen = getActiveScreenModule(state);
     if (screen && typeof screen.afterRender === 'function') {
       screen.afterRender(state, rightPane);
